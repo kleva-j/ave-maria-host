@@ -36,7 +36,8 @@
     "test-start": "cross-env APP_ENV=test WS_URL=ws://localhost:3000 start-server-and-test start 3000 test",
     "test": "playwright test",
     "postinstall": "prisma generate",
-    "prettier": "prettier --write ."
+    "prettier": "prettier --write .",
+    "upgrade-dep": "yarn upgrade-interactive --latest"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
