@@ -13,15 +13,11 @@ const { publicRuntimeConfig } = getConfig();
 const { APP_URL, WS_URL } = publicRuntimeConfig;
 
 function getEndingLink(ctx: NextPageContext | undefined) {
-  if (typeof window === 'undefined') {
+  if (typeof window === 'undefined')
     return httpBatchLink({
       url: `${APP_URL}/api/trpc`,
-      headers() {
-        if (ctx?.req) return { ...ctx.req.headers, 'x-ssr': '1' };
-        return {};
-      },
+      headers: () => (ctx?.req ? { ...ctx.req.headers, 'x-ssr': '1' } : {}),
     });
-  }
   const client = createWSClient({ url: WS_URL });
   return wsLink<AppRouter>({ client });
 }
