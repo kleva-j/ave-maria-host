@@ -1,4 +1,4 @@
-import '../styles/global.css';
+import '@styles/global.css';
 
 import type { Session } from 'next-auth';
 import type { AppType } from 'next/app';
