@@ -1,6 +1,7 @@
 {
   "parser": "@typescript-eslint/parser", // Specifies the ESLint parser
   "extends": [
+    "plugin:storybook/recommended",
     "plugin:@typescript-eslint/recommended", // Uses the recommended rules from the @typescript-eslint/eslint-plugin
     "plugin:react/recommended",
     "plugin:react-hooks/recommended",
@@ -19,14 +20,21 @@
     "react/prop-types": "off",
     "@typescript-eslint/no-explicit-any": "off"
   },
-  // "overrides": [
-  //   {
-  //     "files": [],
-  //     "rules": {
-  // "@typescript-eslint/no-unused-vars": "off"
-  //     }
-  //   }
-  // ],
+  "overrides": [
+    //   {
+    //     "files": [],
+    //     "rules": {
+    // "@typescript-eslint/no-unused-vars": "off"
+    //     }
+    //   }
+    {
+      "files": ["*.stories.@(ts|tsx|js|jsx|mjs|cjs)"],
+      "rules": {
+        // example of overriding a rule
+        "storybook/hierarchy-separator": "error"
+      }
+    }
+  ],
   "settings": {
     "react": {
       "version": "detect"
