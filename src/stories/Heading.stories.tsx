@@ -1,22 +1,24 @@
 import React from 'react';
-import { Text } from '../components/atoms/Text';
+import { Heading } from '../components/atoms/Heading';
 import { ComponentStory, ComponentMeta } from '@storybook/react';
 
-const Template: ComponentStory<typeof Text> = (args) => <Text {...args} />;
+const Template: ComponentStory<typeof Heading> = (args) => (
+  <Heading {...args} />
+);
 
-export const TextTemplate = Template.bind({});
-TextTemplate.args = {
-  size: 5,
+export const HeadingTemplate = Template.bind({});
+HeadingTemplate.args = {
+  size: '4',
   gradient: false,
-  variant: 'pink',
-  children: 'Text',
+  variant: 'blue',
+  children: 'Heading',
 };
 
 export default {
-  title: 'Component/Atoms/Text',
-  component: Text,
+  title: 'Component/Atoms/Heading',
+  component: Heading,
   argTypes: {
-    size: { control: 'select', options: [1, 2, 3, 4, 5, 6, 7, 8, 9] },
+    size: { control: 'select', options: ['1', '2', '3', '4'] },
     variant: {
       control: 'select',
       options: [
@@ -41,4 +43,4 @@ export default {
     },
     gradient: { control: 'select', options: [true, false] },
   },
-} as ComponentMeta<typeof Text>;
+} as ComponentMeta<typeof Heading>;
