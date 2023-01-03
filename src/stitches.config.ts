@@ -426,6 +426,7 @@ export const {
       backgroundClip: value,
     }),
   },
+  prefix: 'avm',
 });
 
 export type CSS = Stitches.CSS<typeof config>;
