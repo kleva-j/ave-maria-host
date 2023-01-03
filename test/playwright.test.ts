@@ -2,6 +2,10 @@ import { test } from '@playwright/test';
 
 test.setTimeout(35e3);
 
+// test.beforeEach(async ({ page }: any) => {
+//   await page.goto('https://localhost:3000/');
+// });
+
 test('send message', async ({ browser, page }) => {
   const viewer = await browser.newPage();
   await viewer.goto('/');
