@@ -43,6 +43,7 @@ LoContrastAlerts.args = {
 export default {
 	title: 'Component/Atoms/Alert',
 	component: Alert,
+	parameters: { layout: 'centered' },
 	argTypes: {
 		fit: { control: 'boolean', default: true },
 		size: { control: 'select', options: ['1'] },
@@ -52,5 +53,3 @@ export default {
 		},
 	},
 } as ComponentMeta<typeof Alert>;
-
-<Alert variant="green">Incorrect password</Alert>;
