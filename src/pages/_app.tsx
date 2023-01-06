@@ -8,16 +8,16 @@ import { getSession, SessionProvider } from 'next-auth/react';
 import { trpc } from 'utils/trpc';
 
 const MyApp: AppType<{ session: Session | null }> = ({
-  Component,
-  pageProps,
+	Component,
+	pageProps,
 }) => {
-  return (
-    <DesignSystemProvider>
-      <SessionProvider session={pageProps.session}>
-        <Component {...pageProps} />
-      </SessionProvider>
-    </DesignSystemProvider>
-  );
+	return (
+		<DesignSystemProvider>
+			<SessionProvider session={pageProps.session}>
+				<Component {...pageProps} />
+			</SessionProvider>
+		</DesignSystemProvider>
+	);
 };
 
 MyApp.getInitialProps = async ({ ctx }) => ({ session: await getSession(ctx) });

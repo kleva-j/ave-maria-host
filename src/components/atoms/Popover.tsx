@@ -10,40 +10,40 @@ const Popover = PopoverPrimitive.Root;
 const PopoverTrigger = PopoverPrimitive.Trigger;
 
 const StyledContent = styled(PopoverPrimitive.Content, panelStyles, {
-  minWidth: 200,
-  minHeight: '$6',
-  maxWidth: 265,
-  '&:focus': {
-    outline: 'none',
-  },
+	minWidth: 200,
+	minHeight: '$6',
+	maxWidth: 265,
+	'&:focus': {
+		outline: 'none',
+	},
 });
 
 type PopoverContentPrimitiveProps = React.ComponentProps<
-  typeof PopoverPrimitive.Content
+	typeof PopoverPrimitive.Content
 >;
 type PopoverContentProps = PopoverContentPrimitiveProps & {
-  css?: CSS;
-  hideArrow?: boolean;
+	css?: CSS;
+	hideArrow?: boolean;
 };
 
 const PopoverContent = React.forwardRef<
-  React.ElementRef<typeof StyledContent>,
-  PopoverContentProps
+	React.ElementRef<typeof StyledContent>,
+	PopoverContentProps
 >(({ children, hideArrow, ...props }, fowardedRef) => (
-  <PopoverPrimitive.Portal>
-    <StyledContent sideOffset={0} {...props} ref={fowardedRef}>
-      {children}
-      {!hideArrow && (
-        <Box css={{ color: '$panel' }}>
-          <PopoverPrimitive.Arrow
-            width={11}
-            height={5}
-            style={{ fill: 'currentColor' }}
-          />
-        </Box>
-      )}
-    </StyledContent>
-  </PopoverPrimitive.Portal>
+	<PopoverPrimitive.Portal>
+		<StyledContent sideOffset={0} {...props} ref={fowardedRef}>
+			{children}
+			{!hideArrow && (
+				<Box css={{ color: '$panel' }}>
+					<PopoverPrimitive.Arrow
+						width={11}
+						height={5}
+						style={{ fill: 'currentColor' }}
+					/>
+				</Box>
+			)}
+		</StyledContent>
+	</PopoverPrimitive.Portal>
 ));
 
 const PopoverClose = PopoverPrimitive.Close;

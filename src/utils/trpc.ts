@@ -13,13 +13,13 @@ const { publicRuntimeConfig } = getConfig();
 const { APP_URL, WS_URL } = publicRuntimeConfig;
 
 function getEndingLink(ctx: NextPageContext | undefined) {
-  if (typeof window === 'undefined')
-    return httpBatchLink({
-      url: `${APP_URL}/api/trpc`,
-      headers: () => (ctx?.req ? { ...ctx.req.headers, 'x-ssr': '1' } : {}),
-    });
-  const client = createWSClient({ url: WS_URL });
-  return wsLink<AppRouter>({ client });
+	if (typeof window === 'undefined')
+		return httpBatchLink({
+			url: `${APP_URL}/api/trpc`,
+			headers: () => (ctx?.req ? { ...ctx.req.headers, 'x-ssr': '1' } : {}),
+		});
+	const client = createWSClient({ url: WS_URL });
+	return wsLink<AppRouter>({ client });
 }
 
 /**
@@ -33,22 +33,22 @@ function getEndingLink(ctx: NextPageContext | undefined) {
  * @link https://trpc.io/docs/ssr
  */
 export const trpc = createTRPCNext<AppRouter>({
-  config({ ctx }) {
-    return {
-      links: [
-        loggerLink({
-          enabled: (opts) =>
-            (process.env.NODE_ENV === 'development' &&
-              typeof window !== 'undefined') ||
-            (opts.direction === 'down' && opts.result instanceof Error),
-        }),
-        getEndingLink(ctx),
-      ],
-      transformer: superjson,
-      queryClientConfig: { defaultOptions: { queries: { staleTime: 60 } } },
-    };
-  },
-  ssr: true,
+	config({ ctx }) {
+		return {
+			links: [
+				loggerLink({
+					enabled: (opts) =>
+						(process.env.NODE_ENV === 'development' &&
+							typeof window !== 'undefined') ||
+						(opts.direction === 'down' && opts.result instanceof Error),
+				}),
+				getEndingLink(ctx),
+			],
+			transformer: superjson,
+			queryClientConfig: { defaultOptions: { queries: { staleTime: 60 } } },
+		};
+	},
+	ssr: true,
 });
 
 // export const transformer = superjson;
@@ -57,5 +57,5 @@ export const trpc = createTRPCNext<AppRouter>({
  * @example type HelloOutput = inferQueryOutput<'hello'>
  */
 export type inferQueryOutput<
-  TRouteKey extends keyof AppRouter['_def']['queries'],
+	TRouteKey extends keyof AppRouter['_def']['queries'],
 > = inferProcedureOutput<AppRouter['_def']['queries'][TRouteKey]>;
