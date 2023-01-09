@@ -3,6 +3,7 @@ import React from 'react';
 import { Box } from 'components/atoms/Box';
 import { Text } from 'components/atoms/Text';
 import { Flex } from 'components/atoms/Flex';
+import { Card } from '@components/atoms/Card';
 import { Badge } from 'components/atoms/Badge';
 import { Label } from 'components/atoms/Label';
 import { Alert } from 'components/atoms/Alert';
@@ -95,6 +96,13 @@ export default function Showcase() {
 			}}
 		>
 			<Alert variant="green">Incorrect password</Alert>
+
+			<Flex direction="column" gap="2">
+				<Card variant="interactive">This is an interactive card</Card>
+				<Card variant="ghost">This is a ghost card</Card>
+				<Card variant="active">This is an active card</Card>
+			</Flex>
+
 			<Heading
 				size="4"
 				css={{
