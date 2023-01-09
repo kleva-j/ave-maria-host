@@ -11,12 +11,23 @@ import { AppRouter, appRouter } from 'server/routers/_app';
  */
 
 export default trpcNext.createNextApiHandler<AppRouter>({
-  router: appRouter,
-  createContext,
-  onError({ error }) {
-    if (error.code === 'INTERNAL_SERVER_ERROR') {
-      console.error('Something went wrong', error);
-    }
-  },
-  batching: { enabled: true },
+	router: appRouter,
+	createContext,
+	responseMeta() {
+		return {
+			headers: {
+				'Access-Control-Allow-Origin': `*`,
+				'Access-Control-Request-Method': '*',
+				'Access-Control-Allow-Methods': 'OPTIONS, GET',
+				'Access-Control-Allow-Headers': '*',
+			},
+			status: 200,
+		};
+	},
+	onError({ error }) {
+		if (error.code === 'INTERNAL_SERVER_ERROR') {
+			console.error('Something went wrong', error);
+		}
+	},
+	batching: { enabled: true },
 });

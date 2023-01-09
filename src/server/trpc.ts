@@ -17,8 +17,8 @@ import { initTRPC, TRPCError } from '@trpc/server';
 import superjson from 'superjson';
 
 const t = initTRPC.context<Context>().create({
-  transformer: superjson,
-  errorFormatter: ({ shape }) => shape,
+	transformer: superjson,
+	errorFormatter: ({ shape }) => shape,
 });
 
 // Create a router
@@ -33,15 +33,15 @@ export const middleware = t.middleware;
 export const mergeRouters = t.mergeRouters;
 
 const isAuthed = middleware(({ next, ctx }) => {
-  const user = ctx.session?.user;
+	const user = ctx.session?.user;
 
-  if (!user?.name) throw new TRPCError({ code: 'UNAUTHORIZED' });
+	if (!user?.name) throw new TRPCError({ code: 'UNAUTHORIZED' });
 
-  return next({
-    ctx: {
-      user: { ...user, name: user.name },
-    },
-  });
+	return next({
+		ctx: {
+			user: { ...user, name: user.name },
+		},
+	});
 });
 
 // Protected base procedure
