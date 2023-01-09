@@ -6,7 +6,7 @@ test.setTimeout(35e3);
 // 	await page.goto('http://localhost:3000/');
 // });
 
-test('send message', async ({ browser, page }) => {
+test('send message', async ({}) => {
 	// const viewer = await browser.newPage();
 	// await viewer.goto('/');
 	// await page.goto('/api/auth/signin');
