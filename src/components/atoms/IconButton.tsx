@@ -23,7 +23,7 @@ export const IconButton = styled('button', {
 	'&::after': { boxSizing: 'border-box' },
 
 	backgroundColor: '$loContrast',
-	border: '1px solid $slate7',
+	// border: '1px solid $slate7',
 	'@hover': {
 		'&:hover': {
 			borderColor: '$slate8',
@@ -50,6 +50,7 @@ export const IconButton = styled('button', {
 		variant: {
 			ghost: {
 				backgroundColor: 'transparent',
+				border: '1px solid $slate7',
 				borderWidth: '0',
 				'@hover': {
 					'&:hover': {
@@ -69,6 +70,7 @@ export const IconButton = styled('button', {
 					},
 			},
 			raised: {
+				border: '1px solid $slate7',
 				boxShadow:
 					'0 0 transparent, 0 16px 32px hsl(206deg 12% 5% / 25%), 0 3px 5px hsl(0deg 0% 0% / 10%)',
 				'@hover': {
@@ -88,10 +90,11 @@ export const IconButton = styled('button', {
 			},
 			sky: {
 				backgroundColor: '$sky5',
+				border: '1px solid $sky7',
 				borderWidth: '0',
 				'@hover': {
 					'&:hover': {
-						backgroundColor: '$skyA3',
+						backgroundColor: '$skyA4',
 					},
 				},
 				'&:focus': {
@@ -105,10 +108,11 @@ export const IconButton = styled('button', {
 			},
 			red: {
 				backgroundColor: '$red5',
+				border: '1px solid $red7',
 				borderWidth: '0',
 				'@hover': {
 					'&:hover': {
-						backgroundColor: '$redA3',
+						backgroundColor: '$redA4',
 					},
 				},
 				'&:focus': {
@@ -122,10 +126,11 @@ export const IconButton = styled('button', {
 			},
 			pink: {
 				backgroundColor: '$pink5',
+				border: '1px solid $pink7',
 				borderWidth: '0',
 				'@hover': {
 					'&:hover': {
-						backgroundColor: '$pinkA3',
+						backgroundColor: '$pinkA4',
 					},
 				},
 				'&:focus': {
@@ -139,10 +144,11 @@ export const IconButton = styled('button', {
 			},
 			plum: {
 				backgroundColor: '$plum5',
+				border: '1px solid $plum7',
 				borderWidth: '0',
 				'@hover': {
 					'&:hover': {
-						backgroundColor: '$plumA3',
+						backgroundColor: '$plumA4',
 					},
 				},
 				'&:focus': {
@@ -156,10 +162,11 @@ export const IconButton = styled('button', {
 			},
 			blue: {
 				backgroundColor: '$blue5',
+				border: '1px solid $blue7',
 				borderWidth: '0',
 				'@hover': {
 					'&:hover': {
-						backgroundColor: '$blueA3',
+						backgroundColor: '$blueA4',
 					},
 				},
 				'&:focus': {
@@ -173,10 +180,11 @@ export const IconButton = styled('button', {
 			},
 			cyan: {
 				backgroundColor: '$cyan5',
+				border: '1px solid $cyan7',
 				borderWidth: '0',
 				'@hover': {
 					'&:hover': {
-						backgroundColor: '$cyanA3',
+						backgroundColor: '$cyanA4',
 					},
 				},
 				'&:focus': {
@@ -190,10 +198,11 @@ export const IconButton = styled('button', {
 			},
 			teal: {
 				backgroundColor: '$teal5',
+				border: '1px solid $teal7',
 				borderWidth: '0',
 				'@hover': {
 					'&:hover': {
-						backgroundColor: '$tealA3',
+						backgroundColor: '$tealA4',
 					},
 				},
 				'&:focus': {
@@ -207,10 +216,11 @@ export const IconButton = styled('button', {
 			},
 			gold: {
 				backgroundColor: '$gold5',
+				border: '1px solid $gold7',
 				borderWidth: '0',
 				'@hover': {
 					'&:hover': {
-						backgroundColor: '$goldA3',
+						backgroundColor: '$goldA4',
 					},
 				},
 				'&:focus': {
@@ -224,10 +234,11 @@ export const IconButton = styled('button', {
 			},
 			mint: {
 				backgroundColor: '$mint5',
+				border: '1px solid $mint7',
 				borderWidth: '0',
 				'@hover': {
 					'&:hover': {
-						backgroundColor: '$mintA3',
+						backgroundColor: '$mintA4',
 					},
 				},
 				'&:focus': {
@@ -241,10 +252,11 @@ export const IconButton = styled('button', {
 			},
 			lime: {
 				backgroundColor: '$lime5',
+				border: '1px solid $lime7',
 				borderWidth: '0',
 				'@hover': {
 					'&:hover': {
-						backgroundColor: '$limeA3',
+						backgroundColor: '$limeA4',
 					},
 				},
 				'&:focus': {
@@ -261,7 +273,7 @@ export const IconButton = styled('button', {
 				borderWidth: '0',
 				'@hover': {
 					'&:hover': {
-						backgroundColor: '$slateA3',
+						backgroundColor: '$slateA4',
 					},
 				},
 				'&:focus': {
@@ -276,10 +288,11 @@ export const IconButton = styled('button', {
 			},
 			grass: {
 				backgroundColor: '$grass5',
+				border: '1px solid $grass7',
 				borderWidth: '0',
 				'@hover': {
 					'&:hover': {
-						backgroundColor: '$grassA3',
+						backgroundColor: '$grassA4',
 					},
 				},
 				'&:focus': {
@@ -294,10 +307,11 @@ export const IconButton = styled('button', {
 			},
 			amber: {
 				backgroundColor: '$amber5',
+				border: '1px solid $amber7',
 				borderWidth: '0',
 				'@hover': {
 					'&:hover': {
-						backgroundColor: '$amberA3',
+						backgroundColor: '$amberA4',
 					},
 				},
 				'&:focus': {
@@ -312,10 +326,11 @@ export const IconButton = styled('button', {
 			},
 			brown: {
 				backgroundColor: '$brown5',
+				border: '1px solid $brown7',
 				borderWidth: '0',
 				'@hover': {
 					'&:hover': {
-						backgroundColor: '$brownA3',
+						backgroundColor: '$brownA4',
 					},
 				},
 				'&:focus': {
@@ -330,10 +345,11 @@ export const IconButton = styled('button', {
 			},
 			green: {
 				backgroundColor: '$green5',
+				border: '1px solid $green7',
 				borderWidth: '0',
 				'@hover': {
 					'&:hover': {
-						backgroundColor: '$greenA3',
+						backgroundColor: '$greenA4',
 					},
 				},
 				'&:focus': {
@@ -348,10 +364,11 @@ export const IconButton = styled('button', {
 			},
 			tomato: {
 				backgroundColor: '$tomato5',
+				border: '1px solid $tomato7',
 				borderWidth: '0',
 				'@hover': {
 					'&:hover': {
-						backgroundColor: '$tomatoA3',
+						backgroundColor: '$tomatoA4',
 					},
 				},
 				'&:focus': {
@@ -366,10 +383,11 @@ export const IconButton = styled('button', {
 			},
 			purple: {
 				backgroundColor: '$purple5',
+				border: '1px solid $purple7',
 				borderWidth: '0',
 				'@hover': {
 					'&:hover': {
-						backgroundColor: '$purpleA3',
+						backgroundColor: '$purpleA4',
 					},
 				},
 				'&:focus': {
@@ -384,10 +402,11 @@ export const IconButton = styled('button', {
 			},
 			violet: {
 				backgroundColor: '$violet5',
+				border: '1px solid $violet7',
 				borderWidth: '0',
 				'@hover': {
 					'&:hover': {
-						backgroundColor: '$violetA3',
+						backgroundColor: '$violetA4',
 					},
 				},
 				'&:focus': {
@@ -402,10 +421,11 @@ export const IconButton = styled('button', {
 			},
 			indigo: {
 				backgroundColor: '$indigo5',
+				border: '1px solid $indigo7',
 				borderWidth: '0',
 				'@hover': {
 					'&:hover': {
-						backgroundColor: '$indigoA3',
+						backgroundColor: '$indigoA4',
 					},
 				},
 				'&:focus': {
@@ -420,10 +440,11 @@ export const IconButton = styled('button', {
 			},
 			bronze: {
 				backgroundColor: '$bronze5',
+				border: '1px solid $bronze7',
 				borderWidth: '0',
 				'@hover': {
 					'&:hover': {
-						backgroundColor: '$bronzeA3',
+						backgroundColor: '$bronzeA4',
 					},
 				},
 				'&:focus': {
@@ -438,10 +459,11 @@ export const IconButton = styled('button', {
 			},
 			orange: {
 				backgroundColor: '$orange5',
+				border: '1px solid $orange7',
 				borderWidth: '0',
 				'@hover': {
 					'&:hover': {
-						backgroundColor: '$orangeA3',
+						backgroundColor: '$orangeA4',
 					},
 				},
 				'&:focus': {
@@ -456,10 +478,11 @@ export const IconButton = styled('button', {
 			},
 			yellow: {
 				backgroundColor: '$yellow5',
+				border: '1px solid $yellow7',
 				borderWidth: '0',
 				'@hover': {
 					'&:hover': {
-						backgroundColor: '$yellowA3',
+						backgroundColor: '$yellowA4',
 					},
 				},
 				'&:focus': {
@@ -474,10 +497,11 @@ export const IconButton = styled('button', {
 			},
 			crimson: {
 				backgroundColor: '$crimson5',
+				border: '1px solid $crimson7',
 				borderWidth: '0',
 				'@hover': {
 					'&:hover': {
-						backgroundColor: '$crimsonA3',
+						backgroundColor: '$crimsonA4',
 					},
 				},
 				'&:focus': {
@@ -493,6 +517,7 @@ export const IconButton = styled('button', {
 		},
 		state: {
 			active: {
+				border: '1px solid $slate7',
 				backgroundColor: '$slate4',
 				boxShadow: 'inset 0 0 0 1px hsl(206,10%,76%)',
 				'@hover': {
@@ -505,6 +530,7 @@ export const IconButton = styled('button', {
 				},
 			},
 			waiting: {
+				border: '1px solid $slate7',
 				backgroundColor: '$slate4',
 				boxShadow: 'inset 0 0 0 1px hsl(206,10%,76%)',
 				'@hover': {
