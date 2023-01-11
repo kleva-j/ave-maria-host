@@ -4,49 +4,60 @@ import { ComponentStory, ComponentMeta } from '@storybook/react';
 
 import { Button } from '../components/atoms/Button';
 
-const Template: ComponentStory<typeof Button> = (args) => <Button {...args} />;
+const Template: ComponentStory<typeof Button> = (args) => (
+	<Button {...args}>Button</Button>
+);
 
 export const DefaultButton = Template.bind({});
-DefaultButton.args = {
-	children: 'Default Button',
-};
-
-export const ActiveButton = Template.bind({});
-ActiveButton.args = {
-	state: 'active',
-	children: 'Active Button',
-};
-
-export const WaitingButton = Template.bind({});
-WaitingButton.args = {
-	state: 'waiting',
-	children: 'Waiting Button',
-};
-
-export const GhostButton = Template.bind({});
-GhostButton.args = {
-	ghost: true,
-	children: 'Ghost Button',
-};
+DefaultButton.args = {};
 
 export default {
 	title: 'Component/Atoms/Button',
 	component: Button,
 	parameters: { layout: 'centered' },
 	argTypes: {
-		size: { control: 'select', options: ['1', '2', '3'], defaultValue: '2' },
+		size: {
+			control: 'select',
+			options: ['xs', 'sm', 'md', 'lg', 'xl'],
+			defaultValue: 'md',
+		},
 		state: { control: 'select', options: ['active', 'waiting'] },
 		ghost: { control: 'boolean', default: false },
-		variant: {
+		uppercase: { control: 'boolean', default: false },
+		disabled: { control: 'boolean', default: false },
+		compact: { control: 'boolean', default: false },
+		color: {
 			control: 'select',
 			options: [
-				'gray',
-				'blue',
-				'green',
+				'sky',
 				'red',
-				'transparentWhite',
-				'transparentBlack',
+				'pink',
+				'plum',
+				'blue',
+				'cyan',
+				'teal',
+				'gold',
+				'mint',
+				'lime',
+				'gray',
+				'grass',
+				'amber',
+				'brown',
+				'green',
+				'tomato',
+				'purple',
+				'violet',
+				'indigo',
+				'bronze',
+				'orange',
+				'yellow',
+				'crimson',
 			],
+			defaultValue: 'red',
+		},
+		variant: {
+			control: 'select',
+			options: ['light', 'filled', 'subtle', 'outline'],
 		},
 	},
 } as ComponentMeta<typeof Button>;

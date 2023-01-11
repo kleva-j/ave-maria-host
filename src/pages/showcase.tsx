@@ -95,6 +95,32 @@ export default function Showcase() {
 				overflowY: 'auto',
 			}}
 		>
+			<Flex gap={2}>
+				<IconButton variant="red" size="1" css={{ borderColor: '$red8' }}>
+					<Cross2Icon />
+				</IconButton>
+				<IconButton variant="orange" size="1">
+					<Cross2Icon />
+				</IconButton>
+				<IconButton variant="yellow" size="1">
+					<Cross2Icon />
+				</IconButton>
+				<IconButton variant="green" size="1">
+					<Cross2Icon />
+				</IconButton>
+				<IconButton variant="gray" size="1" css={{ borderColor: '$slate8' }}>
+					<Cross2Icon />
+				</IconButton>
+
+				<IconButton variant="sky" size="1" css={{ borderColor: '$sky8' }}>
+					<Cross2Icon />
+				</IconButton>
+
+				<Button variant="light" color="red">
+					Submit
+				</Button>
+			</Flex>
+
 			<Alert variant="green">Incorrect password</Alert>
 
 			<Flex direction="column" gap="2">
@@ -319,7 +345,9 @@ export default function Showcase() {
 							<Button>Ok</Button>
 						</AlertDialogAction>
 						<AlertDialogCancel asChild>
-							<Button variant="red">Cancel</Button>
+							<Button color="red" variant="outline">
+								Cancel
+							</Button>
 						</AlertDialogCancel>
 					</Flex>
 				</AlertDialogContent>
