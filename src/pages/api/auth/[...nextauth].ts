@@ -1,59 +1,42 @@
-import NextAuth from 'next-auth';
-import { AppProviders } from 'next-auth/providers';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import GithubProvider from 'next-auth/providers/github';
+import type { NextApiRequest, NextApiResponse } from 'next';
+import type { NextAuthOptions } from 'next-auth';
 
-let useMockProvider = process.env.NODE_ENV === 'test';
-const { GITHUB_CLIENT_ID, GITHUB_SECRET, NODE_ENV, APP_ENV } = process.env;
-if (
-	(NODE_ENV !== 'production' || APP_ENV === 'test') &&
-	(!GITHUB_CLIENT_ID || !GITHUB_SECRET)
-) {
-	console.log('⚠️ Using mocked GitHub auth correct credentials were not added');
-	useMockProvider = true;
-}
-const providers: AppProviders = [];
-if (useMockProvider) {
-	providers.push(
-		CredentialsProvider({
-			id: 'github',
-			name: 'Mocked GitHub',
-			async authorize(credentials) {
-				if (credentials) {
-					const user = {
-						id: credentials.name,
-						name: credentials.name,
-						email: credentials.name,
-					};
-					return user;
-				}
-				return null;
-			},
-			credentials: {
-				name: { type: 'test' },
-			},
-		}),
-	);
-} else {
-	if (!GITHUB_CLIENT_ID || !GITHUB_SECRET) {
-		throw new Error('GITHUB_CLIENT_ID and GITHUB_SECRET must be set');
-	}
-	providers.push(
-		GithubProvider({
-			clientId: GITHUB_CLIENT_ID,
-			clientSecret: GITHUB_SECRET,
-			profile(profile) {
+import { PrismaAdapter } from '@next-auth/prisma-adapter';
+import { prisma } from 'server/prisma';
+
+import GoogleProvider from 'next-auth/providers/google';
+import EmailProvider from 'next-auth/providers/email';
+import NextAuth from 'next-auth';
+
+const authOptions: NextAuthOptions = {
+	providers: [
+		GoogleProvider({
+			clientId: process.env.GOOGLE_CLIENT_ID ?? '',
+			clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+			authorization:
+				'https://accounts.google.com/o/oauth2/v2/auth?' +
+				new URLSearchParams({
+					prompt: 'consent',
+					access_type: 'offline',
+					response_type: 'code',
+				}),
+			profile: (profile: any) => {
 				return {
-					id: profile.id,
-					name: profile.login,
 					email: profile.email,
-					image: profile.avatar_url,
-				} as any;
+					role: 'user',
+					name: profile.name ?? profile.login,
+					emailVerified: new Date().toISOString(),
+					image: profile.picture ?? profile.avatar_url,
+					id: profile.id ? profile.id.toString() : profile.sub,
+				};
 			},
 		}),
-	);
+		EmailProvider({ server: process.env.EMAIL_SERVER ?? '' }),
+	],
+	secret: process.env.NEXTAUTH_SECRET ?? '',
+	adapter: PrismaAdapter(prisma),
+};
+
+export default async function Auth(req: NextApiRequest, res: NextApiResponse) {
+	return NextAuth(req, res, authOptions);
 }
-export default NextAuth({
-	// Configure one or more authentication providers
-	providers,
-});
