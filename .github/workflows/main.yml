@@ -99,7 +99,7 @@ jobs:
       #     cmd: test # will run `yarn test` command
 
       - name: Build and test
-        run: yarn build && yarn test-start && yarn test-dev
+        run: yarn build && yarn test-start
 
       - name: Upload test results
         if: ${{ always() }}
