@@ -2,7 +2,7 @@ import * as AccordionPrimitive from '@radix-ui/react-accordion';
 import React from 'react';
 
 import { ChevronDownIcon } from '@radix-ui/react-icons';
-import { styled, CSS } from 'stitches.config';
+import { styled, CSS } from '../../stitches.config';
 
 const StyledAccordion = styled(AccordionPrimitive.Root, {});
 
@@ -40,12 +40,9 @@ const StyledTrigger = styled(AccordionPrimitive.Trigger, {
 	all: 'unset',
 	boxSizing: 'border-box',
 	userSelect: 'none',
-	'&::before': {
-		boxSizing: 'border-box',
-	},
-	'&::after': {
-		boxSizing: 'border-box',
-	},
+
+	'&::before': { boxSizing: 'border-box' },
+	'&::after': { boxSizing: 'border-box' },
 
 	display: 'flex',
 	alignItems: 'center',
@@ -55,9 +52,7 @@ const StyledTrigger = styled(AccordionPrimitive.Trigger, {
 	width: '100%',
 
 	'@hover': {
-		'&:hover': {
-			backgroundColor: '$slate2',
-		},
+		'&:hover': { backgroundColor: '$slate2' },
 	},
 
 	'&:focus': {
@@ -70,9 +65,7 @@ const StyledTrigger = styled(AccordionPrimitive.Trigger, {
 	},
 
 	'&[data-state="open"]': {
-		svg: {
-			transform: 'rotate(180deg)',
-		},
+		svg: { transform: 'rotate(180deg)' },
 	},
 });
 
