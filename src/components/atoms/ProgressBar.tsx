@@ -1,7 +1,7 @@
 import * as ProgressPrimitive from '@radix-ui/react-progress';
 import React from 'react';
 
-import { styled, keyframes, CSS, VariantProps } from 'stitches.config';
+import { styled, keyframes, CSS, VariantProps } from '../../stitches.config';
 
 const indeterminateProgress = keyframes({
 	'0%': {

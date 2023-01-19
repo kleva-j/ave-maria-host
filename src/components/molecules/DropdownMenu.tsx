@@ -2,7 +2,7 @@ import React from 'react';
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
 
 import { CheckIcon } from '@radix-ui/react-icons';
-import { styled, CSS } from 'stitches.config';
+import { styled, CSS } from '../../stitches.config';
 
 import { menuCss, separatorCss, itemCss, labelCss } from './Menu';
 import { panelStyles } from '../atoms/Panel';

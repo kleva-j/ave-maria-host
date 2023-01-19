@@ -1,7 +1,8 @@
 import React from 'react';
 
 import { CaretSortIcon } from '@radix-ui/react-icons';
-import { styled, CSS } from 'stitches.config';
+
+import { styled, CSS } from '../../stitches.config';
 
 const SelectWrapper = styled('div', {
 	backgroundColor: '$loContrast',

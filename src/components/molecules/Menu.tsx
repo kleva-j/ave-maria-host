@@ -2,7 +2,7 @@ import * as MenuPrimitive from '@radix-ui/react-menu';
 import React from 'react';
 
 import { CheckIcon } from '@radix-ui/react-icons';
-import { styled, css, CSS } from 'stitches.config';
+import { styled, css, CSS } from '../../stitches.config';
 
 import { panelStyles } from '../atoms/Panel';
 import { Flex } from '../atoms/Flex';

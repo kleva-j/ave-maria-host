@@ -2,9 +2,9 @@ import * as ContextMenuPrimitive from '@radix-ui/react-context-menu';
 import React from 'react';
 
 import { CheckIcon } from '@radix-ui/react-icons';
-import { styled, CSS } from 'stitches.config';
 
 import { menuCss, separatorCss, itemCss, labelCss } from './Menu';
+import { styled, CSS } from '../../stitches.config';
 import { panelStyles } from '../atoms/Panel';
 import { Flex } from '../atoms/Flex';
 import { Box } from '../atoms/Box';

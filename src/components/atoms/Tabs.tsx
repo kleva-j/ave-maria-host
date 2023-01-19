@@ -1,8 +1,7 @@
 import * as TabsPrimitive from '@radix-ui/react-tabs';
 import React from 'react';
 
-import { styled, CSS } from 'stitches.config';
-
+import { styled, CSS } from '../../stitches.config';
 import { Separator } from './Separator';
 
 export const Tabs = styled(TabsPrimitive.Root, {

@@ -1,5 +1,6 @@
-import { styled } from 'stitches.config';
 import * as SeparatorPrimitive from '@radix-ui/react-separator';
+
+import { styled } from '../../stitches.config';
 
 export const Separator = styled(SeparatorPrimitive.Root, {
 	border: 'none',
@@ -32,6 +33,9 @@ export const Separator = styled(SeparatorPrimitive.Root, {
 					height: '$7',
 				},
 			},
+		},
+		'w-full': {
+			true: { width: '100% !important' },
 		},
 	},
 	defaultVariants: {

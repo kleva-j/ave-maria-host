@@ -57,6 +57,22 @@ export const Text = styled('span', {
 			gray: { color: '$slate11' },
 			contrast: { color: '$hiContrast' },
 		},
+		truncate: {
+			true: {
+				textOverflow: 'ellipsis' /* enables ellipsis */,
+				whiteSpace: 'nowrap' /* keeps the text in a single line */,
+				overflow: 'hidden' /* keeps the element from overflowing its parent */,
+			},
+		},
+		truncMultiline: {
+			true: {
+				overflow: 'hidden',
+				display: '-webkit-box',
+				'-webkit-box-orient': 'vertical',
+				'-webkit-line-clamp': 3 /* start showing ellipsis when 3rd line is reached */,
+				whiteSpace: 'pre-wrap' /* let the text wrap preserving spaces */,
+			},
+		},
 		gradient: {
 			true: {
 				WebkitBackgroundClip: 'text',
