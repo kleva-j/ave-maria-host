@@ -2,8 +2,8 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 import React from 'react';
 
 import { Cross1Icon } from '@radix-ui/react-icons';
-import { styled, CSS } from 'stitches.config';
 
+import { styled, CSS } from '../../stitches.config';
 import { IconButton } from './IconButton';
 import { overlayStyles } from './Overlay';
 import { panelStyles } from './Panel';

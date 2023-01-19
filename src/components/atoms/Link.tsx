@@ -1,4 +1,4 @@
-import { styled } from 'stitches.config';
+import { styled } from '../../stitches.config';
 import { Text } from './Text';
 
 export const Link = styled('a', {
@@ -6,6 +6,7 @@ export const Link = styled('a', {
 	gap: '$1',
 	flexShrink: 0,
 	outline: 'none',
+	cursor: 'pointer',
 	textDecorationLine: 'none',
 	textUnderlineOffset: '3px',
 	textDecorationColor: '$slate4',

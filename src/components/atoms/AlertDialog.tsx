@@ -1,7 +1,7 @@
 import React from 'react';
 import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
 
-import { styled, CSS } from 'stitches.config';
+import { styled, CSS } from '../../stitches.config';
 
 import { overlayStyles } from './Overlay';
 import { panelStyles } from './Panel';

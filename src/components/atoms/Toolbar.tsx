@@ -1,7 +1,8 @@
 import * as Toolbar from '@radix-ui/react-toolbar';
 
 import { violet, blackA, mauve } from '@radix-ui/colors';
-import { styled } from 'stitches.config';
+
+import { styled } from '../../stitches.config';
 
 const ToolbarRoot = styled(Toolbar.Root, {
 	display: 'flex',
