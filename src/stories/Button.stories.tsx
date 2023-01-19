@@ -17,8 +17,8 @@ export default {
 	parameters: { layout: 'centered' },
 	argTypes: {
 		size: {
-			control: 'select',
-			options: ['xs', 'sm', 'md', 'lg', 'xl'],
+			control: 'radio',
+			options: ['xs', 'sm', 'md', 'lg'],
 			defaultValue: 'md',
 		},
 		state: { control: 'select', options: ['active', 'waiting'] },
