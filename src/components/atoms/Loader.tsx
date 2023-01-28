@@ -17,8 +17,27 @@ const ballTurn = keyframes({
 	'100%': { transform: 'rotate(360deg)' },
 });
 
+const rot1 = keyframes({
+	'0%': { transform: 'rotate(0)' },
+	'50%': {
+		transform: 'rotate(180deg)',
+		borderTopColor: 'rgb(139, 46, 46)',
+		borderBottomColor: 'rgb(243, 92, 33)',
+		borderRightColor: 'transparent',
+		borderLeftColor: 'transparent',
+	},
+	'100%': { transform: 'rotate(360deg)' },
+});
+
 export const Loader = styled(Box, {
 	variants: {
+		size: {
+			1: { width: '$2', height: '$2' },
+			2: { width: '$3', height: '$3' },
+			3: { width: '$4', height: '$4' },
+			4: { width: '$5', height: '$5' },
+			5: { width: '$6', height: '$6' },
+		},
 		variant: {
 			red: {
 				backgroundColor: '$red8',
@@ -120,6 +139,19 @@ export const Loader = styled(Box, {
 				},
 			},
 		},
+		rot1: {
+			true: {
+				width: '50px',
+				height: '50px',
+				display: 'inline-block',
+				borderWidth: '$1',
+				borderStyle: 'solid',
+				borderRadius: '50%',
+				borderTopColor: 'transparent',
+				borderBottomColor: 'transparent',
+				animation: `${rot1} 1s infinite`,
+			},
+		},
 	},
 	compoundVariants: [
 		{
@@ -157,6 +189,26 @@ export const Loader = styled(Box, {
 				borderColor: '$teal9',
 				'&::before, &::after': { backgroundColor: '$teal10' },
 			},
+		},
+		{
+			variant: 'red',
+			rot1: true,
+			css: { borderColor: '$red8', backgroundColor: 'transparent' },
+		},
+		{
+			variant: 'blue',
+			rot1: true,
+			css: { borderColor: '$blue8', backgroundColor: 'transparent' },
+		},
+		{
+			variant: 'teal',
+			rot1: true,
+			css: { borderColor: '$teal8', backgroundColor: 'transparent' },
+		},
+		{
+			variant: 'gray',
+			rot1: true,
+			css: { borderColor: '$slate8', backgroundColor: 'transparent' },
 		},
 	],
 	defaultVariants: {
