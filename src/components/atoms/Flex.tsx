@@ -20,6 +20,8 @@ export const Flex = styled('div', {
 		},
 		justify: {
 			between: { justifyContent: 'space-between' },
+			evenly: { justifyContent: 'space-evenly' },
+			around: { justifyContent: 'space-around' },
 			start: { justifyContent: 'flex-start' },
 			center: { justifyContent: 'center' },
 			end: { justifyContent: 'flex-end' },
