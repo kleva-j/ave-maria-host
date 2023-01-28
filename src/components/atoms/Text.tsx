@@ -73,6 +73,15 @@ export const Text = styled('span', {
 				whiteSpace: 'pre-wrap' /* let the text wrap preserving spaces */,
 			},
 		},
+		semibold: {
+			true: { fontWeight: '500' },
+		},
+		bold: {
+			true: { fontWeight: 'bold' },
+		},
+		bolder: {
+			true: { fontWeight: '900' },
+		},
 		gradient: {
 			true: {
 				WebkitBackgroundClip: 'text',
