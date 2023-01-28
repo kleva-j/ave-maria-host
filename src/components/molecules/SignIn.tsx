@@ -2,7 +2,7 @@ import { GitHubLogoIcon, InstagramLogoIcon } from '@radix-ui/react-icons';
 import { Container } from '@components/atoms/Container';
 import { TextField } from '@components/atoms/TextField';
 import { Separator } from '@components/atoms/Separator';
-import { AuthState, formError, AuthData } from 'types';
+import { formError, AuthData } from 'types';
 import { useForm, zodResolver } from '@mantine/form';
 import { Heading } from '@components/atoms/Heading';
 import { Button } from '@components/atoms/Button';
@@ -59,7 +59,7 @@ export const SignIn = () => {
 	const { error: signInError } = useRouter().query;
 	const [loading, setLoading] = useState<boolean>(false);
 
-	const [error, setError] = useState<null | formError>(
+	const [, setError] = useState<null | formError>(
 		signInError
 			? {
 					title: 'SignIn Error',

@@ -16,7 +16,7 @@ import Link from 'next/link';
 
 const VerifyRequest = ({ email }: any) => {
 	const [seconds, setSeconds] = useState(60);
-	const [loading, setLoading] = useState(false);
+	const [, setLoading] = useState(false);
 	const [touched, setTouched] = useState(false);
 	const timeout = useTimeout(() => {
 		setTouched(false);
@@ -27,7 +27,7 @@ const VerifyRequest = ({ email }: any) => {
 
 	const handleResendEmail = async () => {
 		setLoading(true);
-		const { ok, error }: any = await signIn('email', {
+		const { ok }: any = await signIn('email', {
 			email,
 			redirect: false,
 			authType: AuthState.login,
