@@ -46,21 +46,26 @@ const StyledCloseButton = styled(DialogPrimitive.Close, {
 type DialogContentPrimitiveProps = React.ComponentProps<
 	typeof DialogPrimitive.Content
 >;
-type DialogContentProps = DialogContentPrimitiveProps & { css?: CSS };
+type DialogContentProps = DialogContentPrimitiveProps & {
+	css?: CSS;
+	showClose?: boolean;
+};
 
 const DialogContent = React.forwardRef<
 	React.ElementRef<typeof StyledContent>,
 	DialogContentProps
->(({ children, ...props }, forwardedRef) => (
+>(({ children, showClose = true, ...props }, forwardedRef) => (
 	<DialogPrimitive.Portal>
 		<StyledOverlay />
 		<StyledContent {...props} ref={forwardedRef}>
 			{children}
-			<StyledCloseButton asChild>
-				<IconButton variant="ghost">
-					<Cross1Icon />
-				</IconButton>
-			</StyledCloseButton>
+			{showClose ? (
+				<StyledCloseButton asChild>
+					<IconButton variant="ghost">
+						<Cross1Icon />
+					</IconButton>
+				</StyledCloseButton>
+			) : null}
 		</StyledContent>
 	</DialogPrimitive.Portal>
 ));

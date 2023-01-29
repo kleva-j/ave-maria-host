@@ -21,7 +21,8 @@
 			"@server/*": ["server/*"],
 			"@styles/*": ["styles/*"],
 			"@utils/*": ["utils/*"],
-			"@pages/*": ["pages/*"]
+			"@pages/*": ["pages/*"],
+			"@types/*": ["types/*"]
 		}
 	},
 	"include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],

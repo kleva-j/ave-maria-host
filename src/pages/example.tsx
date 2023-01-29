@@ -119,6 +119,7 @@ import {
 	ArrowRightIcon,
 	ActivityLogIcon,
 	ExclamationTriangleIcon,
+	TrashIcon,
 } from '@radix-ui/react-icons';
 import { Loader } from '@components/atoms/Loader';
 
@@ -1689,7 +1690,12 @@ function Home() {
 										<Button>Cancel</Button>
 									</AlertDialogCancel>
 									<AlertDialogAction asChild>
-										<Button color="red">Delete</Button>
+										<Button color="red" variant="outline">
+											<Box css={{ mr: '$1' }}>
+												<TrashIcon />
+											</Box>
+											Delete
+										</Button>
 									</AlertDialogAction>
 								</Flex>
 							</AlertDialogContent>
