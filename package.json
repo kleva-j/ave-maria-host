@@ -84,7 +84,7 @@
 		"@trpc/client": "^10.9.0",
 		"@trpc/next": "^10.9.0",
 		"@trpc/react-query": "^10.9.0",
-		"@trpc/server": "^10.9.1",
+		"@trpc/server": "^10.45.2",
 		"clsx": "^1.1.1",
 		"lodash.merge": "^4.6.2",
 		"next": "^13.1.6",
