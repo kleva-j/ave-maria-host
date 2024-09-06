@@ -8277,10 +8277,10 @@ jose@^4.10.0:
   resolved "https://registry.yarnpkg.com/jose/-/jose-4.11.1.tgz#8f7443549befe5bddcf4bae664a9cbc1a62da4fa"
   integrity sha512-YRv4Tk/Wlug8qicwqFNFVEZSdbROCHRAC6qu/i0dyNKr5JQdoa2pIGoS04lLO/jXQX7Z9omoNewYIVIxqZBd9Q==
 
-jose@^4.11.4:
-  version "4.13.1"
-  resolved "https://registry.yarnpkg.com/jose/-/jose-4.13.1.tgz#449111bb5ab171db85c03f1bd2cb1647ca06db1c"
-  integrity sha512-MSJQC5vXco5Br38mzaQKiq9mwt7lwj2eXpgpRyQYNHYt2lq1PjkWa7DLXX0WVcQLE9HhMh3jPiufS7fhJf+CLQ==
+jose@^4.15.5:
+  version "4.15.9"
+  resolved "https://registry.yarnpkg.com/jose/-/jose-4.15.9.tgz#9b68eda29e9a0614c042fa29387196c7dd800100"
+  integrity sha512-1vUQX+IdDMVPj4k8kOxgUqlcK518yluMuGZwqlr44FS1ppZB/5GWh4rZG89erpOBOJjU/OBsnCVFfapsRz6nEA==
 
 js-sdsl@^4.1.4:
   version "4.2.0"
@@ -9075,15 +9075,15 @@ nested-error-stacks@^2.0.0, nested-error-stacks@^2.1.0:
   resolved "https://registry.yarnpkg.com/nested-error-stacks/-/nested-error-stacks-2.1.1.tgz#26c8a3cee6cc05fbcf1e333cd2fc3e003326c0b5"
   integrity sha512-9iN1ka/9zmX1ZvLV9ewJYEk9h7RyRRtqdK0woXcqohu8EWIerfPUjYJPg0ULy0UqP7cslmdGc8xKDJcojlKiaw==
 
-next-auth@^4.24.5:
-  version "4.24.5"
-  resolved "https://registry.yarnpkg.com/next-auth/-/next-auth-4.24.5.tgz#1fd1bfc0603c61fd2ba6fd81b976af690edbf07e"
-  integrity sha512-3RafV3XbfIKk6rF6GlLE4/KxjTcuMCifqrmD+98ejFq73SRoj2rmzoca8u764977lH/Q7jo6Xu6yM+Re1Mz/Og==
+next-auth@^4.24.7:
+  version "4.24.7"
+  resolved "https://registry.yarnpkg.com/next-auth/-/next-auth-4.24.7.tgz#0a14c1e35b4a2c0c1ecff95c295b74bd48d3817a"
+  integrity sha512-iChjE8ov/1K/z98gdKbn2Jw+2vLgJtVV39X+rCP5SGnVQuco7QOr19FRNGMIrD8d3LYhHWV9j9sKLzq1aDWWQQ==
   dependencies:
     "@babel/runtime" "^7.20.13"
     "@panva/hkdf" "^1.0.2"
     cookie "^0.5.0"
-    jose "^4.11.4"
+    jose "^4.15.5"
     oauth "^0.9.15"
     openid-client "^5.4.0"
     preact "^10.6.3"
