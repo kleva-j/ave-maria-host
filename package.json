@@ -103,7 +103,7 @@
 		"@babel/core": "^7.20.12",
 		"@commitlint/cli": "^17.4.2",
 		"@commitlint/config-conventional": "^17.4.2",
-		"@playwright/test": "^1.30.0",
+		"@playwright/test": "^1.55.1",
 		"@storybook/addon-actions": "^6.5.16",
 		"@storybook/addon-essentials": "^6.5.16",
 		"@storybook/addon-interactions": "^6.5.16",
