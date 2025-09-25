@@ -54,7 +54,7 @@
 		"**/*": "prettier --write --ignore-unknown"
 	},
 	"dependencies": {
-		"@mantine/form": "^5.10.2",
+		"@mantine/form": "^8.3.2",
 		"@mantine/hooks": "^5.10.2",
 		"@next-auth/prisma-adapter": "^1.0.5",
 		"@prisma/client": "^4.16.2",
