@@ -1,0 +1,37 @@
+{
+  "name": "@host/api",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./src/*.ts"
+    }
+  },
+  "type": "module",
+  "scripts": {
+    "build": "tsdown"
+  },
+  "devDependencies": {
+    "tsdown": "catalog:"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@orpc/server": "catalog:",
+    "@orpc/client": "catalog:",
+    "@orpc/openapi": "catalog:",
+    "@orpc/zod": "catalog:",
+    "hono": "catalog:",
+    "drizzle-orm": "catalog:",
+    "ai": "catalog:",
+    "@ai-sdk/google": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:",
+    "@host/auth": "workspace:*",
+    "@host/db": "workspace:*"
+  }
+}

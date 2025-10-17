@@ -1,0 +1,36 @@
+{
+  "name": "host",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "ruler:apply": "pnpm dlx @intellectronica/ruler@latest apply --local-only",
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "check-types": "turbo check-types",
+    "dev:native": "turbo -F native dev",
+    "dev:web": "turbo -F web dev",
+    "dev:server": "turbo -F server dev",
+    "db:push": "turbo -F @host/db db:push",
+    "db:studio": "turbo -F @host/db db:studio",
+    "db:generate": "turbo -F @host/db db:generate",
+    "db:migrate": "turbo -F @host/db db:migrate",
+    "db:start": "turbo -F @host/db db:start",
+    "db:watch": "turbo -F @host/db db:watch",
+    "db:stop": "turbo -F @host/db db:stop",
+    "db:down": "turbo -F @host/db db:down"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.2",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.4",
+    "tsdown": "^0.15.5",
+    "@types/bun": "^1.2.6"
+  },
+  "packageManager": "pnpm@10.13.1"
+}
