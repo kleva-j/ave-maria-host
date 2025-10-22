@@ -17,6 +17,7 @@ import {
   SidebarGroup,
   SidebarMenu,
 } from "@/components/ui/sidebar";
+import { Link } from "@tanstack/react-router";
 
 type NavMainProps = {
   items: {
@@ -40,10 +41,10 @@ export function NavMain({ items }: NavMainProps) {
           <Collapsible key={item.title} asChild defaultOpen={item.isActive}>
             <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip={item.title}>
-                <a href={item.url}>
+                <Link to={item.url} preload="intent">
                   <item.icon />
                   <span>{item.title}</span>
-                </a>
+                </Link>
               </SidebarMenuButton>
               {item.items?.length ? (
                 <>
@@ -58,9 +59,9 @@ export function NavMain({ items }: NavMainProps) {
                       {item.items?.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton asChild>
-                            <a href={subItem.url}>
+                            <Link to={subItem.url} preload="intent">
                               <span>{subItem.title}</span>
-                            </a>
+                            </Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       ))}

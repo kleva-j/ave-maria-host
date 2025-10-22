@@ -22,12 +22,14 @@
     "db:stop": "docker compose stop",
     "db:down": "docker compose down",
     "effect:migrate-db": "bun run src/scripts/migrator.ts",
-    "effect:reset-db": "bun run src/scripts/reset.ts"
+    "effect:reset-db": "bun run src/scripts/reset.ts",
+    "effect:reset-db:node": "npx tsx src/scripts/reset.ts"
   },
   "devDependencies": {
     "@types/pg": "^8.11.11",
     "drizzle-kit": "^0.31.2",
-    "tsdown": "catalog:"
+    "tsdown": "catalog:",
+    "tsx": "^4.19.2"
   },
   "peerDependencies": {
     "typescript": "^5"

@@ -1,3 +1,5 @@
+import { Link } from "@tanstack/react-router";
+
 import {
   type LucideIcon,
   MoreHorizontal,
@@ -42,10 +44,10 @@ export function NavProjects({ projects }: NavProjectsProps) {
         {projects.map((item) => (
           <SidebarMenuItem key={item.name}>
             <SidebarMenuButton asChild>
-              <a href={item.url}>
+              <Link to={item.url} preload="intent">
                 <item.icon />
                 <span>{item.name}</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

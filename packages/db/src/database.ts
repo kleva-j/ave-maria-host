@@ -2,6 +2,7 @@ import { PlatformConfigProvider } from "@effect/platform";
 import { identity, Config, Effect, Layer } from "effect";
 import { NodeContext } from "@effect/platform-node";
 import { PgClient } from "@effect/sql-pg";
+import { fileURLToPath } from "node:url";
 
 import * as EffectString from "effect/String";
 import * as path from "node:path";
@@ -58,7 +59,10 @@ export const PgLive = Layer.unwrapEffect(
 ).pipe(
   Layer.provide(
     PlatformConfigProvider.layerDotEnv(
-      path.join(process.cwd(), "../../apps/server/.env")
+      path.join(
+        fileURLToPath(new URL(".", import.meta.url)),
+        "../../../apps/server/.env"
+      )
     )
   ),
   Layer.provide(NodeContext.layer)

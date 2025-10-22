@@ -21,7 +21,9 @@
     "db:start": "turbo -F @host/db db:start",
     "db:watch": "turbo -F @host/db db:watch",
     "db:stop": "turbo -F @host/db db:stop",
-    "db:down": "turbo -F @host/db db:down"
+    "db:down": "turbo -F @host/db db:down",
+    "db:reset": "turbo -F @host/db effect:reset-db",
+    "db:reset:node": "turbo -F @host/db effect:reset-db:node"
   },
   "dependencies": {
     "dotenv": "^17.2.2",

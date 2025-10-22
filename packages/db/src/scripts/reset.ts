@@ -1,12 +1,63 @@
+import { Config, Effect, Redacted, Schema } from "effect";
+import { NodeRuntime } from "@effect/platform-node";
 import { SqlClient, SqlSchema } from "@effect/sql";
-import { Effect, Schema } from "effect";
 
 import { PgLive } from "../database";
-import { NodeRuntime } from "@effect/platform-node";
+
+// Safety check to prevent accidental destructive operations
+
+const checkResetConfirmation = () =>
+  Effect.gen(function* () {
+    const DB_RESET_CONFIRM = yield* Config.redacted("DB_RESET_CONFIRM");
+    const resetConfirmationValue = Redacted.value(DB_RESET_CONFIRM);
+
+    if (resetConfirmationValue !== "1") {
+      Effect.logError("❌ Database reset requires confirmation.");
+      Effect.logError(
+        "Set DB_RESET_CONFIRM=1 environment variable to proceed."
+      );
+      Effect.logError(
+        "Example: DB_RESET_CONFIRM=1 bun run src/scripts/reset.ts"
+      );
+
+      process.exit(1);
+    }
+  });
+
+const checkResetAllowProduction = () =>
+  Effect.gen(function* () {
+    const NODE_ENV = yield* Config.redacted("NODE_ENV");
+    const DB_RESET_ALLOW_PRODUCTION = yield* Config.redacted(
+      "DB_RESET_ALLOW_PRODUCTION"
+    );
+    const resetAllowProductionValue = Redacted.value(DB_RESET_ALLOW_PRODUCTION);
+    const nodeEnvValue = Redacted.value(NODE_ENV);
+
+    if (resetAllowProductionValue !== "1" && nodeEnvValue === "production") {
+      Effect.logError(
+        "❌ Database reset is blocked in production environment."
+      );
+      Effect.logError(
+        "Set DB_RESET_ALLOW_PRODUCTION=1 if you really need to reset production data."
+      );
+      process.exit(1);
+    }
+  });
 
 NodeRuntime.runMain(
   Effect.gen(function* () {
     const client = yield* SqlClient.SqlClient;
+
+    yield* checkResetConfirmation();
+    yield* checkResetAllowProduction();
+
+    Effect.logWarning(
+      "⚠️  WARNING: This will DROP ALL TABLES and TYPES from the database!"
+    );
+    Effect.logWarning("📊 Target schemas: public, drizzle");
+    Effect.logWarning(
+      "✅ Safety checks passed - proceeding with database reset..."
+    );
 
     const schemaList = ["public", "drizzle"];
 
@@ -56,6 +107,7 @@ NodeRuntime.runMain(
 
         if (types.length > 0) {
           yield* Effect.log("Dropping types");
+
           for (const type of types) {
             yield* client`DROP TYPE IF EXISTS ${client(type.schemaname)}.${client(type.typname)} CASCADE;`;
           }
