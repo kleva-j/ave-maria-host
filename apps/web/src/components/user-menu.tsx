@@ -1,62 +1,63 @@
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { authClient } from "@/lib/auth-client";
 import { useNavigate } from "@tanstack/react-router";
-import { Button } from "./ui/button";
-import { Skeleton } from "./ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { authClient } from "@/lib/auth-client";
 import { Link } from "@tanstack/react-router";
 
-export default function UserMenu() {
-	const navigate = useNavigate();
-	const { data: session, isPending } = authClient.useSession();
+import {
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuItem,
+  DropdownMenu,
+} from "@/components/ui/dropdown-menu";
 
-	if (isPending) {
-		return <Skeleton className="h-9 w-24" />;
-	}
+export function UserMenu() {
+  const navigate = useNavigate();
+  const { data: session, isPending } = authClient.useSession();
 
-	if (!session) {
-		return (
-			<Button variant="outline" asChild>
-				<Link to="/login">Sign In</Link>
-			</Button>
-		);
-	}
+  if (isPending) {
+    return <Skeleton className="h-9 w-24" />;
+  }
 
-	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button variant="outline">{session.user.name}</Button>
-			</DropdownMenuTrigger>
-			<DropdownMenuContent className="bg-card">
-				<DropdownMenuLabel>My Account</DropdownMenuLabel>
-				<DropdownMenuSeparator />
-				<DropdownMenuItem>{session.user.email}</DropdownMenuItem>
-				<DropdownMenuItem asChild>
-					<Button
-						variant="destructive"
-						className="w-full"
-						onClick={() => {
-							authClient.signOut({
-								fetchOptions: {
-									onSuccess: () => {
-										navigate({
-											to: "/",
-										});
-									},
-								},
-							});
-						}}
-					>
-						Sign Out
-					</Button>
-				</DropdownMenuItem>
-			</DropdownMenuContent>
-		</DropdownMenu>
-	);
+  if (!session) {
+    return (
+      <Button variant="outline" asChild>
+        <Link to="/login">Sign In</Link>
+      </Button>
+    );
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline">{session.user.name}</Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="bg-card">
+        <DropdownMenuLabel>My Account</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem>{session.user.email}</DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Button
+            variant="destructive"
+            className="w-full"
+            onClick={() => {
+              authClient.signOut({
+                fetchOptions: {
+                  onSuccess: () => {
+                    navigate({ to: "/" });
+                  },
+                },
+              });
+            }}
+          >
+            Sign Out
+          </Button>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
+
+export default UserMenu;
