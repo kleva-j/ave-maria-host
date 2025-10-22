@@ -23,7 +23,7 @@ NodeRuntime.runMain(
     if (migrations.length === 0) {
       yield* Effect.log("No migrations to run");
     } else {
-      yield* Effect.log(`Running ${migrations.length} migrations`);
+      yield* Effect.log(`Applied ${migrations.length} migrations`);
       for (const [id, name] of migrations) {
         yield* Effect.log(`- ${id.toString().padStart(4, "0")}: ${name}`);
       }

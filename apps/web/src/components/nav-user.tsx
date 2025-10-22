@@ -53,6 +53,8 @@ export function NavUser() {
 
   const user = session?.user as User;
 
+  if (!user) return null;
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>

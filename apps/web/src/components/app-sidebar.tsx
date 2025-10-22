@@ -6,6 +6,9 @@ import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
 import { Link } from "@tanstack/react-router";
 import { Command } from "lucide-react";
+import { siteConfig } from "@/config";
+
+const { organization } = siteConfig;
 
 import {
   SidebarMenuButton,
@@ -19,11 +22,10 @@ import {
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & AppData;
 
-export async function AppSidebar({
+export function AppSidebar({
   navSecondary,
   projects,
   navMain,
-  user,
   ...props
 }: AppSidebarProps) {
   return (
@@ -37,8 +39,10 @@ export async function AppSidebar({
                   <Command className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">Acme Inc</span>
-                  <span className="truncate text-xs">Enterprise</span>
+                  <span className="truncate font-medium">
+                    {organization.name}
+                  </span>
+                  <span className="truncate text-xs">{organization.tier}</span>
                 </div>
               </Link>
             </SidebarMenuButton>

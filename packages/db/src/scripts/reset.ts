@@ -12,15 +12,15 @@ const checkResetConfirmation = () =>
     const resetConfirmationValue = Redacted.value(DB_RESET_CONFIRM);
 
     if (resetConfirmationValue !== "1") {
-      Effect.logError("❌ Database reset requires confirmation.");
-      Effect.logError(
+      yield* Effect.logError("❌ Database reset requires confirmation.");
+      yield* Effect.logError(
         "Set DB_RESET_CONFIRM=1 environment variable to proceed."
       );
-      Effect.logError(
+      yield* Effect.logError(
         "Example: DB_RESET_CONFIRM=1 bun run src/scripts/reset.ts"
       );
 
-      process.exit(1);
+      return yield* Effect.die("Reset confirmation not provided");
     }
   });
 
@@ -34,32 +34,32 @@ const checkResetAllowProduction = () =>
     const nodeEnvValue = Redacted.value(NODE_ENV);
 
     if (resetAllowProductionValue !== "1" && nodeEnvValue === "production") {
-      Effect.logError(
+      yield* Effect.logError(
         "❌ Database reset is blocked in production environment."
       );
-      Effect.logError(
+      yield* Effect.logError(
         "Set DB_RESET_ALLOW_PRODUCTION=1 if you really need to reset production data."
       );
-      process.exit(1);
+      return yield* Effect.die("Production reset not allowed");
     }
   });
 
 NodeRuntime.runMain(
   Effect.gen(function* () {
-    const client = yield* SqlClient.SqlClient;
-
     yield* checkResetConfirmation();
     yield* checkResetAllowProduction();
 
-    Effect.logWarning(
-      "⚠️  WARNING: This will DROP ALL TABLES and TYPES from the database!"
-    );
-    Effect.logWarning("📊 Target schemas: public, drizzle");
-    Effect.logWarning(
-      "✅ Safety checks passed - proceeding with database reset..."
-    );
+    const client = yield* SqlClient.SqlClient;
 
     const schemaList = ["public", "drizzle"];
+
+    yield* Effect.logWarning(
+      "⚠️  WARNING: This will DROP ALL TABLES and TYPES from the database!"
+    );
+    yield* Effect.logWarning(`📊 Target schemas: ${schemaList.join(", ")}`);
+    yield* Effect.logWarning(
+      "✅ Safety checks passed - proceeding with database reset..."
+    );
 
     const getTypes = SqlSchema.findAll({
       Request: Schema.Void,
