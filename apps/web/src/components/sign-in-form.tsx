@@ -12,7 +12,7 @@ type SignInFormProps = {
   onSwitchToSignUp: () => void;
 };
 
-export default function SignInForm({ onSwitchToSignUp }: SignInFormProps) {
+export function SignInForm({ onSwitchToSignUp }: SignInFormProps) {
   const navigate = useNavigate({ from: "/" });
   const { isPending } = authClient.useSession();
 
@@ -125,3 +125,5 @@ export default function SignInForm({ onSwitchToSignUp }: SignInFormProps) {
     </div>
   );
 }
+
+export default SignInForm;
