@@ -102,7 +102,6 @@ export class GlobalErrorBoundary extends Component<
                     Error Details (Development)
                   </summary>
                   <pre className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded overflow-auto">
-                    {this.state.error.message}
                     {this.state.error.stack}
                   </pre>
                 </details>

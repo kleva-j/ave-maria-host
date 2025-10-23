@@ -95,6 +95,10 @@ function TodosRoute() {
             <div className="flex justify-center py-4">
               <Loader2 className="h-6 w-6 animate-spin" />
             </div>
+          ) : todos.isError ? (
+            <p className="py-4 text-center text-destructive">
+              Failed to load todos. Please try again.
+            </p>
           ) : todos.data?.length === 0 ? (
             <p className="py-4 text-center">No todos yet. Add one above!</p>
           ) : (
