@@ -19,6 +19,9 @@
     "@ai-sdk/google": "catalog:",
     "dotenv": "catalog:",
     "zod": "catalog:",
+    "effect": "catalog:",
+    "@effect/schema": "catalog:",
+    "@effect/platform": "catalog:",
     "@host/api": "workspace:*",
     "@host/auth": "workspace:*",
     "@host/db": "workspace:*"
