@@ -1,410 +1,701 @@
-# Effect.ts Utilities Documentation
+# Effect.ts Utilities API Reference
 
-This document provides comprehensive documentation for all utility functions in the Effect.ts integration library.
+This document provides comprehensive documentation for all utility functions, helpers, and types in the Effect.ts integration library.
 
-## Promise Integration Utilities
+## Table of Contents
 
-### `fromPromise<A>(promise, mapError?)`
+- [Promise Conversion Utilities](#promise-conversion-utilities)
+- [Retry and Recovery Utilities](#retry-and-recovery-utilities)
+- [Validation Utilities](#validation-utilities)
+- [Array Processing Utilities](#array-processing-utilities)
+- [Conditional Execution Utilities](#conditional-execution-utilities)
+- [Side Effect Utilities](#side-effect-utilities)
+- [Resource Management Utilities](#resource-management-utilities)
+- [Performance Utilities](#performance-utilities)
+- [Configuration and Setup](#configuration-and-setup)
 
-Converts a Promise-returning function to an Effect with optional error mapping.
+## Promise Conversion Utilities
+
+### `fromPromise<A>(promise: () => Promise<A>, mapError?: (error: unknown) => ApplicationError): Effect<A, ApplicationError>`
+
+Converts a Promise-returning function to an Effect with automatic error mapping.
 
 **Parameters:**
-- `promise: () => Promise<A>` - Function that returns a Promise
-- `mapError?: (error: unknown) => ApplicationError` - Optional error mapper
 
-**Returns:** `Effect.Effect<A, ApplicationError>`
+- `promise`: Function that returns a Promise
+- `mapError`: Optional function to map caught errors to ApplicationError types
+
+**Returns:** Effect that represents the Promise operation
 
 **Examples:**
+
 ```typescript
-// Basic conversion
-const fetchData = fromPromise(() => fetch('/api/data').then(r => r.json()));
+// Basic Promise conversion
+const fetchUser = fromPromise(() => fetch("/api/user").then((r) => r.json()));
 
 // With custom error mapping
-const fetchUser = fromPromise(
-  () => fetch('/api/user').then(r => r.json()),
-  (error) => new NetworkError({
-    message: `API request failed: ${error}`,
-    url: '/api/user',
-    cause: error
-  })
+const fetchUserWithMapping = fromPromise(
+  () => fetch("/api/user").then((r) => r.json()),
+  (error) =>
+    new NetworkError({
+      message: `Failed to fetch user: ${error}`,
+      url: "/api/user",
+      cause: error,
+    })
+);
+
+// File system operations
+const readFile = fromPromise(
+  () => fs.readFile("config.json", "utf8"),
+  (error) =>
+    new ValidationError({
+      message: "Failed to read config file",
+      field: "config",
+      value: "config.json",
+    })
 );
 ```
 
-### `fromPromiseWith<A, E>(promise, errorMapper)`
+### `fromPromiseWith<A, E extends ApplicationError>(promise: () => Promise<A>, errorMapper: (error: unknown) => E): Effect<A, E>`
 
-Converts a Promise with a specific error mapper for type-safe error handling.
+Converts a Promise to an Effect with a specific error mapper for more precise error handling.
 
 **Parameters:**
-- `promise: () => Promise<A>` - Function that returns a Promise
-- `errorMapper: (error: unknown) => E` - Function to map errors to specific type
 
-**Returns:** `Effect.Effect<A, E>`
+- `promise`: Function that returns a Promise
+- `errorMapper`: Function to map any caught error to a specific ApplicationError type
+
+**Returns:** Effect with the specified error type
 
 **Examples:**
+
 ```typescript
-// Always map to ValidationError
-const parseJSON = fromPromiseWith(
-  () => JSON.parse(jsonString),
-  (error) => new ValidationError({
-    message: `JSON parse failed: ${error}`,
-    field: 'json',
-    value: jsonString
-  })
+// Map all errors to ValidationError
+const parseConfig = fromPromiseWith(
+  () => JSON.parse(configString),
+  (error) =>
+    new ValidationError({
+      message: `Invalid JSON config: ${error}`,
+      field: "config",
+      value: configString,
+    })
 );
-```
 
-### `fromDatabasePromise<A>(promise, operation)`
-
-Specialized converter for database operations that maps errors to `DatabaseError`.
-
-**Parameters:**
-- `promise: () => Promise<A>` - Database operation Promise
-- `operation: string` - Name of the database operation
-
-**Returns:** `Effect.Effect<A, DatabaseError>`
-
-**Examples:**
-```typescript
-const findUser = fromDatabasePromise(
+// Map all errors to DatabaseError
+const queryUser = fromPromiseWith(
   () => db.user.findUnique({ where: { id } }),
-  'findUser'
-);
-
-const createOrder = fromDatabasePromise(
-  () => db.order.create({ data: orderData }),
-  'createOrder'
+  (error) =>
+    new DatabaseError({
+      message: `Query failed: ${error}`,
+      operation: "findUser",
+      cause: error,
+    })
 );
 ```
 
-### `fromNetworkPromise<A>(promise, url)`
+### `fromDatabasePromise<A>(promise: () => Promise<A>, operation: string): Effect<A, DatabaseError>`
 
-Specialized converter for network requests that maps errors to `NetworkError`.
+Specialized Promise converter for database operations with automatic DatabaseError mapping.
 
 **Parameters:**
-- `promise: () => Promise<A>` - Network request Promise
-- `url: string` - URL being accessed
 
-**Returns:** `Effect.Effect<A, NetworkError>`
+- `promise`: Function that returns a database Promise
+- `operation`: Name of the database operation for error context
+
+**Returns:** Effect with DatabaseError on failure
+
+**Example:**
+
+```typescript
+const findUser = (id: string) =>
+  fromDatabasePromise(() => db.user.findUnique({ where: { id } }), "findUser");
+
+const createUser = (data: UserData) =>
+  fromDatabasePromise(() => db.user.create({ data }), "createUser");
+```
+
+### `fromNetworkPromise<A>(promise: () => Promise<A>, url: string): Effect<A, NetworkError>`
+
+Specialized Promise converter for network operations with automatic NetworkError mapping.
+
+**Parameters:**
+
+- `promise`: Function that returns a network Promise
+- `url`: URL being accessed for error context
+
+**Returns:** Effect with NetworkError on failure
+
+**Example:**
+
+```typescript
+const fetchExternalData = (url: string) =>
+  fromNetworkPromise(() => fetch(url).then((r) => r.json()), url);
+
+const uploadFile = (file: File, url: string) =>
+  fromNetworkPromise(() => fetch(url, { method: "POST", body: file }), url);
+```
+
+## Retry and Recovery Utilities
+
+### `withRetry(config?: Partial<RetryConfig>): <A, E, R>(effect: Effect<A, E, R>) => Effect<A, E, R>`
+
+Adds exponential backoff retry logic to an Effect. This is a curried function designed for use in pipes.
+
+**Parameters:**
+
+- `config`: Optional retry configuration object
+
+**RetryConfig Interface:**
+
+```typescript
+interface RetryConfig {
+  maxRetries: number; // Maximum retry attempts (default: 3)
+  initialDelay: Duration; // Initial delay (default: 100ms)
+  maxDelay: Duration; // Maximum delay (default: 5s)
+  backoffFactor: number; // Backoff multiplier (default: 2)
+}
+```
+
+**Returns:** Function that takes an Effect and returns a retrying Effect
 
 **Examples:**
+
 ```typescript
-const fetchExternalAPI = fromNetworkPromise(
-  () => fetch('https://api.external.com/data').then(r => r.json()),
-  'https://api.external.com/data'
+// Basic retry with defaults
+pipe(fetchUserFromAPI(userId), withRetry());
+
+// Custom retry configuration
+pipe(
+  fetchUserFromAPI(userId),
+  withRetry({
+    maxRetries: 5,
+    initialDelay: Duration.millis(200),
+    backoffFactor: 1.5,
+  })
+);
+
+// Retry database operations
+pipe(
+  fromDatabasePromise(() => db.user.findUnique({ where: { id } }), "findUser"),
+  withRetry({ maxRetries: 2 })
+);
+```
+
+### `withRetryWhen<A, E, R>(effect: Effect<A, E, R>, predicate: (error: E) => boolean, config?: Partial<RetryConfig>): Effect<A, E, R>`
+
+Retries an Effect only when specific error conditions are met.
+
+**Parameters:**
+
+- `effect`: The Effect to retry
+- `predicate`: Function that returns true if the error should trigger a retry
+- `config`: Optional retry configuration
+
+**Returns:** Effect that retries on matching errors
+
+**Examples:**
+
+```typescript
+// Only retry on network errors with 5xx status codes
+const retryOnServerErrors = withRetryWhen(
+  fetchExternalData(url),
+  (error) =>
+    error._tag === "NetworkError" &&
+    error.status !== undefined &&
+    error.status >= 500,
+  { maxRetries: 3 }
+);
+
+// Only retry on specific database errors
+const retryOnConnectionErrors = withRetryWhen(
+  databaseOperation,
+  (error) =>
+    error._tag === "DatabaseError" && error.message.includes("connection"),
+  { maxRetries: 5, initialDelay: Duration.seconds(1) }
+);
+```
+
+### `withFallback<A>(fallback: A): <E, R>(effect: Effect<A, E, R>) => Effect<A, never, R>`
+
+Provides a fallback value when an Effect fails, resulting in a never-failing Effect.
+
+**Parameters:**
+
+- `fallback`: The default value to use when the Effect fails
+
+**Returns:** Function that takes an Effect and returns a never-failing Effect
+
+**Examples:**
+
+```typescript
+// Fallback to default user when fetch fails
+pipe(
+  fetchUserFromAPI(userId),
+  withFallback({ id: userId, name: "Unknown User", email: "" })
+);
+
+// Fallback to empty array when fetching list fails
+pipe(fetchUserList(), withFallback([]));
+
+// Fallback to cached data
+pipe(fetchFreshData(), withFallback(cachedData));
+```
+
+### `withFallbackEffect<A, E, R, R2>(effect: Effect<A, E, R>, fallbackEffect: Effect<A, never, R2>): Effect<A, never, R | R2>`
+
+Provides a fallback Effect when the primary Effect fails, allowing for dynamic fallback computation.
+
+**Parameters:**
+
+- `effect`: The primary Effect to try
+- `fallbackEffect`: The Effect to run if the primary fails
+
+**Returns:** Effect that tries the primary, then the fallback
+
+**Examples:**
+
+```typescript
+// Fallback to cache when API fails
+const getUserData = withFallbackEffect(
+  fetchUserFromAPI(userId),
+  fetchUserFromCache(userId)
+);
+
+// Fallback to secondary service
+const getExternalData = withFallbackEffect(
+  fetchFromPrimaryService(url),
+  fetchFromSecondaryService(url)
+);
+
+// Fallback with computation
+const getProcessedData = withFallbackEffect(
+  fetchProcessedData(id),
+  pipe(fetchRawData(id), Effect.map(processData))
+);
+```
+
+### `withTimeout<A, E, R>(effect: Effect<A, E, R>, duration: Duration, fallback?: A): Effect<A, E | "TimeoutError", R>`
+
+Adds timeout behavior to an Effect with optional fallback value.
+
+**Parameters:**
+
+- `effect`: The Effect to add timeout to
+- `duration`: Maximum time to wait for completion
+- `fallback`: Optional fallback value to use on timeout
+
+**Returns:** Effect with timeout behavior
+
+**Examples:**
+
+```typescript
+// Timeout with error
+const fetchWithTimeout = withTimeout(
+  fetchUserFromAPI(userId),
+  Duration.seconds(5)
+);
+
+// Timeout with fallback value
+const fetchWithFallback = withTimeout(
+  fetchUserFromAPI(userId),
+  Duration.seconds(5),
+  { id: userId, name: "Timeout User" }
+);
+
+// Database query with timeout
+const queryWithTimeout = withTimeout(
+  fromDatabasePromise(() => db.complexQuery(), "complexQuery"),
+  Duration.seconds(30)
+);
+```
+
+### `createCircuitBreaker(maxFailures?: number, resetTimeout?: Duration): <A, E, R>(effect: Effect<A, E, R>) => Effect<A, E | "CircuitBreakerOpen", R>`
+
+Creates a circuit breaker that prevents cascading failures by tracking failure counts.
+
+**Parameters:**
+
+- `maxFailures`: Number of failures before opening the circuit (default: 5)
+- `resetTimeout`: Time to wait before allowing requests again (default: 30s)
+
+**Returns:** Function that wraps Effects with circuit breaker behavior
+
+**Circuit Breaker States:**
+
+- **Closed**: Normal operation, requests pass through
+- **Open**: Circuit is open, requests fail immediately with "CircuitBreakerOpen"
+- **Half-Open**: Testing if service has recovered (simplified implementation)
+
+**Examples:**
+
+```typescript
+// Create circuit breaker for external API
+const apiCircuitBreaker = createCircuitBreaker(3, Duration.seconds(60));
+
+const fetchExternalData = (url: string) => {
+  return apiCircuitBreaker(
+    fromNetworkPromise(() => fetch(url).then((r) => r.json()), url)
+  );
+};
+
+// Create circuit breaker for database
+const dbCircuitBreaker = createCircuitBreaker(5, Duration.seconds(30));
+
+const queryDatabase = (query: string) => {
+  return dbCircuitBreaker(
+    fromDatabasePromise(() => db.query(query), "customQuery")
+  );
+};
+
+// Handle circuit breaker open state
+pipe(
+  fetchExternalData("https://api.example.com/data"),
+  Effect.catchTag("CircuitBreakerOpen", () =>
+    Effect.succeed({ error: "Service temporarily unavailable" })
+  )
 );
 ```
 
 ## Validation Utilities
 
-### `validateInput<T>(input, validator, field)`
+### `validateInput<T>(input: unknown, validator: (input: unknown) => input is T, field: string): Effect<T, ValidationError>`
 
-Type-safe input validation with structured error reporting.
+Validates input using a type predicate function and returns a ValidationError on failure.
 
 **Parameters:**
-- `input: unknown` - Input to validate
-- `validator: (input: unknown) => input is T` - Type guard function
-- `field: string` - Field name for error reporting
 
-**Returns:** `Effect.Effect<T, ValidationError>`
+- `input`: The value to validate
+- `validator`: Type predicate function that returns true if input is valid
+- `field`: Field name for error context
 
-**Examples:**
+**Returns:** Effect with validated value or ValidationError
+
+**Example:**
+
 ```typescript
-// Email validation
-const isEmail = (input: unknown): input is string => 
-  typeof input === 'string' && /\S+@\S+\.\S+/.test(input);
+const isString = (input: unknown): input is string => typeof input === "string";
+const isNumber = (input: unknown): input is number => typeof input === "number";
 
-const validateEmail = (email: unknown) =>
-  validateInput(email, isEmail, 'email');
+const validateUserName = (input: unknown) =>
+  validateInput(input, isString, "userName");
 
-// Object validation
-const isUser = (input: unknown): input is User =>
-  typeof input === 'object' && input !== null && 'id' in input;
-
-const validateUser = (user: unknown) =>
-  validateInput(user, isUser, 'user');
+const validateAge = (input: unknown) => validateInput(input, isNumber, "age");
 ```
 
-### `parseJSON<T>(jsonString, field?)`
+### `parseJSON<T>(jsonString: string, field?: string): Effect<T, ValidationError>`
 
-Safe JSON parsing with validation error handling.
+Safely parses JSON string with ValidationError on parse failure.
 
 **Parameters:**
-- `jsonString: string` - JSON string to parse
-- `field?: string` - Field name for error reporting (default: "json")
 
-**Returns:** `Effect.Effect<T, ValidationError>`
+- `jsonString`: JSON string to parse
+- `field`: Field name for error context (default: "json")
 
-**Examples:**
+**Returns:** Effect with parsed value or ValidationError
+
+**Example:**
+
 ```typescript
-// Basic JSON parsing
-const parseConfig = parseJSON<Config>(configString, 'config');
+const parseConfig = (configString: string) =>
+  parseJSON<AppConfig>(configString, "appConfig");
 
-// Parse API response
-const parseResponse = parseJSON<ApiResponse>(responseBody, 'apiResponse');
+const parseUserData = (userJson: string) =>
+  parseJSON<User>(userJson, "userData");
 ```
 
-### `parseNumber(value, field)`
+### `parseNumber(value: string | number, field: string): Effect<number, ValidationError>`
 
-Safe number parsing with validation.
+Safely converts string or number to number with ValidationError on failure.
 
 **Parameters:**
-- `value: string | number` - Value to parse as number
-- `field: string` - Field name for error reporting
 
-**Returns:** `Effect.Effect<number, ValidationError>`
+- `value`: String or number to convert
+- `field`: Field name for error context
 
-**Examples:**
+**Returns:** Effect with number or ValidationError
+
+**Example:**
+
 ```typescript
-const parseAge = (ageString: string) => parseNumber(ageString, 'age');
-const parsePrice = (priceInput: unknown) => parseNumber(priceInput, 'price');
+const parseUserId = (id: string) => parseNumber(id, "userId");
+const parsePrice = (price: string) => parseNumber(price, "price");
 ```
 
-### `parseDate(value, field)`
+### `parseDate(value: string | Date, field: string): Effect<Date, ValidationError>`
 
-Safe date parsing with validation.
+Safely converts string or Date to Date with ValidationError on failure.
 
 **Parameters:**
-- `value: string | Date` - Value to parse as Date
-- `field: string` - Field name for error reporting
 
-**Returns:** `Effect.Effect<Date, ValidationError>`
+- `value`: String or Date to convert
+- `field`: Field name for error context
 
-**Examples:**
+**Returns:** Effect with Date or ValidationError
+
+**Example:**
+
 ```typescript
-const parseBirthDate = (dateString: string) => parseDate(dateString, 'birthDate');
-const parseCreatedAt = (timestamp: unknown) => parseDate(timestamp, 'createdAt');
+const parseBirthDate = (date: string) => parseDate(date, "birthDate");
+const parseCreatedAt = (timestamp: string) => parseDate(timestamp, "createdAt");
 ```
 
 ## Array Processing Utilities
 
-### `mapEffect<A, B, E, R>(array, f)`
+### `mapEffect<A, B, E, R>(array: readonly A[], f: (item: A, index: number) => Effect<B, E, R>): Effect<readonly B[], E, R>`
 
-Map over an array with Effect computations, executing all in parallel.
+Maps over an array with an Effect-returning function, collecting all results.
 
 **Parameters:**
-- `array: readonly A[]` - Array to map over
-- `f: (item: A, index: number) => Effect.Effect<B, E, R>` - Mapping function
 
-**Returns:** `Effect.Effect<readonly B[], E, R>`
+- `array`: Array to map over
+- `f`: Function that transforms each item to an Effect
 
-**Examples:**
+**Returns:** Effect with array of transformed values
+
+**Example:**
+
 ```typescript
-// Fetch multiple users
-const fetchUsers = (userIds: string[]) =>
-  mapEffect(userIds, (id) => fetchUserFromAPI(id));
+const fetchUserDetails = (userIds: string[]) =>
+  mapEffect(userIds, (id, index) => fetchUserFromAPI(id));
 
-// Validate multiple inputs
 const validateInputs = (inputs: unknown[]) =>
-  mapEffect(inputs, (input, index) => 
-    validateInput(input, isValidInput, `input[${index}]`)
+  mapEffect(inputs, (input, index) =>
+    validateInput(input, isString, `input[${index}]`)
   );
 ```
 
-### `filterEffect<A, E, R>(array, predicate)`
+### `filterEffect<A, E, R>(array: readonly A[], predicate: (item: A, index: number) => Effect<boolean, E, R>): Effect<readonly A[], E, R>`
 
-Filter an array with Effect-based predicates.
+Filters an array using an Effect-returning predicate function.
 
 **Parameters:**
-- `array: readonly A[]` - Array to filter
-- `predicate: (item: A, index: number) => Effect.Effect<boolean, E, R>` - Filter predicate
 
-**Returns:** `Effect.Effect<readonly A[], E, R>`
+- `array`: Array to filter
+- `predicate`: Effect-returning predicate function
 
-**Examples:**
+**Returns:** Effect with filtered array
+
+**Example:**
+
 ```typescript
-// Filter users by active status
 const filterActiveUsers = (users: User[]) =>
   filterEffect(users, (user) => checkUserActive(user.id));
 
-// Filter valid configurations
-const filterValidConfigs = (configs: Config[]) =>
-  filterEffect(configs, (config) => validateConfig(config));
+const filterValidEmails = (emails: string[]) =>
+  filterEffect(emails, (email) =>
+    validateEmail(email).pipe(
+      Effect.map(() => true),
+      Effect.catchAll(() => Effect.succeed(false))
+    )
+  );
 ```
 
-## Control Flow Utilities
+## Conditional Execution Utilities
 
-### `when<A, E, R>(condition, effect)`
+### `when<A, E, R>(condition: boolean, effect: Effect<A, E, R>): Effect<A | undefined, E, R>`
 
-Conditionally execute an Effect based on a boolean condition.
+Conditionally executes an Effect based on a boolean condition.
 
 **Parameters:**
-- `condition: boolean` - Whether to execute the Effect
-- `effect: Effect.Effect<A, E, R>` - Effect to execute conditionally
 
-**Returns:** `Effect.Effect<A | undefined, E, R>`
+- `condition`: Boolean condition to check
+- `effect`: Effect to execute if condition is true
 
-**Examples:**
+**Returns:** Effect with result or undefined
+
+**Example:**
+
 ```typescript
-// Conditional user update
-const maybeUpdateUser = (shouldUpdate: boolean, userId: string, data: UserData) =>
-  when(shouldUpdate, updateUser(userId, data));
+const conditionalUpdate = (shouldUpdate: boolean, data: UpdateData) =>
+  when(shouldUpdate, updateDatabase(data));
 
-// Conditional logging
-const maybeLog = (isDebug: boolean, message: string) =>
-  when(isDebug, Effect.sync(() => console.log(message)));
+const optionalNotification = (notify: boolean, message: string) =>
+  when(notify, sendNotification(message));
 ```
 
-### `unless<A, E, R>(condition, effect)`
+### `unless<A, E, R>(condition: boolean, effect: Effect<A, E, R>): Effect<A | undefined, E, R>`
 
-Execute an Effect unless a condition is true (negated `when`).
+Conditionally executes an Effect when condition is false (opposite of `when`).
 
 **Parameters:**
-- `condition: boolean` - Condition to negate
-- `effect: Effect.Effect<A, E, R>` - Effect to execute unless condition is true
 
-**Returns:** `Effect.Effect<A | undefined, E, R>`
+- `condition`: Boolean condition to check
+- `effect`: Effect to execute if condition is false
 
-**Examples:**
+**Returns:** Effect with result or undefined
+
+**Example:**
+
 ```typescript
-// Skip cache unless expired
-const skipCacheUnlessExpired = (isExpired: boolean, fetchFresh: Effect.Effect<Data, Error>) =>
-  unless(isExpired, fetchFresh);
+const skipCache = (useCache: boolean, fetchFn: Effect<Data, Error>) =>
+  unless(useCache, fetchFn);
 ```
 
 ## Side Effect Utilities
 
-### `tapLog(message)`
+### `tapLog<A, E, R>(message: string): (effect: Effect<A, E, R>) => Effect<A, E, R>`
 
-Add logging side effect to an Effect pipeline.
+Adds logging side effect to an Effect without changing its result.
 
 **Parameters:**
-- `message: string` - Message to log
 
-**Returns:** `(effect: Effect.Effect<A, E, R>) => Effect.Effect<A, E, R>`
+- `message`: Message to log
 
-**Examples:**
+**Returns:** Function that adds logging to an Effect
+
+**Example:**
+
 ```typescript
-// Add logging to pipeline
 pipe(
-  fetchUserData(userId),
-  tapLog('Fetching user data'),
-  Effect.map(processUserData),
-  tapLog('Processing complete')
+  fetchUserFromAPI(userId),
+  tapLog("Fetching user data"),
+  Effect.map(processUser),
+  tapLog("User data processed")
 );
 ```
 
-### `tapError(onError)`
+### `tapError<A, E, R>(onError: (error: E) => Effect<void, never, R>): (effect: Effect<A, E, R>) => Effect<A, E, R>`
 
-Add error handling side effect without changing the error.
+Adds error handling side effect without changing the error propagation.
 
 **Parameters:**
-- `onError: (error: E) => Effect.Effect<void, never, R>` - Error handler
 
-**Returns:** `(effect: Effect.Effect<A, E, R>) => Effect.Effect<A, E, R>`
+- `onError`: Function to handle errors as side effect
 
-**Examples:**
+**Returns:** Function that adds error handling to an Effect
+
+**Example:**
+
 ```typescript
-// Log errors without handling them
 pipe(
-  riskyOperation(),
-  tapError((error) => 
-    Effect.sync(() => console.error('Operation failed:', error))
-  )
+  fetchUserFromAPI(userId),
+  tapError((error) => Effect.sync(() => console.error("Fetch failed:", error)))
 );
 ```
 
-## Resource Management
+## Resource Management Utilities
 
-### `bracket<A, B, E1, E2, R1, R2>(acquire, use, release)`
+### `bracket<A, B, E1, E2, R1, R2>(acquire: Effect<A, E1, R1>, use: (resource: A) => Effect<B, E2, R2>, release: (resource: A) => Effect<void, never, R1>): Effect<B, E1 | E2, R1 | R2>`
 
-Resource acquisition and cleanup pattern ensuring proper resource management.
+Provides resource acquisition and cleanup pattern with guaranteed cleanup.
 
 **Parameters:**
-- `acquire: Effect.Effect<A, E1, R1>` - Acquire resource
-- `use: (resource: A) => Effect.Effect<B, E2, R2>` - Use resource
-- `release: (resource: A) => Effect.Effect<void, never, R1>` - Release resource
 
-**Returns:** `Effect.Effect<B, E1 | E2, R1 | R2>`
+- `acquire`: Effect to acquire the resource
+- `use`: Function to use the resource
+- `release`: Function to release the resource (always called)
 
-**Examples:**
+**Returns:** Effect with resource management
+
+**Example:**
+
 ```typescript
-// Database connection management
-const withConnection = <T>(
-  operation: (conn: Connection) => Effect.Effect<T, DatabaseError>
-) =>
-  bracket(
-    acquireConnection(),
-    operation,
-    (conn) => Effect.sync(() => conn.close())
-  );
+const withDatabaseConnection = <A>(
+  use: (db: Database) => Effect<A, DatabaseError>
+) => bracket(acquireConnection(), use, (db) => Effect.sync(() => db.close()));
 
-// File handle management
-const withFile = <T>(
+const withFileHandle = <A>(
   filename: string,
-  operation: (file: FileHandle) => Effect.Effect<T, Error>
+  use: (file: FileHandle) => Effect<A, Error>
 ) =>
-  bracket(
-    Effect.tryPromise(() => fs.open(filename)),
-    operation,
-    (file) => Effect.sync(() => file.close())
-  );
+  bracket(openFile(filename), use, (file) => Effect.sync(() => file.close()));
 ```
 
 ## Performance Utilities
 
-### `memoize<A, E, R>(effect)`
+### `memoize<A, E, R>(effect: Effect<A, E, R>): Effect<A, E, R>`
 
-Memoize an Effect to cache its result (simplified implementation).
+Caches the result of an Effect to avoid repeated computation.
 
 **Parameters:**
-- `effect: Effect.Effect<A, E, R>` - Effect to memoize
 
-**Returns:** `Effect.Effect<A, E, R>`
+- `effect`: Effect to memoize
 
-**Examples:**
+**Returns:** Memoized Effect that caches its result
+
+**Example:**
+
 ```typescript
-// Memoize expensive computation
 const expensiveComputation = memoize(
   Effect.sync(() => {
-    // Heavy computation here
-    return computeResult();
+    // Expensive calculation
+    return heavyCalculation();
   })
 );
 
-// Memoize API call
 const cachedUserFetch = memoize(fetchUserFromAPI(userId));
 ```
 
-### `debounce<A, E, R>(effect, delay)`
+### `debounce<A, E, R>(effect: Effect<A, E, R>, delay: number): Effect<A, E, R>`
 
-Debounce Effect execution by adding a delay.
+Delays Effect execution by the specified amount.
 
 **Parameters:**
-- `effect: Effect.Effect<A, E, R>` - Effect to debounce
-- `delay: number` - Delay in milliseconds
 
-**Returns:** `Effect.Effect<A, E, R>`
+- `effect`: Effect to debounce
+- `delay`: Delay in milliseconds
 
-**Examples:**
+**Returns:** Debounced Effect
+
+**Example:**
+
 ```typescript
-// Debounce search API calls
-const debouncedSearch = (query: string) =>
-  debounce(searchAPI(query), 300);
-
-// Debounce save operations
-const debouncedSave = (data: SaveData) =>
-  debounce(saveToDatabase(data), 1000);
+const debouncedSearch = debounce(
+  searchUsers(query),
+  300 // 300ms delay
+);
 ```
 
-### `throttle<A, E, R>(effect, interval)`
+### `throttle<A, E, R>(effect: Effect<A, E, R>, interval: number): Effect<A, E, R>`
 
-Throttle Effect execution to limit frequency.
+Limits Effect execution frequency to the specified interval.
 
 **Parameters:**
-- `effect: Effect.Effect<A, E, R>` - Effect to throttle
-- `interval: number` - Minimum interval between executions in milliseconds
 
-**Returns:** `Effect.Effect<A, E, R>`
+- `effect`: Effect to throttle
+- `interval`: Minimum interval between executions in milliseconds
 
-**Examples:**
+**Returns:** Throttled Effect
+
+**Example:**
+
 ```typescript
-// Throttle analytics events
-const throttledAnalytics = (event: AnalyticsEvent) =>
-  throttle(sendAnalytics(event), 5000);
+const throttledApiCall = throttle(
+  fetchExternalData(url),
+  1000 // Max once per second
+);
+```
 
-// Throttle status updates
-const throttledStatusUpdate = (status: Status) =>
-  throttle(updateStatus(status), 2000);
+## Configuration and Setup
+
+### Default Retry Configuration
+
+```typescript
+const defaultRetryConfig: RetryConfig = {
+  maxRetries: 3,
+  initialDelay: Duration.millis(100),
+  maxDelay: Duration.seconds(5),
+  backoffFactor: 2,
+};
+```
+
+### Type Definitions
+
+```typescript
+// Core configuration interfaces
+interface RetryConfig {
+  readonly maxRetries: number;
+  readonly initialDelay: Duration.Duration;
+  readonly maxDelay: Duration.Duration;
+  readonly backoffFactor: number;
+}
+
+// Circuit breaker state
+interface CircuitBreakerState {
+  readonly failures: number;
+  readonly lastFailure?: Date;
+  readonly state: "closed" | "open" | "half-open";
+}
 ```
 
 ## Usage Patterns
@@ -412,79 +703,51 @@ const throttledStatusUpdate = (status: Status) =>
 ### Combining Utilities
 
 ```typescript
-// Complex data processing pipeline
-const processUserData = (rawData: unknown[]) =>
+// Comprehensive error handling with retry, fallback, and timeout
+const robustApiCall = (url: string) =>
   pipe(
-    // Validate all inputs
-    mapEffect(rawData, (data, index) => 
-      validateInput(data, isUserData, `user[${index}]`)
-    ),
-    // Filter valid users
-    Effect.flatMap((users) =>
-      filterEffect(users, (user) => 
-        Effect.succeed(user.isActive)
-      )
-    ),
-    // Add logging
-    tapLog('Processing user data'),
-    // Add retry logic
-    withRetry({ maxRetries: 3 }),
-    // Add fallback
-    withFallback([])
+    fromNetworkPromise(() => fetch(url).then((r) => r.json()), url),
+    withTimeout(Duration.seconds(10)),
+    withRetry({ maxRetries: 3, initialDelay: Duration.millis(500) }),
+    withFallback({ error: "Service unavailable", data: null })
   );
-```
 
-### Error Handling Patterns
+// Database operation with circuit breaker and logging
+const dbCircuitBreaker = createCircuitBreaker(5, Duration.seconds(30));
 
-```typescript
-// Comprehensive error handling
-const robustDataFetch = (id: string) =>
+const safeDbQuery = (query: string) =>
   pipe(
-    // Try primary source
-    fromDatabasePromise(() => db.findById(id), 'findById'),
-    // Retry on failure
-    withRetry({ maxRetries: 2 }),
-    // Fallback to cache
-    Effect.catchTag('DatabaseError', () =>
-      fromPromise(() => cache.get(id))
-    ),
-    // Final fallback
-    withFallback({ id, data: null, source: 'fallback' }),
-    // Log errors
+    fromDatabasePromise(() => db.query(query), "customQuery"),
+    dbCircuitBreaker,
+    tapLog(`Executing query: ${query}`),
     tapError((error) =>
-      Effect.sync(() => console.error('Data fetch failed:', error))
+      Effect.sync(() => console.error("Query failed:", error))
     )
   );
 ```
 
-### Resource Management Patterns
+### Migration from Promises
 
 ```typescript
-// Database transaction with proper cleanup
-const performTransaction = <T>(
-  operations: (tx: Transaction) => Effect.Effect<T, DatabaseError>
-) =>
-  bracket(
-    // Acquire transaction
-    fromDatabasePromise(() => db.beginTransaction(), 'beginTransaction'),
-    // Use transaction
-    (tx) => pipe(
-      operations(tx),
-      Effect.tap(() => 
-        fromDatabasePromise(() => tx.commit(), 'commit')
-      )
+// Before: Promise-based code
+const fetchUserData = async (id: string) => {
+  try {
+    const response = await fetch(`/api/users/${id}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Failed to fetch user:", error);
+    return { id, name: "Unknown" };
+  }
+};
+
+// After: Effect-based code
+const fetchUserData = (id: string) =>
+  pipe(
+    fromPromise(() => fetch(`/api/users/${id}`).then((r) => r.json())),
+    withRetry({ maxRetries: 3 }),
+    tapError((error) =>
+      Effect.sync(() => console.error("Failed to fetch user:", error))
     ),
-    // Always rollback on error
-    (tx) => Effect.sync(() => tx.rollback())
+    withFallback({ id, name: "Unknown" })
   );
 ```
-
-## Best Practices
-
-1. **Use Specific Converters**: Prefer `fromDatabasePromise` and `fromNetworkPromise` over generic `fromPromise`
-2. **Validate Early**: Use validation utilities at system boundaries
-3. **Handle Resources**: Always use `bracket` for resource management
-4. **Add Context**: Include meaningful field names and operation names in errors
-5. **Combine Patterns**: Use utilities together for robust error handling
-6. **Performance**: Use memoization and throttling for expensive operations
-7. **Logging**: Add `tapLog` and `tapError` for observability

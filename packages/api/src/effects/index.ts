@@ -26,6 +26,10 @@
  * 
  * @see {@link ./README.md} for comprehensive documentation
  * @see {@link ./UTILITIES.md} for utility function reference
+ * @see {@link ./ERROR_REFERENCE.md} for error types and handling
+ * @see {@link ./SERVICES.md} for service interfaces and patterns
+ * @see {@link ./INTEGRATION_PATTERNS.md} for Hono and oRPC integration
+ * @see {@link ./BEST_PRACTICES.md} for best practices and troubleshooting
  */
 
 // Core types and configuration

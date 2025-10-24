@@ -1,320 +1,261 @@
-# Effect.ts Integration Library
+# Effect.ts Integration Documentation
 
-This library provides a comprehensive foundation for using Effect.ts in the Better-T-Stack application. It includes error handling, retry mechanisms, utility functions, and configuration management built on top of Effect.ts.
+This directory contains comprehensive documentation for the Effect.ts integration in the Better-T-Stack project. Effect.ts provides functional programming patterns, robust error handling, dependency injection, and type-safe async operations.
 
-## Overview
+## Documentation Overview
 
-Effect.ts is a powerful library for building robust, type-safe applications with functional programming patterns. This integration provides:
+### 📚 Core Documentation
 
-- **Structured Error Handling**: Tagged errors with detailed context
-- **Retry Mechanisms**: Configurable retry logic with exponential backoff
-- **Fallback Strategies**: Graceful degradation patterns
-- **Promise Integration**: Seamless migration from Promise-based code
-- **Utility Functions**: Common patterns and helpers
-- **Configuration Management**: Type-safe configuration interfaces
+- **[UTILITIES.md](./UTILITIES.md)** - Complete API reference for all utility functions, helpers, and types
+- **[ERROR_REFERENCE.md](./ERROR_REFERENCE.md)** - Comprehensive guide to error types, hierarchy, and handling patterns
+- **[SERVICES.md](./SERVICES.md)** - Service interfaces, dependency injection, and layer composition
+- **[INTEGRATION_PATTERNS.md](./INTEGRATION_PATTERNS.md)** - Hono middleware, oRPC integration, and migration guides
+- **[BEST_PRACTICES.md](./BEST_PRACTICES.md)** - Performance optimization, debugging, and production deployment
 
-## Core Modules
-
-### 1. Core Types and Configuration (`core.ts`)
-
-Defines the foundational types and configuration interfaces for the application.
-
-#### Configuration Interfaces
-
-- `DatabaseConfig`: Database connection settings
-- `AuthConfig`: Authentication and JWT configuration
-- `ServerConfig`: HTTP server and CORS settings
-- `LoggingConfig`: Logging level and format configuration
-- `AppConfig`: Combined application configuration
-
-#### Service Context Tags
-
-- `AppConfigService`: Context tag for dependency injection of application configuration
-
-### 2. Error Hierarchy (`errors.ts`)
-
-Comprehensive error types using Effect.ts tagged errors for type-safe error handling.
-
-#### Base Error Types
-
-- `AppError`: Abstract base class for all application errors
-- `ValidationError`: Input validation failures
-- `NotFoundError`: Missing resource errors
-- `UnauthorizedError`: Authentication failures
-- `ForbiddenError`: Authorization failures
-- `DatabaseError`: Database operation failures
-- `AuthError`: Authentication service errors
-- `NetworkError`: External service communication errors
-- `BusinessLogicError`: Domain-specific business rule violations
-- `ConfigError`: Configuration-related errors
-
-#### Error Features
-
-- **Timestamp Tracking**: All errors include creation timestamps
-- **Structured Context**: Errors carry relevant context information
-- **Type Safety**: Union type `ApplicationError` for comprehensive error handling
-- **Cause Chaining**: Support for error cause tracking
-
-### 3. Recovery Patterns (`recovery.ts`)
-
-Resilience patterns for handling failures and building robust applications.
-
-#### Retry Mechanisms
-
-- `withRetry()`: Exponential backoff retry with configurable parameters
-- `withRetryWhen()`: Conditional retry based on error predicates
-- `RetryConfig`: Configuration interface for retry behavior
-
-#### Fallback Strategies
-
-- `withFallback()`: Provide default values on failure
-- `withFallbackEffect()`: Fallback to alternative Effect computations
-- `withTimeout()`: Timeout handling with optional fallback values
-
-#### Circuit Breaker
-
-- `createCircuitBreaker()`: Prevent cascading failures with circuit breaker pattern
-- Configurable failure thresholds and reset timeouts
-- State tracking (closed, open, half-open)
-
-#### Bulkhead Pattern
-
-- `withBulkhead()`: Resource isolation (simplified implementation)
-
-### 4. Utility Functions (`utils.ts`)
-
-Common patterns and helper functions for Effect.ts development.
-
-#### Promise Integration
-
-- `fromPromise()`: Convert Promises to Effects with error mapping
-- `fromPromiseWith()`: Convert Promises with custom error mappers
-- `fromDatabasePromise()`: Database-specific Promise conversion
-- `fromNetworkPromise()`: Network request Promise conversion
-
-#### Validation Utilities
-
-- `validateInput()`: Type-safe input validation
-- `parseJSON()`: Safe JSON parsing with error handling
-- `parseNumber()`: Safe number parsing and validation
-- `parseDate()`: Safe date parsing and validation
-
-#### Array Processing
-
-- `mapEffect()`: Map over arrays with Effect computations
-- `filterEffect()`: Filter arrays with Effect predicates
-
-#### Control Flow
-
-- `when()`: Conditional Effect execution
-- `unless()`: Negated conditional execution
-
-#### Side Effects
-
-- `tapLog()`: Logging side effects
-- `tapError()`: Error handling side effects
-
-#### Resource Management
-
-- `bracket()`: Resource acquisition and cleanup patterns
-- `memoize()`: Effect memoization (simplified)
-
-#### Timing
-
-- `debounce()`: Debounced Effect execution
-- `throttle()`: Throttled Effect execution
-
-## Usage Examples
-
-### Basic Error Handling
+### 🚀 Quick Start
 
 ```typescript
-import { Effect, pipe } from "effect";
-import { ValidationError, parseJSON, parseNumber } from "./effects";
+import { Effect, pipe, withRetry, withFallback, fromPromise } from "@host/api/effects";
 
-const validateUser = (input: unknown) => {
-  return pipe(
-    parseJSON<{ name: string; age: string }>(JSON.stringify(input)),
-    Effect.flatMap(({ name, age }) =>
-      pipe(
-        parseNumber(age, "age"),
-        Effect.map((parsedAge) => ({ name, age: parsedAge }))
-      )
-    )
-  );
-};
+// Convert Promise to Effect with retry and fallback
+const fetchUser = (id: string) => pipe(
+  fromPromise(() => fetch(`/api/users/${id}`).then(r => r.json())),
+  withRetry({ maxRetries: 3 }),
+  withFallback({ id, name: "Unknown User" })
+);
+
+// Use services with dependency injection
+const createUser = (userData: CreateUserData) =>
+  Effect.gen(function* (_) {
+    const db = yield* _(DatabaseService);
+    const auth = yield* _(AuthService);
+    const logger = yield* _(LoggingService);
+    
+    // Hash password
+    const hashedPassword = yield* _(auth.hashPassword(userData.password));
+    
+    // Create user in database
+    const result = yield* _(db.execute(
+      "INSERT INTO users (id, email, name, password_hash) VALUES (?, ?, ?, ?)",
+      [userData.id, userData.email, userData.name, hashedPassword]
+    ));
+    
+    // Log success
+    yield* _(logger.info("User created", { userId: userData.id }));
+    
+    return { userId: userData.id, created: true };
+  });
 ```
 
-### Retry with Fallback
+## Key Features
 
-```typescript
-import { Effect, pipe } from "effect";
-import { withRetry, withFallback, fromDatabasePromise } from "./effects";
+### 🛡️ Structured Error Handling
+- Tagged errors with detailed context
+- Type-safe error propagation
+- Comprehensive error recovery patterns
+- Automatic error logging and monitoring
 
-const fetchUser = (userId: string) => {
-  return pipe(
-    fromDatabasePromise(
-      () => db.user.findUnique({ where: { id: userId } }),
-      "fetchUser"
-    ),
-    withRetry({ maxRetries: 3, initialDelay: Duration.millis(100) }),
-    withFallback({ id: userId, name: "Unknown User" })
-  );
-};
+### 🔄 Retry and Recovery
+- Exponential backoff retry logic
+- Circuit breaker patterns
+- Fallback strategies
+- Timeout handling
+
+### 🏗️ Service Architecture
+- Dependency injection with Effect Context
+- Layer-based service composition
+- Resource management and cleanup
+- Mock services for testing
+
+### 🔌 Framework Integration
+- Hono middleware for Effect programs
+- oRPC type-safe API integration
+- Promise-to-Effect migration utilities
+- Testing framework integration
+
+### ⚡ Performance Optimization
+- Concurrent execution patterns
+- Connection pooling
+- Caching and memoization
+- Resource lifecycle management
+
+## Architecture Overview
+
+```
+Effect.ts Integration
+├── Core Types & Configuration (core.ts)
+├── Error Hierarchy (errors.ts)
+├── Utility Functions (utils.ts)
+├── Recovery Patterns (recovery.ts)
+└── Service Interfaces
+    ├── DatabaseService
+    ├── AuthService
+    ├── LoggingService
+    └── ConfigService
 ```
 
-### Circuit Breaker Pattern
+## Getting Started
+
+### 1. Installation
+Effect.ts is already installed and configured in the project. Import from the effects module:
 
 ```typescript
-import { Effect } from "effect";
-import { createCircuitBreaker, fromNetworkPromise } from "./effects";
-
-const circuitBreaker = createCircuitBreaker(5, Duration.seconds(30));
-
-const fetchExternalData = (url: string) => {
-  return circuitBreaker(
-    fromNetworkPromise(() => fetch(url).then(res => res.json()), url)
-  );
-};
+import { Effect, DatabaseService, AuthService } from "@host/api/effects";
 ```
 
-### Configuration Management
+### 2. Basic Usage
+Start with simple Effect programs and gradually adopt more advanced patterns:
 
 ```typescript
-import { Effect, Context } from "effect";
-import { AppConfigService, type AppConfig } from "./effects";
+// Simple Effect program
+const getUser = (id: string) =>
+  Effect.gen(function* (_) {
+    const db = yield* _(DatabaseService);
+    const user = yield* _(db.queryOne<User>("SELECT * FROM users WHERE id = ?", [id]));
+    
+    if (!user) {
+      yield* _(Effect.fail(new NotFoundError({
+        message: "User not found",
+        resource: "User",
+        id
+      })));
+    }
+    
+    return user;
+  });
+```
 
-const useDatabase = Effect.gen(function* (_) {
-  const config = yield* _(AppConfigService);
-  const connection = yield* _(connectToDatabase(config.database.url));
-  return connection;
-});
+### 3. Error Handling
+Use typed errors for robust error handling:
 
-// Provide configuration
-const program = Effect.provide(
-  useDatabase,
-  Layer.succeed(AppConfigService, {
-    database: { url: "postgresql://...", maxConnections: 10 },
-    auth: { jwtSecret: "secret", sessionTimeout: 3600 },
-    // ... other config
+```typescript
+const handleUserOperation = (userId: string) => pipe(
+  getUser(userId),
+  Effect.catchTag("NotFoundError", () => 
+    Effect.succeed({ error: "User not found" })
+  ),
+  Effect.catchTag("DatabaseError", (error) => {
+    console.error("Database error:", error);
+    return Effect.succeed({ error: "Service unavailable" });
   })
 );
 ```
 
-## Best Practices
+### 4. Service Integration
+Use services through dependency injection:
 
-### Error Handling
+```typescript
+const userService = {
+  authenticate: (credentials: LoginCredentials) =>
+    Effect.gen(function* (_) {
+      const auth = yield* _(AuthService);
+      const logger = yield* _(LoggingService);
+      
+      const result = yield* _(auth.authenticateUser(credentials));
+      yield* _(logger.info("User authenticated", { userId: result.userId }));
+      
+      return result;
+    })
+};
+```
 
-1. **Use Specific Error Types**: Choose the most specific error type for each failure case
-2. **Include Context**: Provide relevant context in error messages and fields
-3. **Chain Errors**: Use the `cause` field to maintain error chains
-4. **Handle at Boundaries**: Catch and handle errors at appropriate application boundaries
-
-### Retry Logic
-
-1. **Configure Appropriately**: Set reasonable retry limits and delays
-2. **Use Predicates**: Only retry on transient errors, not permanent failures
-3. **Combine with Circuit Breakers**: Prevent retry storms with circuit breakers
-4. **Monitor Metrics**: Track retry attempts and success rates
-
-### Resource Management
-
-1. **Use Bracket Pattern**: Ensure proper resource cleanup with `bracket()`
-2. **Timeout Operations**: Set reasonable timeouts for external operations
-3. **Implement Bulkheads**: Isolate resources to prevent cascading failures
-
-### Performance
-
-1. **Memoize Expensive Operations**: Cache results of expensive computations
-2. **Use Throttling**: Prevent overwhelming external services
-3. **Batch Operations**: Combine multiple operations when possible
-
-## Migration Guide
+## Migration Strategy
 
 ### From Promise-based Code
+Use the migration utilities to gradually adopt Effect.ts:
 
-1. **Wrap Promises**: Use `fromPromise()` or specific converters
-2. **Map Errors**: Convert generic errors to typed application errors
-3. **Add Retry Logic**: Enhance reliability with retry mechanisms
-4. **Implement Fallbacks**: Provide graceful degradation
+```typescript
+// Before: Promise-based
+const fetchUserData = async (id: string) => {
+  try {
+    const response = await fetch(`/api/users/${id}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Failed to fetch user:", error);
+    throw error;
+  }
+};
 
-### From Callback-based Code
-
-1. **Promisify First**: Convert callbacks to Promises, then to Effects
-2. **Handle Errors**: Map callback errors to typed errors
-3. **Add Context**: Include relevant context in error handling
+// After: Effect-based
+const fetchUserData = (id: string) => pipe(
+  fromPromise(() => fetch(`/api/users/${id}`).then(r => r.json())),
+  withRetry({ maxRetries: 3 }),
+  Effect.tapError((error) => 
+    Effect.sync(() => console.error("Failed to fetch user:", error))
+  )
+);
+```
 
 ## Testing
 
-### Unit Testing Effects
+Use the provided test utilities for Effect programs:
 
 ```typescript
-import { Effect } from "effect";
-import { describe, it, expect } from "vitest";
+import { runTest, TestRuntime } from "@host/api/effects/testing";
 
-describe("validateUser", () => {
-  it("should validate correct input", async () => {
-    const input = { name: "John", age: "25" };
-    const result = await Effect.runPromise(validateUser(input));
-    expect(result).toEqual({ name: "John", age: 25 });
-  });
-
-  it("should fail on invalid input", async () => {
-    const input = { name: "John", age: "invalid" };
-    const result = await Effect.runPromiseExit(validateUser(input));
-    expect(result._tag).toBe("Failure");
+describe("UserService", () => {
+  it("should create user successfully", async () => {
+    const result = await runTest(
+      userService.createUser({
+        id: "test-user",
+        email: "test@example.com",
+        name: "Test User",
+        password: "password123"
+      })
+    );
+    
+    expect(result.userId).toBe("test-user");
   });
 });
 ```
 
-### Integration Testing
+## Production Considerations
+
+### Environment Configuration
+Configure services for production environments:
 
 ```typescript
-import { Effect, Layer } from "effect";
-import { TestConfigService } from "./test-utils";
-
-const testProgram = Effect.provide(
-  yourProgram,
-  Layer.succeed(AppConfigService, testConfig)
+const ProductionLayer = Layer.mergeAll(
+  DatabaseLive.pipe(Layer.provide(ProductionConfigLayer)),
+  AuthLive.pipe(Layer.provide(ProductionConfigLayer)),
+  LoggingLive.pipe(Layer.provide(ProductionConfigLayer))
 );
-
-const result = await Effect.runPromise(testProgram);
 ```
 
-## Performance Considerations
+### Monitoring and Health Checks
+Implement comprehensive health monitoring:
 
-1. **Effect Creation**: Effects are lazy and only execute when run
-2. **Memory Usage**: Be mindful of memoization and caching strategies
-3. **Concurrency**: Use `Effect.all()` for parallel execution
-4. **Resource Pools**: Implement proper connection pooling for databases
+```typescript
+const healthCheck = () =>
+  Effect.gen(function* (_) {
+    const [dbHealth, authHealth] = yield* _(Effect.all([
+      DatabaseService.pipe(Effect.flatMap(db => db.healthCheck())),
+      AuthService.pipe(Effect.flatMap(auth => auth.healthCheck()))
+    ]));
+    
+    return {
+      status: dbHealth.status === "healthy" && authHealth.status === "healthy" 
+        ? "healthy" 
+        : "unhealthy",
+      services: { database: dbHealth, auth: authHealth }
+    };
+  });
+```
 
-## Troubleshooting
+## Next Steps
 
-### Common Issues
+1. **Read the Documentation**: Start with [UTILITIES.md](./UTILITIES.md) for the API reference
+2. **Understand Errors**: Review [ERROR_REFERENCE.md](./ERROR_REFERENCE.md) for error handling patterns
+3. **Learn Services**: Study [SERVICES.md](./SERVICES.md) for dependency injection patterns
+4. **Integration**: Follow [INTEGRATION_PATTERNS.md](./INTEGRATION_PATTERNS.md) for framework integration
+5. **Best Practices**: Apply [BEST_PRACTICES.md](./BEST_PRACTICES.md) for production-ready code
 
-1. **Type Errors**: Ensure proper generic type parameters
-2. **Runtime Errors**: Check error handling and fallback strategies
-3. **Performance**: Monitor retry attempts and circuit breaker states
-4. **Memory Leaks**: Ensure proper resource cleanup
+## Support and Resources
 
-### Debugging
+- **Effect.ts Official Documentation**: https://effect.website/
+- **Better-T-Stack Documentation**: See project README
+- **Internal Examples**: Check the `examples.ts` file for usage patterns
 
-1. **Use `tapLog()`**: Add logging to trace execution flow
-2. **Effect Tracing**: Enable Effect.ts tracing for debugging
-3. **Error Context**: Include detailed context in error messages
-4. **Metrics**: Implement metrics collection for monitoring
+---
 
-## Contributing
-
-When adding new utilities:
-
-1. **Follow Patterns**: Use existing patterns for consistency
-2. **Add Documentation**: Include comprehensive JSDoc comments
-3. **Write Tests**: Add unit tests for new functionality
-4. **Update Examples**: Add usage examples to this README
-
-## References
-
-- [Effect.ts Documentation](https://effect.website/)
-- [Effect.ts GitHub](https://github.com/Effect-TS/effect)
-- [Functional Programming Patterns](https://effect.website/docs/guides/essentials/pipeline)
+This Effect.ts integration provides a solid foundation for building robust, type-safe, and maintainable applications in the Better-T-Stack ecosystem.
