@@ -44,3 +44,6 @@ export const auth = betterAuth({
     expo(),
   ],
 });
+
+// Export Effect-based authentication services
+export * from "./effects/index.js";
