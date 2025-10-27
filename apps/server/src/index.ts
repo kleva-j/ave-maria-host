@@ -16,13 +16,13 @@ import { Layer } from "effect";
 import { Hono } from "hono";
 
 // Import Effect.ts integration
-import { effectMiddleware } from "./effects/hono-middleware";
-import { AppLayer } from "./effects/layers";
 import {
   performRuntimeHealthCheck,
   initializeRuntime,
   getRuntimeStatus,
-} from "./effects/runtime";
+  effectMiddleware,
+  AppLayer,
+} from "./effects";
 
 const app = new Hono();
 

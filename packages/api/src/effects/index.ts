@@ -44,5 +44,11 @@ export * from "./recovery";
 // Utility functions and helpers
 export * from "./utils";
 
+// oRPC integration utilities
+export * from "./orpc";
+
+// Migration utilities for Promise-to-Effect conversion
+export * from "./migration";
+
 // Re-export commonly used Effect types for convenience
 export { Effect, Context, Layer, Schedule, Duration, pipe } from "effect";

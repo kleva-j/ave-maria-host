@@ -108,13 +108,38 @@ export class DatabaseTransactionError extends Data.TaggedError(
   }
 }
 
+export class DatabaseConstraintViolationError extends Data.TaggedError(
+  "DatabaseConstraintViolationError"
+)<{
+  /** Human-readable error message */
+  readonly message: string;
+  /** The database operation that failed */
+  readonly operation: string;
+  /** Optional SQL query that caused the error */
+  readonly query?: string;
+  /** Optional underlying cause of the query error */
+  readonly cause?: unknown;
+  /** Timestamp when the error was created */
+  readonly timestamp: Date;
+}> {
+  constructor(args: {
+    message: string;
+    operation: string;
+    query?: string;
+    cause?: unknown;
+  }) {
+    super({ ...args, timestamp: new Date() });
+  }
+}
+
 /**
  * Union type of all database-specific errors for comprehensive error handling.
  */
 export type DatabaseError =
+  | DatabaseConstraintViolationError
+  | DatabaseTransactionError
   | DatabaseConnectionError
-  | DatabaseQueryError
-  | DatabaseTransactionError;
+  | DatabaseQueryError;
 
 /**
  * Database service interface providing Effect-based database operations.

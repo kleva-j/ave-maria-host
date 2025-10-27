@@ -1,261 +1,279 @@
-# Effect.ts Integration Documentation
+# Effect.ts oRPC Integration
 
-This directory contains comprehensive documentation for the Effect.ts integration in the Better-T-Stack project. Effect.ts provides functional programming patterns, robust error handling, dependency injection, and type-safe async operations.
+This directory contains a comprehensive Effect.ts integration for oRPC that enables type-safe, composable API endpoints with structured error handling and service injection.
 
-## Documentation Overview
+## 🚀 Quick Start
 
-### 📚 Core Documentation
-
-- **[UTILITIES.md](./UTILITIES.md)** - Complete API reference for all utility functions, helpers, and types
-- **[ERROR_REFERENCE.md](./ERROR_REFERENCE.md)** - Comprehensive guide to error types, hierarchy, and handling patterns
-- **[SERVICES.md](./SERVICES.md)** - Service interfaces, dependency injection, and layer composition
-- **[INTEGRATION_PATTERNS.md](./INTEGRATION_PATTERNS.md)** - Hono middleware, oRPC integration, and migration guides
-- **[BEST_PRACTICES.md](./BEST_PRACTICES.md)** - Performance optimization, debugging, and production deployment
-
-### 🚀 Quick Start
+### 1. Basic Effect Procedure
 
 ```typescript
-import { Effect, pipe, withRetry, withFallback, fromPromise } from "@host/api/effects";
+import { effectProcedure } from "@host/api/effects";
+import { z } from "zod";
 
-// Convert Promise to Effect with retry and fallback
-const fetchUser = (id: string) => pipe(
-  fromPromise(() => fetch(`/api/users/${id}`).then(r => r.json())),
-  withRetry({ maxRetries: 3 }),
-  withFallback({ id, name: "Unknown User" })
-);
+// Create an Effect-based endpoint
+const getUserProcedure = effectProcedure()
+  .input(z.object({ id: z.string() }))
+  .handler(({ input }) =>
+    Effect.gen(function* (_) {
+      const db = yield* _(DatabaseService);
+      const users = yield* _(
+        db.query("SELECT * FROM users WHERE id = $1", [input.id])
+      );
 
-// Use services with dependency injection
-const createUser = (userData: CreateUserData) =>
+      if (users.length === 0) {
+        yield* _(
+          Effect.fail(
+            new NotFoundError({
+              message: "User not found",
+              resource: "User",
+              id: input.id,
+            })
+          )
+        );
+      }
+
+      return users[0];
+    })
+  );
+```
+
+### 2. Integration with oRPC Router
+
+```typescript
+import { effectToPromiseHandler } from "@host/api/effects";
+import { publicProcedure } from "@host/api";
+
+// Convert Effect handler to Promise-based oRPC handler
+const userRouter = {
+  getUser: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .handler(
+      effectToPromiseHandler(({ input }) => getUserEffect(input.id), AppLayer)
+    ),
+};
+```
+
+## 📁 File Structure
+
+```
+packages/api/src/effects/
+├── index.ts              # Main exports
+├── orpc.ts              # oRPC integration utilities
+├── errors.ts            # Error type definitions
+├── utils.ts             # Utility functions
+├── recovery.ts          # Error recovery patterns
+├── migration.ts         # Promise-to-Effect migration utilities
+└── README.md           # This file
+
+examples/
+├── effect-usage.ts      # Client usage examples
+├── effect-router-demo.ts # Router integration demo
+└── ...
+
+routers/
+├── todo-effect.ts       # Effect-based todo router (demo)
+├── auth-effect.ts       # Effect-based auth router (demo)
+└── ...
+```
+
+## 🔧 Core Components
+
+### Effect Procedures
+
+- **`effectProcedure()`**: Factory for creating Effect-based oRPC procedures
+- **`effectProcedure().input(schema)`**: Add input validation
+- **`effectProcedure().handler(fn)`**: Define the Effect-based handler
+
+### Error Handling
+
+- **`ApplicationError`**: Union type of all application errors
+- **`ValidationError`**: Input validation failures
+- **`NotFoundError`**: Resource not found
+- **`UnauthorizedError`**: Authentication required
+- **`ForbiddenError`**: Access denied
+- **`DatabaseError`**: Database operation failures
+- **`AuthError`**: Authentication service errors
+- **`NetworkError`**: External service errors
+- **`BusinessLogicError`**: Domain rule violations
+
+### Conversion Utilities
+
+- **`effectToPromiseHandler`**: Convert Effect handler to Promise-based oRPC handler
+- **`promiseToEffectHandler`**: Convert Promise handler to Effect-based handler
+- **`createEffectRouter`**: Create router from Effect procedures (experimental)
+
+### Migration Utilities
+
+- **`wrapPromiseHandler`**: Wrap existing Promise handlers with Effect patterns
+- **`migrateRouter`**: Migrate entire routers from Promise to Effect
+- **`validateMigration`**: Test migration correctness
+
+## 🎯 Usage Patterns
+
+### 1. Service Injection
+
+```typescript
+const getUserEffect = (id: string) =>
   Effect.gen(function* (_) {
+    // Inject services using Effect's dependency injection
     const db = yield* _(DatabaseService);
     const auth = yield* _(AuthService);
-    const logger = yield* _(LoggingService);
-    
-    // Hash password
-    const hashedPassword = yield* _(auth.hashPassword(userData.password));
-    
-    // Create user in database
-    const result = yield* _(db.execute(
-      "INSERT INTO users (id, email, name, password_hash) VALUES (?, ?, ?, ?)",
-      [userData.id, userData.email, userData.name, hashedPassword]
-    ));
-    
-    // Log success
-    yield* _(logger.info("User created", { userId: userData.id }));
-    
-    return { userId: userData.id, created: true };
-  });
-```
+    const config = yield* _(AppConfigService);
 
-## Key Features
-
-### 🛡️ Structured Error Handling
-- Tagged errors with detailed context
-- Type-safe error propagation
-- Comprehensive error recovery patterns
-- Automatic error logging and monitoring
-
-### 🔄 Retry and Recovery
-- Exponential backoff retry logic
-- Circuit breaker patterns
-- Fallback strategies
-- Timeout handling
-
-### 🏗️ Service Architecture
-- Dependency injection with Effect Context
-- Layer-based service composition
-- Resource management and cleanup
-- Mock services for testing
-
-### 🔌 Framework Integration
-- Hono middleware for Effect programs
-- oRPC type-safe API integration
-- Promise-to-Effect migration utilities
-- Testing framework integration
-
-### ⚡ Performance Optimization
-- Concurrent execution patterns
-- Connection pooling
-- Caching and memoization
-- Resource lifecycle management
-
-## Architecture Overview
-
-```
-Effect.ts Integration
-├── Core Types & Configuration (core.ts)
-├── Error Hierarchy (errors.ts)
-├── Utility Functions (utils.ts)
-├── Recovery Patterns (recovery.ts)
-└── Service Interfaces
-    ├── DatabaseService
-    ├── AuthService
-    ├── LoggingService
-    └── ConfigService
-```
-
-## Getting Started
-
-### 1. Installation
-Effect.ts is already installed and configured in the project. Import from the effects module:
-
-```typescript
-import { Effect, DatabaseService, AuthService } from "@host/api/effects";
-```
-
-### 2. Basic Usage
-Start with simple Effect programs and gradually adopt more advanced patterns:
-
-```typescript
-// Simple Effect program
-const getUser = (id: string) =>
-  Effect.gen(function* (_) {
-    const db = yield* _(DatabaseService);
-    const user = yield* _(db.queryOne<User>("SELECT * FROM users WHERE id = ?", [id]));
-    
-    if (!user) {
-      yield* _(Effect.fail(new NotFoundError({
-        message: "User not found",
-        resource: "User",
-        id
-      })));
-    }
-    
+    // Use services in your business logic
+    const user = yield* _(db.findUser(id));
     return user;
   });
 ```
 
-### 3. Error Handling
-Use typed errors for robust error handling:
+### 2. Error Recovery
 
 ```typescript
-const handleUserOperation = (userId: string) => pipe(
-  getUser(userId),
-  Effect.catchTag("NotFoundError", () => 
-    Effect.succeed({ error: "User not found" })
-  ),
-  Effect.catchTag("DatabaseError", (error) => {
-    console.error("Database error:", error);
-    return Effect.succeed({ error: "Service unavailable" });
-  })
-);
+const getUserWithFallback = (id: string) =>
+  pipe(
+    getUserEffect(id),
+    Effect.catchTag("NotFoundError", () =>
+      Effect.succeed({ id, name: "Unknown User" })
+    ),
+    Effect.retry(Schedule.exponential("100 millis"))
+  );
 ```
 
-### 4. Service Integration
-Use services through dependency injection:
+### 3. Parallel Operations
 
 ```typescript
-const userService = {
-  authenticate: (credentials: LoginCredentials) =>
-    Effect.gen(function* (_) {
-      const auth = yield* _(AuthService);
-      const logger = yield* _(LoggingService);
-      
-      const result = yield* _(auth.authenticateUser(credentials));
-      yield* _(logger.info("User authenticated", { userId: result.userId }));
-      
-      return result;
-    })
-};
-```
-
-## Migration Strategy
-
-### From Promise-based Code
-Use the migration utilities to gradually adopt Effect.ts:
-
-```typescript
-// Before: Promise-based
-const fetchUserData = async (id: string) => {
-  try {
-    const response = await fetch(`/api/users/${id}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Failed to fetch user:", error);
-    throw error;
-  }
-};
-
-// After: Effect-based
-const fetchUserData = (id: string) => pipe(
-  fromPromise(() => fetch(`/api/users/${id}`).then(r => r.json())),
-  withRetry({ maxRetries: 3 }),
-  Effect.tapError((error) => 
-    Effect.sync(() => console.error("Failed to fetch user:", error))
-  )
-);
-```
-
-## Testing
-
-Use the provided test utilities for Effect programs:
-
-```typescript
-import { runTest, TestRuntime } from "@host/api/effects/testing";
-
-describe("UserService", () => {
-  it("should create user successfully", async () => {
-    const result = await runTest(
-      userService.createUser({
-        id: "test-user",
-        email: "test@example.com",
-        name: "Test User",
-        password: "password123"
-      })
+const getUserStats = (id: string) =>
+  Effect.gen(function* (_) {
+    const [user, posts, comments] = yield* _(
+      Effect.all([
+        getUserEffect(id),
+        getUserPostsEffect(id),
+        getUserCommentsEffect(id),
+      ])
     );
-    
-    expect(result.userId).toBe("test-user");
+
+    return { user, posts: posts.length, comments: comments.length };
+  });
+```
+
+## 🔄 Migration Strategy
+
+### Phase 1: Parallel Implementation
+
+- Keep existing Promise-based endpoints
+- Add new Effect-based endpoints (e.g., `todoEffect`)
+- Both versions work simultaneously
+
+### Phase 2: Gradual Migration
+
+- Migrate clients to use Effect endpoints
+- Monitor and compare behavior
+- Fix any issues found
+
+### Phase 3: Cleanup
+
+- Remove old Promise-based endpoints
+- Update documentation and examples
+
+### Example Migration
+
+```typescript
+// Before (Promise-based)
+const oldRouter = {
+  getUser: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .handler(async ({ input }) => {
+      const user = await db.user.findUnique({ where: { id: input.id } });
+      if (!user) throw new Error("User not found");
+      return user;
+    }),
+};
+
+// After (Effect-based, converted to Promise for oRPC)
+const newRouter = {
+  getUser: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .handler(
+      effectToPromiseHandler(({ input }) => getUserEffect(input.id), AppLayer)
+    ),
+};
+```
+
+## 🧪 Testing
+
+### Unit Testing Effect Handlers
+
+```typescript
+import { Effect, Layer } from "effect";
+import { describe, it, expect } from "vitest";
+
+describe("getUserEffect", () => {
+  it("should return user when found", async () => {
+    const mockDb = {
+      findUser: (id: string) => Effect.succeed({ id, name: "John" }),
+    };
+
+    const TestLayer = Layer.succeed(DatabaseService, mockDb);
+
+    const result = await Effect.runPromise(
+      Effect.provide(getUserEffect("123"), TestLayer)
+    );
+
+    expect(result.name).toBe("John");
+  });
+
+  it("should fail with NotFoundError when user not found", async () => {
+    const mockDb = {
+      findUser: (id: string) =>
+        Effect.fail(
+          new NotFoundError({
+            message: "User not found",
+            resource: "User",
+            id,
+          })
+        ),
+    };
+
+    const TestLayer = Layer.succeed(DatabaseService, mockDb);
+
+    await expect(
+      Effect.runPromise(Effect.provide(getUserEffect("999"), TestLayer))
+    ).rejects.toThrow("User not found");
   });
 });
 ```
 
-## Production Considerations
+## 🚨 Current Limitations
 
-### Environment Configuration
-Configure services for production environments:
+1. **Missing Service Implementations**: `DatabaseService` and `AuthService` need to be implemented
+2. **Type Compatibility**: Some type mismatches between Effect and oRPC type systems
+3. **Layer Configuration**: Proper Effect layers need to be set up for dependency injection
 
-```typescript
-const ProductionLayer = Layer.mergeAll(
-  DatabaseLive.pipe(Layer.provide(ProductionConfigLayer)),
-  AuthLive.pipe(Layer.provide(ProductionConfigLayer)),
-  LoggingLive.pipe(Layer.provide(ProductionConfigLayer))
-);
-```
+## 🛠 Next Steps
 
-### Monitoring and Health Checks
-Implement comprehensive health monitoring:
+1. **Implement Services**: Create `DatabaseService` and `AuthService` implementations
+2. **Create App Layer**: Set up proper Effect layer composition
+3. **Fix Type Issues**: Resolve remaining TypeScript compatibility issues
+4. **Add Integration Tests**: Test the full Effect-oRPC integration
+5. **Performance Testing**: Benchmark Effect vs Promise performance
+6. **Documentation**: Add more examples and best practices
 
-```typescript
-const healthCheck = () =>
-  Effect.gen(function* (_) {
-    const [dbHealth, authHealth] = yield* _(Effect.all([
-      DatabaseService.pipe(Effect.flatMap(db => db.healthCheck())),
-      AuthService.pipe(Effect.flatMap(auth => auth.healthCheck()))
-    ]));
-    
-    return {
-      status: dbHealth.status === "healthy" && authHealth.status === "healthy" 
-        ? "healthy" 
-        : "unhealthy",
-      services: { database: dbHealth, auth: authHealth }
-    };
-  });
-```
+## 📚 Resources
 
-## Next Steps
+- [Effect.ts Documentation](https://effect.website/)
+- [oRPC Documentation](https://orpc.io/)
+- [Better-T-Stack Documentation](https://better-t-stack.com/)
 
-1. **Read the Documentation**: Start with [UTILITIES.md](./UTILITIES.md) for the API reference
-2. **Understand Errors**: Review [ERROR_REFERENCE.md](./ERROR_REFERENCE.md) for error handling patterns
-3. **Learn Services**: Study [SERVICES.md](./SERVICES.md) for dependency injection patterns
-4. **Integration**: Follow [INTEGRATION_PATTERNS.md](./INTEGRATION_PATTERNS.md) for framework integration
-5. **Best Practices**: Apply [BEST_PRACTICES.md](./BEST_PRACTICES.md) for production-ready code
+## 🤝 Contributing
 
-## Support and Resources
+When adding new Effect-based endpoints:
 
-- **Effect.ts Official Documentation**: https://effect.website/
-- **Better-T-Stack Documentation**: See project README
-- **Internal Examples**: Check the `examples.ts` file for usage patterns
+1. Follow the established error handling patterns
+2. Use proper service injection with Effect layers
+3. Add comprehensive tests
+4. Update documentation and examples
+5. Ensure backward compatibility with existing Promise-based endpoints
 
----
+## 📄 License
 
-This Effect.ts integration provides a solid foundation for building robust, type-safe, and maintainable applications in the Better-T-Stack ecosystem.
+This integration follows the same license as the Better-T-Stack project.
