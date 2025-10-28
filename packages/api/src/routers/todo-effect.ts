@@ -15,22 +15,23 @@
  * The original todo router remains unchanged for backward compatibility.
  */
 
-import { z } from "zod";
+import type { Layer } from "effect";
 
-import { Effect, type Layer } from "effect";
+import { DatabaseService } from "@host/db";
+import { Effect } from "effect";
+import { z } from "zod";
 
 // Import Effect utilities and error types
 import {
+  type EffectProcedureImplementation,
   createEffectRouter,
   ValidationError,
   effectProcedure,
   NotFoundError,
   DatabaseError,
-  type EffectProcedureImplementation,
 } from "../effects";
 
 // Import database service (will be implemented in database effects)
-import { DatabaseService } from "@host/db/effects/database";
 
 /**
  * Input validation schemas for todo operations

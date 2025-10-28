@@ -352,6 +352,18 @@ export const TodoHandlersLive: Layer.Layer<
 
   CreateTodo: ({ text }: CreateTodoPayloadType) =>
     Effect.gen(function* (_) {
+      if (!text || text.trim().length === 0) {
+        return yield* _(
+          Effect.fail(
+            new TodoValidationError({
+              message: "Todo text cannot be empty",
+              field: "text",
+              value: text,
+            })
+          )
+        );
+      }
+
       const db = yield* _(DatabaseService);
 
       const result = yield* _(
@@ -473,7 +485,8 @@ export const TodoHandlersLive: Layer.Layer<
               "UPDATE todo SET completed = $1 WHERE id = $2 RETURNING *",
               [completed, id]
             )
-          )
+          ),
+          { concurrency: 5 }
         ),
         Effect.map((todos) => todos.flat() as Todo[]),
         Effect.mapError(
