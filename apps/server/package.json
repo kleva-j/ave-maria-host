@@ -14,6 +14,8 @@
     "@orpc/server": "catalog:",
     "@orpc/openapi": "catalog:",
     "@orpc/zod": "catalog:",
+    "@effect/rpc": "catalog:",
+    "@effect/platform-bun": "catalog:",
     "better-auth": "catalog:",
     "ai": "catalog:",
     "@ai-sdk/google": "catalog:",

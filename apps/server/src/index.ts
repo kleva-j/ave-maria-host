@@ -155,8 +155,6 @@ const initializeApp = async () => {
   }
 };
 
-console.log("Meta main: ", import.meta.main);
-
 // Initialize the app if this is the main module
 if (import.meta.main) {
   initializeApp().catch((error) => {
