@@ -1,102 +1,58 @@
 /**
- * @fileoverview Unified Client Adapter for Migration
+ * @fileoverview Unified Client for @effect/rpc
  * 
- * This module provides a unified interface that can switch between oRPC and @effect/rpc
- * based on feature flags, enabling gradual migration with backward compatibility.
+ * This module provides a unified interface for @effect/rpc operations.
+ * The migration from oRPC is now complete.
  */
 
-import { shouldUseEffectRpc, logMigrationUsage } from "./feature-flags";
-import { client as orpcClient } from "./orpc";
 import { effectRpcClient } from "./effect-rpc-client";
 
 /**
- * Unified client interface that abstracts the underlying RPC implementation
+ * Unified client interface using @effect/rpc
  */
 export class UnifiedRpcClient {
   /**
-   * Todo operations with automatic client selection
+   * Todo operations using @effect/rpc
    */
   async getAllTodos() {
-    if (shouldUseEffectRpc('TODOS')) {
-      return effectRpcClient.getAllTodos();
-    } else {
-      logMigrationUsage('getAllTodos', 'orpc');
-      return orpcClient.todo.getAll();
-    }
+    return effectRpcClient.getAllTodos();
   }
 
   async createTodo(text: string) {
-    if (shouldUseEffectRpc('TODOS')) {
-      return effectRpcClient.createTodo(text);
-    } else {
-      logMigrationUsage('createTodo', 'orpc');
-      return orpcClient.todo.create({ text });
-    }
+    return effectRpcClient.createTodo(text);
   }
 
   async updateTodo(id: number, completed: boolean) {
-    if (shouldUseEffectRpc('TODOS')) {
-      return effectRpcClient.updateTodo(id, completed);
-    } else {
-      logMigrationUsage('updateTodo', 'orpc');
-      return orpcClient.todo.toggle({ id });
-    }
+    return effectRpcClient.updateTodo(id, completed);
   }
 
   async deleteTodo(id: number) {
-    if (shouldUseEffectRpc('TODOS')) {
-      return effectRpcClient.deleteTodo(id);
-    } else {
-      logMigrationUsage('deleteTodo', 'orpc');
-      return orpcClient.todo.delete({ id });
-    }
+    return effectRpcClient.deleteTodo(id);
   }
 
   /**
-   * Authentication operations with automatic client selection
+   * Authentication operations using @effect/rpc
    */
   async login(email: string, password: string) {
-    if (shouldUseEffectRpc('AUTH')) {
-      return effectRpcClient.login(email, password);
-    } else {
-      logMigrationUsage('login', 'orpc');
-      // oRPC doesn't have auth endpoints yet, so we'll use a placeholder
-      throw new Error('Auth endpoints not implemented in oRPC');
-    }
+    return effectRpcClient.login(email, password);
   }
 
   async getProfile() {
-    if (shouldUseEffectRpc('AUTH')) {
-      return effectRpcClient.getProfile();
-    } else {
-      logMigrationUsage('getProfile', 'orpc');
-      // oRPC doesn't have auth endpoints yet, so we'll use a placeholder
-      throw new Error('Auth endpoints not implemented in oRPC');
-    }
+    return effectRpcClient.getProfile();
   }
 
   /**
-   * Health check with automatic client selection
+   * Health check using @effect/rpc
    */
   async healthCheck() {
-    if (shouldUseEffectRpc('HEALTH_CHECK')) {
-      return effectRpcClient.healthCheck();
-    } else {
-      logMigrationUsage('healthCheck', 'orpc');
-      return orpcClient.healthCheck();
-    }
+    return effectRpcClient.healthCheck();
   }
 
   /**
-   * Private data with automatic client selection
+   * Private data using @effect/rpc
    */
   async getPrivateData() {
-    if (shouldUseEffectRpc('AUTH')) {
-      return effectRpcClient.getPrivateData();
-    } else {
-      logMigrationUsage('getPrivateData', 'orpc');
-      return orpcClient.privateData();
-    }
+    return effectRpcClient.getPrivateData();
   }
 }
 
@@ -106,7 +62,7 @@ export class UnifiedRpcClient {
 export const unifiedClient = new UnifiedRpcClient();
 
 /**
- * React Query utilities that work with the unified client
+ * React Query utilities using @effect/rpc
  */
 export const createUnifiedQueryOptions = () => {
   return {

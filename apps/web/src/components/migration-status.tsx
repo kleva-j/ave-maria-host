@@ -1,8 +1,8 @@
 /**
  * @fileoverview Migration Status Dashboard
  *
- * This component shows the current migration status and allows developers
- * to monitor which endpoints are using @effect/rpc vs oRPC.
+ * This component shows the migration completion status.
+ * All endpoints now use @effect/rpc instead of legacy oRPC.
  */
 
 import { FEATURE_FLAGS, shouldUseEffectRpc } from "@/utils/feature-flags";
@@ -11,7 +11,7 @@ import { useState, useEffect } from "react";
 
 interface EndpointStatus {
   name: string;
-  client: "oRPC" | "@effect/rpc";
+  client: "@effect/rpc";
   enabled: boolean;
 }
 
@@ -27,18 +27,18 @@ export function MigrationStatus() {
       const endpointStatus: EndpointStatus[] = [
         {
           name: "Health Check",
-          client: shouldUseEffectRpc("HEALTH_CHECK") ? "@effect/rpc" : "oRPC",
-          enabled: shouldUseEffectRpc("HEALTH_CHECK"),
+          client: "@effect/rpc",
+          enabled: true,
         },
         {
           name: "Todos",
-          client: shouldUseEffectRpc("TODOS") ? "@effect/rpc" : "oRPC",
-          enabled: shouldUseEffectRpc("TODOS"),
+          client: "@effect/rpc",
+          enabled: true,
         },
         {
           name: "Authentication",
-          client: shouldUseEffectRpc("AUTH") ? "@effect/rpc" : "oRPC",
-          enabled: shouldUseEffectRpc("AUTH"),
+          client: "@effect/rpc",
+          enabled: true,
         },
       ];
 
@@ -66,7 +66,7 @@ export function MigrationStatus() {
 
       <div className="space-y-2">
         <div className="text-xs text-gray-600 dark:text-gray-400">
-          Global: {FEATURE_FLAGS.USE_EFFECT_RPC ? "@effect/rpc" : "oRPC"}
+          Migration Complete: All endpoints use @effect/rpc
         </div>
 
         {endpoints.map((endpoint) => (

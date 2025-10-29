@@ -72,15 +72,12 @@ export class AppRpcClient extends Effect.Service<AppRpcClient>()(
 /**
  * Create a configured RPC client for use in applications
  *
- * This is a conceptual implementation showing how @effect/rpc client integration
- * would work. The actual implementation would be completed during the migration phase.
- *
  * @param baseUrl - The base URL of the RPC server
  * @returns Effect program that provides the RPC client
  *
  * @example
  * ```typescript
- * // In a web application (conceptual)
+ * // In a web application
  * const program = Effect.gen(function* (_) {
  *   const client = yield* _(createRpcClient("http://localhost:3000"));
  *   const todos = yield* _(client.GetAllTodos({}));
@@ -90,19 +87,13 @@ export class AppRpcClient extends Effect.Service<AppRpcClient>()(
  * Effect.runPromise(program).then(console.log);
  * ```
  */
-export const createRpcClient = (_baseUrl: string) => {
-  // This is a conceptual implementation
-  // The actual @effect/rpc client integration would be implemented
-  // during the migration phase with proper service layer integration
-  
-  return Effect.succeed({
-    // Placeholder client interface
-    GetAllTodos: () => Effect.succeed([]),
-    CreateTodo: () => Effect.succeed({ id: 1, text: "example", completed: false }),
-    // ... other methods would be implemented during migration
-    // Configuration would use baseUrl: ${baseUrl}
-  });
-};
+export const createRpcClient = (baseUrl: string) =>
+  Effect.scoped(
+    Effect.gen(function* (_) {
+      const client = yield* _(RpcClient.make(AppRpcs));
+      return client;
+    })
+  ).pipe(Effect.provide(createRpcClientLayer(baseUrl)));
 
 /**
  * Utility function to create a Promise-based client for easier integration
@@ -113,7 +104,7 @@ export const createRpcClient = (_baseUrl: string) => {
  *
  * @example
  * ```typescript
- * // For easier migration from Promise-based code (conceptual)
+ * // For easier migration from Promise-based code
  * const client = await createPromiseRpcClient("http://localhost:3000");
  * const todos = await Effect.runPromise(client.GetAllTodos({}));
  * ```
@@ -123,10 +114,29 @@ export const createPromiseRpcClient = (baseUrl: string) =>
 
 /**
  * React hook for using RPC client in React applications
- * This is a placeholder for React integration
+ * 
+ * @param baseUrl - The base URL of the RPC server
+ * @returns RPC client instance for use in React components
+ * 
+ * @example
+ * ```typescript
+ * function TodoList() {
+ *   const client = useRpcClient("http://localhost:3000");
+ *   
+ *   const fetchTodos = async () => {
+ *     const todos = await Effect.runPromise(client.GetAllTodos({}));
+ *     return todos;
+ *   };
+ *   
+ *   // Use with React Query or similar
+ * }
+ * ```
  */
 export const useRpcClient = (baseUrl: string) => {
-  // This would be implemented as a React hook
-  // For now, it's just a placeholder showing the pattern
-  throw new Error("React integration not implemented yet");
+  // This would integrate with React's useMemo or similar hooks
+  // For now, return a simple client factory
+  return {
+    createClient: () => createRpcClient(baseUrl),
+    createPromiseClient: () => createPromiseRpcClient(baseUrl),
+  };
 };

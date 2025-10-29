@@ -126,7 +126,7 @@ export class AuthValidationError extends Schema.TaggedError<AuthValidationError>
 /**
  * Union of all auth-related errors
  */
-export const AuthError = Schema.Union(
+export const AuthRpcError = Schema.Union(
   AuthenticationError,
   AuthValidationError,
   AuthorizationError
