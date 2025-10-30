@@ -44,6 +44,12 @@ export * from "./recovery";
 // Utility functions and helpers
 export * from "./utils";
 
+// Effect.ts built-in logging integration and utilities
+export * from "./logging";
+
+// Monitoring and observability services with Effect integration
+export * from "./monitoring";
+
 // The application now uses native @effect/rpc implementation
 
 // Re-export commonly used Effect types for convenience

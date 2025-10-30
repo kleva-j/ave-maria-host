@@ -1,23 +1,8 @@
-import type { Context } from "./context";
-
-import { ORPCError, os } from "@orpc/server";
-
-export const o = os.$context<Context>();
-
-export const publicProcedure = o;
-
-const requireAuth = o.middleware(async ({ context, next }) => {
-  if (!context.session?.user) {
-    throw new ORPCError("UNAUTHORIZED");
-  }
-  return next({
-    context: {
-      session: context.session,
-    },
-  });
-});
-
-export const protectedProcedure = publicProcedure.use(requireAuth);
+// Legacy oRPC procedures have been replaced with native @effect/rpc implementation
+// See packages/api/src/rpc/ for the new RPC implementation
 
 // Export Effect.ts utilities
 export * from "./effects";
+
+// Export new RPC implementation
+export * from "./rpc";

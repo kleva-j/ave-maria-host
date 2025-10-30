@@ -22,43 +22,14 @@
  * ```
  */
 
+import type { AppConfig, LoggingConfig } from "@host/api";
+
+import { LOG_LEVELS, LOG_FORMATS } from "@host/api";
 import { Config, Effect, Redacted } from "effect";
 
 // Define basic types
-const LOG_LEVELS = {
-  debug: "debug",
-  info: "info",
-  warn: "warn",
-  error: "error",
-} as const;
-
-const LOG_FORMATS = {
-  json: "json",
-  pretty: "pretty",
-} as const;
-
-export type LogFormat = keyof typeof LOG_FORMATS;
-export type LogLevel = keyof typeof LOG_LEVELS;
-
-// Define basic types for now (will be replaced with actual imports later)
-export interface AppConfig {
-  database: { url: string; maxConnections: number; connectionTimeout: number };
-  auth: {
-    jwtSecret: string;
-    sessionTimeout: number;
-    refreshTokenExpiry: number;
-  };
-  server: {
-    port: number;
-    host: string;
-    cors: { origins: string[]; credentials: boolean };
-  };
-  logging: {
-    level: LogLevel;
-    format: LogFormat;
-    enableCorrelationId: boolean;
-  };
-}
+export type LogFormat = LoggingConfig["format"];
+export type LogLevel = LoggingConfig["level"];
 
 /**
  * Database configuration
