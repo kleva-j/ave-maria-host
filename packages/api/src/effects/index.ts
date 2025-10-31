@@ -50,6 +50,12 @@ export * from "./logging";
 // Monitoring and observability services with Effect integration
 export * from "./monitoring";
 
+// Enhanced storage backend implementations
+export * from "./storage";
+
+// Retention policy enforcement with Effect scheduling
+export * from "./retention";
+
 // The application now uses native @effect/rpc implementation
 
 // Re-export commonly used Effect types for convenience
