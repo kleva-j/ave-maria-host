@@ -59,6 +59,9 @@ export * from "./retention";
 // Batch processor with Effect scheduling and failure handling
 export * from "./batch-processor";
 
+// Histogram and distribution metrics with Effect state management
+export * from "./histogram-metrics";
+
 // The application now uses native @effect/rpc implementation
 
 // Re-export commonly used Effect types for convenience
