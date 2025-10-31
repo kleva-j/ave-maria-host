@@ -14,8 +14,9 @@ import { queryClient } from "@/utils/orpc";
 import { NAV_THEME } from "@/lib/constants";
 import React, { useRef } from "react";
 import { useColorScheme } from "@/lib/use-color-scheme";
-import { Platform } from "react-native";
+import { Platform, View } from "react-native";
 import { setAndroidNavigationBar } from "@/lib/android-navigation-bar";
+import { MigrationStatus } from "@/components/migration-status";
 
 const LIGHT_THEME: Theme = {
 	...DefaultTheme,
@@ -56,13 +57,16 @@ export default function RootLayout() {
 			<ThemeProvider value={isDarkColorScheme ? DARK_THEME : LIGHT_THEME}>
 				<StatusBar style={isDarkColorScheme ? "light" : "dark"} />
 				<GestureHandlerRootView style={{ flex: 1 }}>
-					<Stack>
-						<Stack.Screen name="(drawer)" options={{ headerShown: false }} />
-						<Stack.Screen
-							name="modal"
-							options={{ title: "Modal", presentation: "modal" }}
-						/>
-					</Stack>
+					<View style={{ flex: 1 }}>
+						<Stack>
+							<Stack.Screen name="(drawer)" options={{ headerShown: false }} />
+							<Stack.Screen
+								name="modal"
+								options={{ title: "Modal", presentation: "modal" }}
+							/>
+						</Stack>
+						<MigrationStatus />
+					</View>
 				</GestureHandlerRootView>
 			</ThemeProvider>
 		</QueryClientProvider>

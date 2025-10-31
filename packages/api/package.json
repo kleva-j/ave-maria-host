@@ -12,10 +12,13 @@
   },
   "type": "module",
   "scripts": {
-    "build": "tsdown"
+    "build": "tsdown",
+    "test": "vitest --run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
-    "tsdown": "catalog:"
+    "tsdown": "catalog:",
+    "vitest": "catalog:"
   },
   "peerDependencies": {
     "typescript": "^5"
@@ -25,6 +28,7 @@
     "@orpc/client": "catalog:",
     "@orpc/openapi": "catalog:",
     "@orpc/zod": "catalog:",
+    "@effect/rpc": "catalog:",
     "hono": "catalog:",
     "drizzle-orm": "catalog:",
     "ai": "catalog:",

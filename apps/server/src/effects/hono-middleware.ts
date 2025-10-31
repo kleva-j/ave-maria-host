@@ -36,6 +36,7 @@ import { HTTPException } from "hono/http-exception";
 // Define basic error types for now (will be replaced with actual imports later)
 type DatabaseError = {
   _tag:
+    | "DatabaseConstraintViolationError"
     | "DatabaseTransactionError"
     | "DatabaseConnectionError"
     | "DatabaseQueryError";

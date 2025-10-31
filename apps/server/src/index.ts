@@ -16,13 +16,13 @@ import { Layer } from "effect";
 import { Hono } from "hono";
 
 // Import Effect.ts integration
-import { effectMiddleware } from "./effects/hono-middleware";
-import { AppLayer } from "./effects/layers";
 import {
   performRuntimeHealthCheck,
   initializeRuntime,
   getRuntimeStatus,
-} from "./effects/runtime";
+  effectMiddleware,
+  AppLayer,
+} from "./effects";
 
 const app = new Hono();
 
@@ -154,8 +154,6 @@ const initializeApp = async () => {
     process.exit(1);
   }
 };
-
-console.log("Meta main: ", import.meta.main);
 
 // Initialize the app if this is the main module
 if (import.meta.main) {

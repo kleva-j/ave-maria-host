@@ -10,6 +10,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { createORPCClient } from "@orpc/client";
 import { Loader } from "@/components/loader";
+import { MigrationStatus } from "@/components/migration-status";
 import { useState } from "react";
 
 import {
@@ -56,6 +57,7 @@ function RootComponent() {
           {isFetching ? <Loader /> : <Outlet />}
         </div>
         <Toaster richColors />
+        <MigrationStatus />
       </ThemeProvider>
       <TanStackRouterDevtools position="bottom-left" />
       <ReactQueryDevtools position="bottom" buttonPosition="bottom-right" />

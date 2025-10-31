@@ -27,8 +27,15 @@
 
 import { Context, Effect, Layer, pipe, Exit, ManagedRuntime } from "effect";
 
-// Import configuration types and effects
-import type { AppConfig } from "./config";
+// Import monitoring and logging services
+import type {
+  HealthCheckService,
+  MonitoringService,
+  AppConfig,
+} from "@host/api";
+
+import { MonitoringLayer } from "@host/api";
+
 import {
   ProdAppConfigEffect,
   TestAppConfigEffect,
@@ -64,7 +71,12 @@ const AuthServiceLive = Layer.succeed(
 /**
  * Combined type representing all application services available in the runtime
  */
-export type AppServices = DatabaseService | AuthService | AppConfig;
+export type AppServices =
+  | DatabaseService
+  | AuthService
+  | AppConfig
+  | MonitoringService
+  | HealthCheckService;
 
 /**
  * Configuration service that provides application configuration using Effect's Config system
@@ -77,6 +89,8 @@ const ConfigServiceLive = Layer.effect(AppConfigService, AppConfigEffect);
  *
  * The layer composition follows this dependency graph:
  * - ConfigServiceLive (no dependencies)
+ * - LoggerLayers.fromConfig (depends on ConfigServiceLive)
+ * - MonitoringLayer (no dependencies, uses Effect's built-in logging)
  * - DatabaseServiceLive (depends on ConfigServiceLive)
  * - AuthServiceLive (depends on DatabaseServiceLive and ConfigServiceLive)
  *
@@ -90,8 +104,11 @@ const ConfigServiceLive = Layer.effect(AppConfigService, AppConfigEffect);
  *   const db = yield* _(DatabaseService);
  *   const auth = yield* _(AuthService);
  *   const config = yield* _(AppConfigService);
+ *   const monitoring = yield* _(MonitoringService);
  *
- *   // Use services...
+ *   // Use Effect's built-in logging
+ *   yield* _(Effect.logInfo("Application started successfully"));
+ *
  *   return "Application started successfully";
  * });
  *
@@ -102,6 +119,7 @@ const ConfigServiceLive = Layer.effect(AppConfigService, AppConfigEffect);
  */
 export const AppLayer = Layer.mergeAll(
   ConfigServiceLive,
+  MonitoringLayer,
   DatabaseServiceLive,
   AuthServiceLive
 );
@@ -113,6 +131,7 @@ export const AppLayer = Layer.mergeAll(
  */
 export const DevAppLayer = Layer.mergeAll(
   Layer.effect(AppConfigService, DevAppConfigEffect),
+  MonitoringLayer,
   DatabaseServiceLive,
   AuthServiceLive
 );
@@ -124,6 +143,7 @@ export const DevAppLayer = Layer.mergeAll(
  */
 export const ProdAppLayer = Layer.mergeAll(
   Layer.effect(AppConfigService, ProdAppConfigEffect),
+  MonitoringLayer,
   DatabaseServiceLive,
   AuthServiceLive
 );
@@ -134,6 +154,7 @@ export const ProdAppLayer = Layer.mergeAll(
  */
 export const TestAppLayer = Layer.mergeAll(
   Layer.effect(AppConfigService, TestAppConfigEffect),
+  MonitoringLayer,
   DatabaseServiceLive,
   AuthServiceLive
 );

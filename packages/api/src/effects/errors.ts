@@ -2,12 +2,20 @@ import type { AuthErrorType, ConfigError } from "./core";
 
 import { Data } from "effect";
 
+// Import database error types
+import type {
+  DatabaseConstraintViolationError,
+  DatabaseTransactionError,
+  DatabaseConnectionError,
+  DatabaseQueryError,
+} from "@host/db/effects/database";
+
 /**
  * Abstract base class for all application errors using Effect.ts tagged errors.
  * Provides common error properties including timestamp tracking and cause chaining.
- * 
+ *
  * This class should not be instantiated directly. Use specific error subclasses instead.
- * 
+ *
  * @example
  * ```typescript
  * // Don't use AppError directly, use specific error types
@@ -30,7 +38,7 @@ export abstract class AppError extends Data.TaggedError("AppError")<{
 /**
  * Error class for input validation failures.
  * Used when user input or data doesn't meet validation requirements.
- * 
+ *
  * @example
  * ```typescript
  * // Throw validation error
@@ -39,7 +47,7 @@ export abstract class AppError extends Data.TaggedError("AppError")<{
  *   field: "email",
  *   value: "not-an-email"
  * });
- * 
+ *
  * // Handle validation error
  * Effect.catchTag("ValidationError", (error) => {
  *   console.error(`Validation failed for ${error.field}: ${error.message}`);
@@ -65,7 +73,7 @@ export class ValidationError extends Data.TaggedError("ValidationError")<{
 /**
  * Error class for missing resources or entities.
  * Used when a requested resource cannot be found in the system.
- * 
+ *
  * @example
  * ```typescript
  * // Throw not found error
@@ -74,7 +82,7 @@ export class ValidationError extends Data.TaggedError("ValidationError")<{
  *   resource: "User",
  *   id: "user-123"
  * });
- * 
+ *
  * // Handle not found error
  * Effect.catchTag("NotFoundError", (error) => {
  *   return Effect.succeed({ error: `${error.resource} with ID ${error.id} not found` });
@@ -99,7 +107,7 @@ export class NotFoundError extends Data.TaggedError("NotFoundError")<{
 /**
  * Error class for authentication failures.
  * Used when a user is not authenticated or authentication credentials are invalid.
- * 
+ *
  * @example
  * ```typescript
  * // Throw unauthorized error
@@ -107,7 +115,7 @@ export class NotFoundError extends Data.TaggedError("NotFoundError")<{
  *   message: "Authentication required",
  *   action: "access_user_profile"
  * });
- * 
+ *
  * // Handle unauthorized error
  * Effect.catchTag("UnauthorizedError", (error) => {
  *   return Effect.succeed({ error: "Please log in to continue", redirectTo: "/login" });
@@ -130,7 +138,7 @@ export class UnauthorizedError extends Data.TaggedError("UnauthorizedError")<{
 /**
  * Error class for authorization failures.
  * Used when a user is authenticated but lacks permission to perform an action.
- * 
+ *
  * @example
  * ```typescript
  * // Throw forbidden error
@@ -139,11 +147,11 @@ export class UnauthorizedError extends Data.TaggedError("UnauthorizedError")<{
  *   resource: "AdminPanel",
  *   action: "delete_user"
  * });
- * 
+ *
  * // Handle forbidden error
  * Effect.catchTag("ForbiddenError", (error) => {
- *   return Effect.succeed({ 
- *     error: `Access denied: cannot ${error.action} on ${error.resource}` 
+ *   return Effect.succeed({
+ *     error: `Access denied: cannot ${error.action} on ${error.resource}`
  *   });
  * })
  * ```
@@ -166,7 +174,7 @@ export class ForbiddenError extends Data.TaggedError("ForbiddenError")<{
 /**
  * Error class for database operation failures.
  * Used when database queries, transactions, or connections fail.
- * 
+ *
  * @example
  * ```typescript
  * // Throw database error
@@ -175,7 +183,7 @@ export class ForbiddenError extends Data.TaggedError("ForbiddenError")<{
  *   operation: "findUser",
  *   cause: originalError
  * });
- * 
+ *
  * // Handle database error
  * Effect.catchTag("DatabaseError", (error) => {
  *   console.error(`Database ${error.operation} failed: ${error.message}`);
@@ -201,7 +209,7 @@ export class DatabaseError extends Data.TaggedError("DatabaseError")<{
 /**
  * Error class for authentication service failures.
  * Used for specific authentication-related errors with categorized types.
- * 
+ *
  * @example
  * ```typescript
  * // Throw auth error
@@ -209,7 +217,7 @@ export class DatabaseError extends Data.TaggedError("DatabaseError")<{
  *   message: "JWT token has expired",
  *   type: "SessionExpired"
  * });
- * 
+ *
  * // Handle auth error by type
  * Effect.catchTag("AuthError", (error) => {
  *   switch (error.type) {
@@ -239,7 +247,7 @@ export class AuthError extends Data.TaggedError("AuthError")<{
 /**
  * Error class for external service communication failures.
  * Used when HTTP requests to external APIs or services fail.
- * 
+ *
  * @example
  * ```typescript
  * // Throw network error
@@ -249,7 +257,7 @@ export class AuthError extends Data.TaggedError("AuthError")<{
  *   status: 503,
  *   cause: fetchError
  * });
- * 
+ *
  * // Handle network error with retry logic
  * Effect.catchTag("NetworkError", (error) => {
  *   if (error.status && error.status >= 500) {
@@ -285,7 +293,7 @@ export class NetworkError extends Data.TaggedError("NetworkError")<{
 /**
  * Error class for domain-specific business logic violations.
  * Used when business rules or domain constraints are violated.
- * 
+ *
  * @example
  * ```typescript
  * // Throw business logic error
@@ -294,13 +302,13 @@ export class NetworkError extends Data.TaggedError("NetworkError")<{
  *   code: "ORDER_ALREADY_SHIPPED",
  *   context: { orderId: "order-123", status: "shipped" }
  * });
- * 
+ *
  * // Handle business logic error
  * Effect.catchTag("BusinessLogicError", (error) => {
- *   return Effect.succeed({ 
- *     error: error.message, 
+ *   return Effect.succeed({
+ *     error: error.message,
  *     code: error.code,
- *     context: error.context 
+ *     context: error.context
  *   });
  * })
  * ```
@@ -327,12 +335,12 @@ export class BusinessLogicError extends Data.TaggedError("BusinessLogicError")<{
 /**
  * Union type of all application errors for comprehensive error handling.
  * Use this type when you need to handle any application error.
- * 
+ *
  * @example
  * ```typescript
  * const handleAnyError = (error: ApplicationError) => {
  *   console.error(`Error occurred at ${error.timestamp}: ${error.message}`);
- *   
+ *
  *   switch (error._tag) {
  *     case "ValidationError":
  *       return { type: "validation", field: error.field };
@@ -348,12 +356,16 @@ export class BusinessLogicError extends Data.TaggedError("BusinessLogicError")<{
  * ```
  */
 export type ApplicationError =
-  | ValidationError
-  | NotFoundError
-  | UnauthorizedError
-  | ForbiddenError
-  | DatabaseError
-  | AuthError
-  | NetworkError
+  | DatabaseConstraintViolationError
+  | DatabaseTransactionError
+  | DatabaseConnectionError
+  | DatabaseQueryError
   | BusinessLogicError
-  | ConfigError;
+  | UnauthorizedError
+  | ValidationError
+  | ForbiddenError
+  | NotFoundError
+  | DatabaseError
+  | NetworkError
+  | ConfigError
+  | AuthError;
