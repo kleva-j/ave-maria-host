@@ -85,12 +85,24 @@ export interface ServerConfig {
  */
 export interface LoggingConfig {
   /** Minimum log level to output */
-  readonly level: "debug" | "info" | "warn" | "error";
+  readonly level: keyof typeof LOG_LEVELS;
   /** Log output format */
-  readonly format: "json" | "pretty";
+  readonly format: keyof typeof LOG_FORMATS;
   /** Whether to include correlation IDs in log entries */
   readonly enableCorrelationId: boolean;
 }
+
+export const LOG_LEVELS = {
+  debug: "debug",
+  info: "info",
+  warn: "warn",
+  error: "error",
+} as const;
+
+export const LOG_FORMATS = {
+  json: "json",
+  pretty: "pretty",
+} as const;
 
 /**
  * Complete application configuration combining all subsystem configurations.

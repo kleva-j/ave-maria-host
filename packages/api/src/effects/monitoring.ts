@@ -35,8 +35,6 @@
 import {
   Duration,
   Schedule,
-  FiberRef,
-  LogLevel,
   Context,
   Effect,
   Data,
@@ -45,7 +43,7 @@ import {
   Ref,
 } from "effect";
 
-import { LogSpan, StructuredLogging, CorrelationId } from "./logging";
+import { StructuredLogging } from "./logging";
 
 /**
  * Metric types for different kinds of measurements.
