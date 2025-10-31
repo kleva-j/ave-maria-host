@@ -208,6 +208,19 @@ export interface BatchConfiguration {
   readonly maxWaitTime: Duration.Duration;
   readonly enableAutoFlush: boolean;
   readonly enableBatching: boolean;
+  readonly enablePartialFailureRecovery: boolean;
+  readonly retryConfig: BatchRetryConfig;
+}
+
+/**
+ * Retry configuration for batch operations.
+ */
+export interface BatchRetryConfig {
+  readonly maxRetries: number;
+  readonly initialDelay: Duration.Duration;
+  readonly maxDelay: Duration.Duration;
+  readonly backoffMultiplier: number;
+  readonly retryableErrors: readonly string[];
 }
 
 /**
@@ -411,6 +424,17 @@ export const StorageConfigurationSchema = Schema.Struct({
 });
 
 /**
+ * Schema for batch retry configuration validation.
+ */
+export const BatchRetryConfigSchema = Schema.Struct({
+  maxRetries: Schema.NonNegativeInt,
+  initialDelay: Schema.String, // Duration string representation
+  maxDelay: Schema.String, // Duration string representation
+  backoffMultiplier: Schema.Number,
+  retryableErrors: Schema.Array(Schema.String),
+});
+
+/**
  * Schema for batch configuration validation.
  */
 export const BatchConfigurationSchema = Schema.Struct({
@@ -419,6 +443,8 @@ export const BatchConfigurationSchema = Schema.Struct({
   maxWaitTime: Schema.String, // Duration string representation
   enableAutoFlush: Schema.Boolean,
   enableBatching: Schema.Boolean,
+  enablePartialFailureRecovery: Schema.Boolean,
+  retryConfig: BatchRetryConfigSchema,
 });
 
 /**

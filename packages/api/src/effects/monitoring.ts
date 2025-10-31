@@ -44,40 +44,12 @@ import {
 } from "effect";
 
 import { StructuredLogging } from "./logging";
-
-/**
- * Metric types for different kinds of measurements.
- */
-export type MetricType =
-  | "histogram"
-  | "counter"
-  | "summary"
-  | "gauge"
-  | "timer";
+import type { Metric, MetricLabels, MetricType } from "./enhanced-types";
 
 /**
  * Metric value types.
  */
 export type MetricValue = number;
-
-/**
- * Metric labels for categorization and filtering.
- */
-export interface MetricLabels {
-  readonly [key: string]: string | number | boolean;
-}
-
-/**
- * Metric data structure that integrates with Effect's logging.
- */
-export interface Metric {
-  readonly name: string;
-  readonly value: MetricValue;
-  readonly type: MetricType;
-  readonly labels?: MetricLabels;
-  readonly timestamp: Date;
-  readonly unit?: string;
-}
 
 /**
  * Health check status enumeration.
@@ -273,11 +245,12 @@ class EffectMonitoringService implements MonitoringService {
 
     return pipe(
       Effect.gen(function* (_) {
-        // Create the metric object
+        // Create the metric object using enhanced types
         const metric: Metric = {
-          name,
+          id: `${name}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          name: name as Metric["name"], // Cast to the branded type
+          value: { type: "number", value },
           type,
-          value,
           labels: labels || {},
           timestamp: new Date(),
         };

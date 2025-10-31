@@ -56,6 +56,9 @@ export * from "./storage";
 // Retention policy enforcement with Effect scheduling
 export * from "./retention";
 
+// Batch processor with Effect scheduling and failure handling
+export * from "./batch-processor";
+
 // The application now uses native @effect/rpc implementation
 
 // Re-export commonly used Effect types for convenience
