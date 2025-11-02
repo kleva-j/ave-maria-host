@@ -62,6 +62,31 @@ export * from "./batch-processor";
 // Histogram and distribution metrics with Effect state management
 export * from "./histogram-metrics";
 
+// Enhanced health check system with dependencies and advanced features
+export {
+  EnhancedHealthCheckRegistry,
+  EnhancedHealthCheckRegistryLive,
+  EnhancedHealthCheckUtils,
+  DependencyResolutionError,
+  type EnhancedHealthCheckResult,
+  type EnhancedSystemHealth,
+  type HealthCheckConfig,
+  type BackoffStrategy,
+  type RetryPolicy as EnhancedHealthCheckRetryPolicy,
+} from "./enhanced-health-checks";
+
+// Health check timeout and retry policies using Effect patterns
+export {
+  HealthCheckPolicies,
+  HealthCheckTimeoutError,
+  RetryExhaustedError,
+  type TimeoutConfig,
+  type RetryPolicy as HealthCheckPolicyRetryPolicy,
+} from "./health-check-policies";
+
+// Advanced health check caching and performance optimization
+export * from "./health-check-cache";
+
 // The application now uses native @effect/rpc implementation
 
 // Re-export commonly used Effect types for convenience
