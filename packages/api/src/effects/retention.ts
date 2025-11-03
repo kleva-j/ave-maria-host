@@ -8,7 +8,7 @@
 import type { RetentionPolicy } from "./enhanced-types";
 import type { EnhancedMetricStore } from "./storage";
 
-import { Context, Data, Duration, Effect, Layer, Schedule, pipe } from "effect";
+import { Context, Data, Duration, Effect, Fiber, Layer, Schedule, pipe } from "effect";
 
 /**
  * Retention error types for policy enforcement failures.
@@ -50,6 +50,7 @@ export interface RetentionPolicyService {
  */
 export class RetentionPolicyServiceImpl implements RetentionPolicyService {
   private isScheduleRunning = false;
+  private cleanupFiber: Fiber.RuntimeFiber<number, never> | undefined = undefined;
   private cleanupStats: RetentionStats = {
     totalCleanupRuns: 0,
     totalMetricsRemoved: 0,
@@ -69,7 +70,7 @@ export class RetentionPolicyServiceImpl implements RetentionPolicyService {
   readonly startCleanupSchedule = (): Effect.Effect<void, RetentionError> => {
     const self = this;
     return Effect.gen(function* (_) {
-      if (self.isScheduleRunning) {
+      if (self.isScheduleRunning || self.cleanupFiber) {
         yield* _(
           Effect.logInfo("Retention cleanup schedule is already running")
         );
@@ -97,11 +98,12 @@ export class RetentionPolicyServiceImpl implements RetentionPolicyService {
             // Continue the schedule even if cleanup fails
             return 0;
           })
-        ),
-        Effect.fork
+        )
       );
 
-      yield* _(scheduledCleanup);
+      // Fork the cleanup and store the fiber reference
+      const fiber = yield* _(Effect.fork(scheduledCleanup));
+      self.cleanupFiber = fiber;
     }).pipe(
       Effect.mapError(
         (error) =>
@@ -117,15 +119,20 @@ export class RetentionPolicyServiceImpl implements RetentionPolicyService {
   readonly stopCleanupSchedule = (): Effect.Effect<void, RetentionError> => {
     const self = this;
     return Effect.gen(function* (_) {
-      if (!self.isScheduleRunning) {
+      if (!self.isScheduleRunning || !self.cleanupFiber) {
         yield* _(Effect.logInfo("Retention cleanup schedule is not running"));
         return;
       }
 
       yield* _(Effect.logInfo("Stopping retention policy cleanup schedule"));
 
+      // Interrupt the cleanup fiber and wait for termination
+      yield* _(Fiber.interrupt(self.cleanupFiber));
+      
+      // Update state only after fiber has been interrupted
       self.isScheduleRunning = false;
       self.cleanupStats = { ...self.cleanupStats, isRunning: false };
+      self.cleanupFiber = undefined;
     }).pipe(
       Effect.mapError(
         (error) =>
