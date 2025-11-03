@@ -227,5 +227,87 @@ describe("Histogram and Distribution Metrics", () => {
       expect(merged.min).toBe(1);
       expect(merged.max).toBe(6);
     });
+
+    it("should handle statistical significance calculation edge cases", async () => {
+      // Test with insufficient sample sizes
+      const dist1 = {
+        values: [1],
+        count: 1,
+        sum: 1,
+        mean: 1,
+        min: 1,
+        max: 1,
+        stddev: 0,
+        percentiles: { "50": 1 },
+      };
+
+      const dist2 = {
+        values: [2, 3],
+        count: 2,
+        sum: 5,
+        mean: 2.5,
+        min: 2,
+        max: 3,
+        stddev: 0.5,
+        percentiles: { "50": 2.5 },
+      };
+
+      // Test insufficient sample size - should fail
+      try {
+        await Effect.runPromise(DistributionUtils.calculateStatisticalSignificance(dist1, dist2));
+        expect.fail("Should have thrown an error for insufficient sample size");
+      } catch (error) {
+        expect((error as Error).message).toContain("sample size less than 2");
+      }
+
+      // Test with empty distributions - should fail
+      const emptyDist = {
+        values: [],
+        count: 0,
+        sum: 0,
+        mean: 0,
+        min: 0,
+        max: 0,
+        stddev: 0,
+        percentiles: {},
+      };
+
+      try {
+        await Effect.runPromise(DistributionUtils.calculateStatisticalSignificance(emptyDist, dist2));
+        expect.fail("Should have thrown an error for empty distributions");
+      } catch (error) {
+        expect((error as Error).message).toContain("empty distributions");
+      }
+
+      // Test with valid distributions - should succeed
+      const validDist1 = {
+        values: [1, 2, 3],
+        count: 3,
+        sum: 6,
+        mean: 2,
+        min: 1,
+        max: 3,
+        stddev: 1,
+        percentiles: { "50": 2 },
+      };
+
+      const validDist2 = {
+        values: [4, 5, 6],
+        count: 3,
+        sum: 15,
+        mean: 5,
+        min: 4,
+        max: 6,
+        stddev: 1,
+        percentiles: { "50": 5 },
+      };
+
+      const result = await Effect.runPromise(DistributionUtils.calculateStatisticalSignificance(validDist1, validDist2));
+      
+      expect(result).toHaveProperty("meanDifference");
+      expect(result).toHaveProperty("pValue");
+      expect(result).toHaveProperty("isSignificant");
+      expect(result.meanDifference).toBe(-3); // 2 - 5 = -3
+    });
   });
 });

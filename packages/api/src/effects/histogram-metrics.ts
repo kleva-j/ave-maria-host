@@ -944,17 +944,69 @@ export namespace DistributionUtils {
         );
       }
 
+      // Guard against insufficient sample sizes for t-test
+      if (dist1.count < 2 || dist2.count < 2) {
+        yield* _(
+          Effect.fail(
+            new DistributionError({
+              message:
+                "Cannot calculate statistical significance with sample size less than 2",
+            })
+          )
+        );
+      }
+
       const meanDifference = dist1.mean - dist2.mean;
 
       // Simplified t-test calculation (assuming equal variances)
-      const pooledStddev = Math.sqrt(
+      const pooledDenominator = dist1.count + dist2.count - 2;
+      
+      // Additional safety check for pooled denominator
+      if (pooledDenominator <= 0) {
+        yield* _(
+          Effect.fail(
+            new DistributionError({
+              message:
+                "Invalid degrees of freedom for pooled variance calculation",
+            })
+          )
+        );
+      }
+
+      const pooledVariance = 
         ((dist1.count - 1) * dist1.stddev ** 2 +
           (dist2.count - 1) * dist2.stddev ** 2) /
-          (dist1.count + dist2.count - 2)
-      );
+          pooledDenominator;
+
+      // Guard against negative pooled variance (should not happen with valid data)
+      if (pooledVariance < 0) {
+        yield* _(
+          Effect.fail(
+            new DistributionError({
+              message:
+                "Invalid negative pooled variance in statistical calculation",
+            })
+          )
+        );
+      }
+
+      const pooledStddev = Math.sqrt(pooledVariance);
 
       const standardError =
         pooledStddev * Math.sqrt(1 / dist1.count + 1 / dist2.count);
+      
+      // Guard against zero standard error
+      if (standardError === 0) {
+        yield* _(
+          Effect.fail(
+            new DistributionError({
+              message:
+                "Cannot calculate t-statistic with zero standard error",
+            })
+          )
+        );
+      }
+
       const tStatistic = meanDifference / standardError;
 
       // Simplified p-value calculation (this is an approximation)
