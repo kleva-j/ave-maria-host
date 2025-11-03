@@ -87,6 +87,24 @@ export {
 // Advanced health check caching and performance optimization
 export * from "./health-check-cache";
 
+// Export service with JSON and streaming support for metrics
+export {
+  type ExportServiceInterface,
+  type StreamingExportOptions,
+  type JsonExportOptions,
+  type ExportService,
+  type ExportFormat,
+  DEFAULT_JSON_EXPORT_OPTIONS,
+  DEFAULT_STREAMING_EXPORT_OPTIONS,
+  MockExportServiceLayer,
+  createExportService,
+  ExportServiceLayer,
+  MockExportService,
+  ExportServiceTag,
+  ExportUtils,
+  ExportError,
+} from "./export-service";
+
 // The application now uses native @effect/rpc implementation
 
 // Re-export commonly used Effect types for convenience
