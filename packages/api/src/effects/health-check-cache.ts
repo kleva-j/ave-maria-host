@@ -19,6 +19,7 @@ import {
 } from "effect";
 
 import type { EnhancedHealthCheckResult } from "./enhanced-health-checks";
+
 import { HealthCheckError } from "./monitoring";
 import { StructuredLogging } from "./logging";
 
@@ -137,6 +138,16 @@ export interface HealthCheckCache {
     Fiber.RuntimeFiber<void, HealthCheckError>,
     HealthCheckError
   >;
+
+  readonly startBackgroundRefresh: (
+    healthCheckEffects: Record<
+      string,
+      Effect.Effect<EnhancedHealthCheckResult, HealthCheckError>
+    >
+  ) => Effect.Effect<
+    Fiber.RuntimeFiber<void, HealthCheckError>,
+    HealthCheckError
+  >;
 }
 
 /**
@@ -211,7 +222,17 @@ class HealthCheckCacheImpl implements HealthCheckCache {
             totalTtl * (self.config.refreshThreshold / 100);
 
           if (timeToExpiry <= refreshThreshold && !entry.refreshInProgress) {
-            yield* _(Queue.offer(self.refreshQueue, checkName));
+            // Offer to queue (non-blocking) - if queue is full, it will be dropped
+            yield* _(
+              Queue.offer(self.refreshQueue, checkName),
+              Effect.catchAll(() => 
+                // Queue might be full, log and continue
+                pipe(
+                  Effect.logDebug(`Refresh queue full, skipping refresh for: ${checkName}`),
+                  Effect.annotateLogs("healthCheck.name", checkName)
+                )
+              )
+            );
           }
         }
 
@@ -597,6 +618,64 @@ class HealthCheckCacheImpl implements HealthCheckCache {
     );
   }
 
+  startBackgroundRefresh(
+    healthCheckEffects: Record<
+      string,
+      Effect.Effect<EnhancedHealthCheckResult, HealthCheckError>
+    >
+  ): Effect.Effect<
+    Fiber.RuntimeFiber<void, HealthCheckError>,
+    HealthCheckError
+  > {
+    const self = this;
+
+    // Create a single worker that processes the queue
+    const refreshWorker = pipe(
+      Effect.gen(function* (_) {
+        while (true) {
+          // Take one item from the refresh queue
+          const checkName = yield* _(Queue.take(self.refreshQueue));
+          
+          // Process the refresh task (this will handle concurrency internally)
+          yield* _(
+            self.processRefresh(checkName, healthCheckEffects),
+            Effect.catchAll((error) =>
+              // Log error but continue processing queue
+              pipe(
+                Effect.logWarning(
+                  `Background refresh failed for ${checkName}`,
+                  error
+                ),
+                Effect.annotateLogs("healthCheck.name", checkName)
+              )
+            )
+          );
+        }
+      }),
+      Effect.catchAll((error) =>
+        pipe(
+          Effect.logError("Background refresh worker failed", error),
+          Effect.flatMap(() => Effect.sleep(Duration.seconds(1))), // Brief pause before restarting
+          Effect.flatMap(() => Effect.fail(error))
+        )
+      )
+    );
+
+    return Effect.gen(function* (_) {
+      const fiber = yield* _(Effect.fork(refreshWorker));
+      
+      yield* _(
+        Effect.logInfo("Started background refresh worker"),
+        Effect.annotateLogs(
+          "cache.refreshConcurrency",
+          self.config.refreshConcurrency
+        )
+      );
+      
+      return fiber as Fiber.RuntimeFiber<void, HealthCheckError>;
+    });
+  }
+
   // Private helper methods
 
   private recordHit(accessTime: number): Effect.Effect<void, never> {
@@ -670,6 +749,129 @@ class HealthCheckCacheImpl implements HealthCheckCache {
         return entries;
     }
   }
+
+  private processRefresh(
+    checkName: string,
+    healthCheckEffects: Record<
+      string,
+      Effect.Effect<EnhancedHealthCheckResult, HealthCheckError>
+    >
+  ): Effect.Effect<void, HealthCheckError> {
+    const self = this;
+
+    return pipe(
+      Effect.gen(function* (_) {
+        // Check if entry still exists and needs refresh
+        const cache = yield* _(Ref.get(self.cacheRef));
+        const entry = cache.get(checkName);
+
+        if (!entry) {
+          // Entry was removed, nothing to refresh
+          return;
+        }
+
+        if (entry.refreshInProgress) {
+          // Already being refreshed, skip
+          return;
+        }
+
+        // Check if still needs refresh (might have been refreshed by another process)
+        const now = new Date();
+        const timeToExpiry = entry.expiresAt.getTime() - now.getTime();
+        const totalTtl = entry.expiresAt.getTime() - entry.cachedAt.getTime();
+        const refreshThreshold = totalTtl * (self.config.refreshThreshold / 100);
+
+        if (timeToExpiry > refreshThreshold) {
+          // No longer needs refresh
+          return;
+        }
+
+        // Mark as refresh in progress
+        yield* _(
+          Ref.update(self.cacheRef, (cache) => {
+            const newCache = new Map(cache);
+            const currentEntry = newCache.get(checkName);
+            if (currentEntry) {
+              newCache.set(checkName, {
+                ...currentEntry,
+                refreshInProgress: true,
+              });
+            }
+            return newCache;
+          })
+        );
+
+        // Get the health check effect
+        const healthCheckEffect = healthCheckEffects[checkName];
+        if (!healthCheckEffect) {
+          yield* _(
+            Effect.logWarning(
+              `No health check effect found for background refresh: ${checkName}`
+            ),
+            Effect.annotateLogs("healthCheck.name", checkName)
+          );
+          return;
+        }
+
+        // Execute the refresh
+        const result = yield* _(
+          pipe(
+            healthCheckEffect,
+            Effect.timeout(Duration.seconds(30)), // Timeout for background refresh
+            Effect.catchAll((error) => {
+              // Log error but don't fail the refresh process
+              return pipe(
+                Effect.logWarning(
+                  `Background refresh failed for: ${checkName}`
+                ),
+                Effect.annotateLogs("healthCheck.name", checkName),
+                Effect.annotateLogs("error", String(error)),
+                Effect.andThen(Effect.fail(error))
+              );
+            })
+          ),
+          Effect.either
+        );
+
+        if (result._tag === "Right") {
+          // Successful refresh, update cache
+          yield* _(self.set(checkName, result.right));
+          yield* _(self.recordRefresh());
+          yield* _(
+            Effect.logDebug(`Background refresh completed: ${checkName}`),
+            Effect.annotateLogs("healthCheck.name", checkName)
+          );
+        }
+      }),
+      Effect.catchAll((error) => {
+        // Always clear the refresh in progress flag
+        return pipe(
+          Ref.update(self.cacheRef, (cache) => {
+            const newCache = new Map(cache);
+            const entry = newCache.get(checkName);
+            if (entry) {
+              newCache.set(checkName, {
+                ...entry,
+                refreshInProgress: false,
+              });
+            }
+            return newCache;
+          }),
+          Effect.andThen(
+            pipe(
+              Effect.logError(
+                `Background refresh process failed for: ${checkName}`,
+                error
+              ),
+              Effect.annotateLogs("healthCheck.name", checkName)
+            )
+          )
+        );
+      }),
+
+      Effect.withLogSpan(`cache-background-refresh.${checkName}`)
+    );
+  }
 }
 
 /**
@@ -702,7 +904,8 @@ export const HealthCheckCacheLive: Layer.Layer<HealthCheckCache> = Layer.effect(
         accessCount: 0,
       })
     );
-    const refreshQueue = yield* _(Queue.unbounded<string>());
+    // Use bounded queue to prevent unbounded growth
+    const refreshQueue = yield* _(Queue.bounded<string>(DefaultCacheConfig.maxEntries));
 
     return new HealthCheckCacheImpl(
       cacheRef,
@@ -734,7 +937,8 @@ export const makeHealthCheckCacheLayer = (
           accessCount: 0,
         })
       );
-      const refreshQueue = yield* _(Queue.unbounded<string>());
+      // Use bounded queue to prevent unbounded growth
+      const refreshQueue = yield* _(Queue.bounded<string>(finalConfig.maxEntries));
 
       return new HealthCheckCacheImpl(
         cacheRef,
@@ -795,4 +999,56 @@ export namespace CacheUtils {
     enableBackgroundRefresh: false,
     refreshConcurrency: 1,
   };
+
+  /**
+   * Setup a complete cache system with background refresh.
+   * 
+   * @example
+   * ```typescript
+   * const healthCheckEffects = {
+   *   "database": databaseHealthCheck,
+   *   "redis": redisHealthCheck,
+   *   "api": apiHealthCheck
+   * };
+   * 
+   * const program = Effect.gen(function* (_) {
+   *   const cache = yield* _(HealthCheckCache);
+   *   
+   *   // Start background refresh worker
+   *   const refreshFiber = yield* _(cache.startBackgroundRefresh(healthCheckEffects));
+   *   
+   *   // Start maintenance worker
+   *   const maintenanceFiber = yield* _(cache.startMaintenance(Duration.minutes(5)));
+   *   
+   *   // Use cache normally - background refresh will happen automatically
+   *   const result = yield* _(cache.get("database"));
+   *   
+   *   return { refreshFiber, maintenanceFiber };
+   * });
+   * ```
+   */
+  export const setupCacheWithBackgroundRefresh = (
+    healthCheckEffects: Record<
+      string,
+      Effect.Effect<EnhancedHealthCheckResult, HealthCheckError>
+    >,
+    maintenanceInterval = Duration.minutes(5)
+  ) =>
+    Effect.gen(function* (_) {
+      const cache = yield* _(HealthCheckCache);
+      
+      // Start background refresh worker
+      const refreshFiber = yield* _(cache.startBackgroundRefresh(healthCheckEffects));
+      
+      // Start maintenance worker
+      const maintenanceFiber = yield* _(cache.startMaintenance(maintenanceInterval));
+      
+      yield* _(
+        Effect.logInfo("Cache system started with background refresh and maintenance"),
+        Effect.annotateLogs("cache.healthChecks", Object.keys(healthCheckEffects).length),
+        Effect.annotateLogs("cache.maintenanceInterval", Duration.toMillis(maintenanceInterval))
+      );
+      
+      return { refreshFiber, maintenanceFiber };
+    });
 }

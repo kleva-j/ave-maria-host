@@ -893,21 +893,13 @@ class EnhancedHealthCheckRegistryImpl implements EnhancedHealthCheckRegistry {
 
   private executeHealthCheckWithRetry(
     config: HealthCheckConfig,
-    context: HealthCheckExecutionContext
+    _context: HealthCheckExecutionContext
   ): Effect.Effect<EnhancedHealthCheckResult, HealthCheckError> {
-    return pipe(
+    // Create the base health check effect with timeout
+    const baseHealthCheck = pipe(
       config.check,
       Effect.timeout(config.timeout),
       Effect.timed,
-      Effect.map(
-        ([duration, checkResult]) =>
-          ({
-            ...checkResult,
-            responseTime: Duration.toMillis(duration),
-            timestamp: new Date(),
-            retryAttempts: 0,
-          }) as EnhancedHealthCheckResult
-      ),
       Effect.catchAll((error) => {
         const healthCheckError =
           error._tag === "HealthCheckError"
@@ -923,6 +915,119 @@ class EnhancedHealthCheckRegistryImpl implements EnhancedHealthCheckRegistry {
 
         return Effect.fail(healthCheckError);
       })
+    );
+
+    // Apply retry logic with attempt tracking
+    return pipe(
+      this.retryWithTracking(baseHealthCheck, config.retryPolicy, config.name)
+    );
+  }
+
+  private retryWithTracking(
+    effect: Effect.Effect<readonly [Duration.Duration, HealthCheckResult], HealthCheckError>,
+    retryPolicy: RetryPolicy,
+    checkName: string
+  ): Effect.Effect<EnhancedHealthCheckResult, HealthCheckError> {
+    const attemptWithDelay = (attemptNumber: number): Effect.Effect<EnhancedHealthCheckResult, HealthCheckError> => {
+      return pipe(
+        effect,
+        Effect.flatMap(([duration, checkResult]) =>
+          Effect.succeed({
+            ...checkResult,
+            responseTime: Duration.toMillis(duration),
+            timestamp: new Date(),
+            retryAttempts: Math.max(0, attemptNumber - 1), // Subtract 1 because first attempt is not a retry
+          } as EnhancedHealthCheckResult)
+        ),
+        Effect.catchAll((error) => {
+          // Check if we should retry
+          if (
+            attemptNumber < retryPolicy.maxAttempts &&
+            this.shouldRetryError(error, retryPolicy)
+          ) {
+            // Calculate delay based on backoff strategy
+            const delay = this.calculateDelay(retryPolicy, attemptNumber - 1);
+            
+            return pipe(
+              Effect.sleep(delay),
+              Effect.flatMap(() => attemptWithDelay(attemptNumber + 1))
+            );
+          }
+          
+          // No more retries, fail with final error
+          const finalError =
+            error._tag === "HealthCheckError"
+              ? new HealthCheckError({
+                  ...error,
+                  message: `${error.message} (after ${attemptNumber} attempts)`,
+                })
+              : new HealthCheckError({
+                  checkName,
+                  message: `Health check failed after ${attemptNumber} attempts: ${String(error)}`,
+                  cause: error,
+                });
+
+          return Effect.fail(finalError);
+        })
+      );
+    };
+
+    return attemptWithDelay(1); // Start with attempt 1
+  }
+
+  private calculateDelay(retryPolicy: RetryPolicy, retryAttempt: number): Duration.Duration {
+    const initialDelay = retryPolicy.initialDelay || Duration.millis(100);
+    const maxDelay = retryPolicy.maxDelay || Duration.seconds(30);
+
+    let delay: Duration.Duration;
+
+    switch (retryPolicy.backoffStrategy) {
+      case "fixed":
+        delay = initialDelay;
+        break;
+      case "linear":
+        delay = Duration.millis(Duration.toMillis(initialDelay) * (retryAttempt + 1));
+        break;
+      case "exponential":
+        delay = Duration.millis(Duration.toMillis(initialDelay) * (2 ** retryAttempt));
+        break;
+      default:
+        delay = Duration.millis(Duration.toMillis(initialDelay) * (2 ** retryAttempt));
+    }
+
+    // Apply max delay cap
+    if (Duration.greaterThan(delay, maxDelay)) {
+      delay = maxDelay;
+    }
+
+    // Apply jitter if configured
+    if (retryPolicy.jitter) {
+      const jitterAmount = Duration.toMillis(delay) * 0.1; // 10% jitter
+      const jitter = Math.random() * jitterAmount * 2 - jitterAmount; // -10% to +10%
+      delay = Duration.millis(Math.max(0, Duration.toMillis(delay) + jitter));
+    }
+
+    return delay;
+  }
+
+
+
+  private shouldRetryError(error: unknown, retryPolicy: RetryPolicy): boolean {
+    // If no retryable errors are specified, retry all errors
+    if (!retryPolicy.retryableErrors || retryPolicy.retryableErrors.length === 0) {
+      return true;
+    }
+
+    // Check if the error type/tag is in the retryable errors list
+    if (error && typeof error === "object" && "_tag" in error) {
+      const errorTag = (error as { _tag: string })._tag;
+      return retryPolicy.retryableErrors.includes(errorTag);
+    }
+
+    // Check if the error message contains any of the retryable error patterns
+    const errorMessage = String(error).toLowerCase();
+    return retryPolicy.retryableErrors.some((retryableError) =>
+      errorMessage.includes(retryableError.toLowerCase())
     );
   }
 

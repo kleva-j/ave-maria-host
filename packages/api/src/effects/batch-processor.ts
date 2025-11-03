@@ -284,6 +284,9 @@ export class BatchProcessorImpl implements BatchProcessor {
         }
       } catch (error) {
         // Update statistics on failed flush
+        for (const item of pendingItems) {
+          yield* _(Queue.offer(self.pendingQueue, item));
+        }
         yield* _(
           Ref.update(self.state, (state) => ({
             ...state,
