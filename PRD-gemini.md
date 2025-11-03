@@ -128,7 +128,7 @@ These define the quality attributes and constraints of the system.
 * **Mobile Platforms:** iOS (Native/Swift) and Android (Native/Kotlin or Flutter/React Native for cross-platform efficiency).
 * **Backend:** RESTful API architecture (e.g., Python/Django or Node.js/Express).
 * **Database:** PostgreSQL or similar reliable, scalable relational database.
-* **Cloud Hosting:** AWS or Google Cloud (GCP).
+* **Hosting:** Vercel.
 
 ### 6.2 Key Integrations
 * **Payment Gateway:** Integration with a local, regulated third-party payment processor (e.g., Paystack, Flutterwave, or a local bank API) for secure funding and withdrawals.
