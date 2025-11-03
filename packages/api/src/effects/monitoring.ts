@@ -32,6 +32,13 @@
  * ```
  */
 
+import type {
+  MetricValue as CanonicalMetricValue,
+  MetricLabels,
+  MetricType,
+  Metric,
+} from "./enhanced-types";
+
 import {
   Duration,
   Schedule,
@@ -43,13 +50,13 @@ import {
   Ref,
 } from "effect";
 
+import { createNumericValue } from "./enhanced-types";
 import { StructuredLogging } from "./logging";
-import type { Metric, MetricLabels, MetricType } from "./enhanced-types";
 
 /**
- * Metric value types.
+ * Re-export the canonical MetricValue type from enhanced-types to ensure consistency.
  */
-export type MetricValue = number;
+export type MetricValue = CanonicalMetricValue;
 
 /**
  * Health check status enumeration.
@@ -119,7 +126,7 @@ export interface MonitoringService {
    */
   readonly recordMetric: (
     name: string,
-    value: MetricValue,
+    value: number,
     labels?: MetricLabels,
     type?: MetricType
   ) => Effect.Effect<void, MonitoringError>;
@@ -145,7 +152,7 @@ export interface MonitoringService {
    */
   readonly setGauge: (
     name: string,
-    value: MetricValue,
+    value: number,
     labels?: MetricLabels
   ) => Effect.Effect<void, MonitoringError>;
 
@@ -237,7 +244,7 @@ class EffectMonitoringService implements MonitoringService {
 
   recordMetric(
     name: string,
-    value: MetricValue,
+    value: number,
     labels?: MetricLabels,
     type: MetricType = "gauge"
   ): Effect.Effect<void, MonitoringError> {
@@ -249,7 +256,7 @@ class EffectMonitoringService implements MonitoringService {
         const metric: Metric = {
           id: `${name}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           name: name as Metric["name"], // Cast to the branded type
-          value: { type: "number", value },
+          value: createNumericValue(value),
           type,
           labels: labels || {},
           timestamp: new Date(),
@@ -317,7 +324,7 @@ class EffectMonitoringService implements MonitoringService {
 
   setGauge(
     name: string,
-    value: MetricValue,
+    value: number,
     labels?: MetricLabels
   ): Effect.Effect<void, MonitoringError> {
     return this.recordMetric(name, value, labels, "gauge");
