@@ -7,9 +7,14 @@
  */
 
 import { Context, Data, Duration, Effect, Layer } from "effect";
+
 import type {
   StorageConfiguration,
+  MetadataFilter,
+  SortCriteria,
   MetricFilter,
+  ValueFilter,
+  LabelFilter,
   MetricName,
   Metric,
 } from "./enhanced-types";
@@ -505,6 +510,16 @@ export class InMemoryStorageBackend implements StorageBackend {
       filtered = filtered.filter((metric) => names.includes(metric.name));
     }
 
+    // Filter by name pattern (enhanced filtering)
+    if (filter.namePattern) {
+      try {
+        const nameRegex = new RegExp(filter.namePattern);
+        filtered = filtered.filter((metric) => nameRegex.test(metric.name));
+      } catch {
+        // Invalid regex, skip pattern filtering
+      }
+    }
+
     // Filter by types
     const types = filter.types;
     if (types && types.length > 0) {
@@ -521,7 +536,7 @@ export class InMemoryStorageBackend implements StorageBackend {
       );
     }
 
-    // Filter by labels
+    // Filter by labels (basic)
     if (filter.labels) {
       filtered = filtered.filter((metric) => {
         return Object.entries(filter.labels || {}).every(
@@ -529,6 +544,36 @@ export class InMemoryStorageBackend implements StorageBackend {
             metric.labels[key as keyof typeof metric.labels] === value
         );
       });
+    }
+
+    // Filter by advanced label filters (enhanced filtering)
+    if (filter.labelFilters && filter.labelFilters.length > 0) {
+      filtered = filtered.filter(
+        (metric) =>
+          filter.labelFilters?.every((labelFilter) =>
+            this.applyLabelFilter(metric, labelFilter)
+          ) ?? true
+      );
+    }
+
+    // Filter by metadata filters (enhanced filtering)
+    if (filter.metadataFilters && filter.metadataFilters.length > 0) {
+      filtered = filtered.filter(
+        (metric) =>
+          filter.metadataFilters?.every((metadataFilter) =>
+            this.applyMetadataFilter(metric, metadataFilter)
+          ) ?? true
+      );
+    }
+
+    // Filter by value filters (enhanced filtering)
+    if (filter.valueFilters && filter.valueFilters.length > 0) {
+      filtered = filtered.filter(
+        (metric) =>
+          filter.valueFilters?.every((valueFilter) =>
+            this.applyValueFilter(metric, valueFilter)
+          ) ?? true
+      );
     }
 
     // Filter by sources
@@ -549,6 +594,11 @@ export class InMemoryStorageBackend implements StorageBackend {
       );
     }
 
+    // Apply sorting (enhanced filtering)
+    if (filter.sortBy) {
+      filtered = this.applySorting(filtered, filter.sortBy);
+    }
+
     // Apply offset and limit
     if (filter.offset || filter.limit) {
       const start = filter.offset || 0;
@@ -557,6 +607,247 @@ export class InMemoryStorageBackend implements StorageBackend {
     }
 
     return filtered;
+  }
+
+  private applyLabelFilter(metric: Metric, filter: LabelFilter): boolean {
+    const labelValue = metric.labels[filter.key as keyof typeof metric.labels];
+    if (labelValue === undefined) {
+      return (
+        filter.operator === "not_equals" || filter.operator === "not_contains"
+      );
+    }
+
+    const valueStr = String(labelValue);
+    const filterValueStr = String(filter.value);
+    const caseSensitive = filter.caseSensitive ?? true;
+
+    const compareValue = caseSensitive ? valueStr : valueStr.toLowerCase();
+    const filterCompareValue = caseSensitive
+      ? filterValueStr
+      : filterValueStr.toLowerCase();
+
+    switch (filter.operator) {
+      case "equals":
+        return compareValue === filterCompareValue;
+      case "not_equals":
+        return compareValue !== filterCompareValue;
+      case "contains":
+        return compareValue.includes(filterCompareValue);
+      case "not_contains":
+        return !compareValue.includes(filterCompareValue);
+      case "starts_with":
+        return compareValue.startsWith(filterCompareValue);
+      case "ends_with":
+        return compareValue.endsWith(filterCompareValue);
+      case "regex":
+        try {
+          const regex = new RegExp(filterValueStr, caseSensitive ? "" : "i");
+          return regex.test(valueStr);
+        } catch {
+          return false;
+        }
+      case "in":
+        if (Array.isArray(filter.value)) {
+          return filter.value.some((v) =>
+            caseSensitive
+              ? String(v) === valueStr
+              : String(v).toLowerCase() === compareValue
+          );
+        }
+        return false;
+      case "not_in":
+        if (Array.isArray(filter.value)) {
+          return !filter.value.some((v) =>
+            caseSensitive
+              ? String(v) === valueStr
+              : String(v).toLowerCase() === compareValue
+          );
+        }
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  private applyMetadataFilter(metric: Metric, filter: MetadataFilter): boolean {
+    if (!metric.metadata) {
+      return (
+        filter.operator === "not_equals" || filter.operator === "not_contains"
+      );
+    }
+
+    const metadataValue = metric.metadata[filter.field];
+    if (metadataValue === undefined) {
+      return (
+        filter.operator === "not_equals" || filter.operator === "not_contains"
+      );
+    }
+
+    const valueStr = String(metadataValue);
+    const filterValueStr = String(filter.value);
+    const caseSensitive = filter.caseSensitive ?? true;
+
+    const compareValue = caseSensitive ? valueStr : valueStr.toLowerCase();
+    const filterCompareValue = caseSensitive
+      ? filterValueStr
+      : filterValueStr.toLowerCase();
+
+    switch (filter.operator) {
+      case "equals":
+        return compareValue === filterCompareValue;
+      case "not_equals":
+        return compareValue !== filterCompareValue;
+      case "contains":
+        return compareValue.includes(filterCompareValue);
+      case "not_contains":
+        return !compareValue.includes(filterCompareValue);
+      case "starts_with":
+        return compareValue.startsWith(filterCompareValue);
+      case "ends_with":
+        return compareValue.endsWith(filterCompareValue);
+      case "regex":
+        try {
+          const regex = new RegExp(filterValueStr, caseSensitive ? "" : "i");
+          return regex.test(valueStr);
+        } catch {
+          return false;
+        }
+      default:
+        return false;
+    }
+  }
+
+  private applyValueFilter(metric: Metric, filter: ValueFilter): boolean {
+    let numericValue: number;
+
+    switch (metric.value.type) {
+      case "number":
+        numericValue = metric.value.value;
+        break;
+      case "number_with_unit":
+        numericValue = metric.value.value;
+        // Check unit if specified in filter
+        if (filter.unit && metric.value.unit !== filter.unit) {
+          return false;
+        }
+        break;
+      case "histogram":
+        numericValue = metric.value.buckets.sum;
+        break;
+      case "distribution":
+        numericValue =
+          metric.value.values.reduce((a, b) => a + b, 0) /
+          metric.value.values.length;
+        break;
+      default:
+        return false;
+    }
+
+    switch (filter.operator) {
+      case "equals":
+        return (
+          typeof filter.value === "number" && numericValue === filter.value
+        );
+      case "not_equals":
+        return (
+          typeof filter.value === "number" && numericValue !== filter.value
+        );
+      case "greater_than":
+        return typeof filter.value === "number" && numericValue > filter.value;
+      case "greater_than_or_equal":
+        return typeof filter.value === "number" && numericValue >= filter.value;
+      case "less_than":
+        return typeof filter.value === "number" && numericValue < filter.value;
+      case "less_than_or_equal":
+        return typeof filter.value === "number" && numericValue <= filter.value;
+      case "between":
+        if (Array.isArray(filter.value) && filter.value.length === 2) {
+          return (
+            numericValue >= filter.value[0] && numericValue <= filter.value[1]
+          );
+        }
+        return false;
+      case "not_between":
+        if (Array.isArray(filter.value) && filter.value.length === 2) {
+          return (
+            numericValue < filter.value[0] || numericValue > filter.value[1]
+          );
+        }
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  private applySorting(
+    metrics: readonly Metric[],
+    sortCriteria: SortCriteria
+  ): readonly Metric[] {
+    const sorted = [...metrics].sort((a, b) => {
+      const result = this.compareMetrics(a, b, sortCriteria);
+      if (result !== 0 || !sortCriteria.secondarySort) {
+        return result;
+      }
+      return this.compareMetrics(a, b, sortCriteria.secondarySort);
+    });
+
+    return sorted;
+  }
+
+  private compareMetrics(
+    a: Metric,
+    b: Metric,
+    sortCriteria: SortCriteria
+  ): number {
+    let aValue: string | number;
+    let bValue: string | number;
+
+    switch (sortCriteria.field) {
+      case "name":
+        aValue = a.name;
+        bValue = b.name;
+        break;
+      case "timestamp":
+        aValue = a.timestamp.getTime();
+        bValue = b.timestamp.getTime();
+        break;
+      case "type":
+        aValue = a.type;
+        bValue = b.type;
+        break;
+      case "value":
+        aValue = this.getNumericValueForSorting(a.value);
+        bValue = this.getNumericValueForSorting(b.value);
+        break;
+      case "source":
+        aValue = a.metadata?.source || "";
+        bValue = b.metadata?.source || "";
+        break;
+      default:
+        return 0;
+    }
+
+    if (aValue < bValue) {
+      return sortCriteria.direction === "asc" ? -1 : 1;
+    }
+    if (aValue > bValue) {
+      return sortCriteria.direction === "asc" ? 1 : -1;
+    }
+    return 0;
+  }
+
+  private getNumericValueForSorting(value: Metric["value"]): number {
+    switch (value.type) {
+      case "number":
+      case "number_with_unit":
+        return value.value;
+      case "histogram":
+        return value.buckets.sum;
+      case "distribution":
+        return value.values.reduce((a, b) => a + b, 0) / value.values.length;
+      default:
+        return 0;
+    }
   }
 
   private estimateMemoryUsage(metrics: readonly Metric[]): number {

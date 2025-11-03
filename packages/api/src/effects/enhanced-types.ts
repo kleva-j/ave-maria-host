@@ -132,7 +132,7 @@ export interface TimeRange {
 }
 
 /**
- * Advanced metric filter interface for querying metrics.
+ * Advanced metric filter interface for querying metrics with enhanced filtering capabilities.
  */
 export interface MetricFilter {
   readonly names?: readonly MetricName[];
@@ -143,7 +143,94 @@ export interface MetricFilter {
   readonly correlationIds?: readonly string[];
   readonly limit?: number;
   readonly offset?: number;
+  // Enhanced filtering capabilities
+  readonly namePattern?: string; // Regex pattern for name matching
+  readonly labelFilters?: readonly LabelFilter[]; // Advanced label filtering
+  readonly metadataFilters?: readonly MetadataFilter[]; // Metadata-based filtering
+  readonly valueFilters?: readonly ValueFilter[]; // Value-based filtering
+  readonly sortBy?: SortCriteria; // Sorting options
+  readonly includeMetadata?: boolean; // Whether to include metadata in results
+  readonly includeLabels?: boolean; // Whether to include labels in results
 }
+
+/**
+ * Label filter for advanced label-based filtering.
+ */
+export interface LabelFilter {
+  readonly key: string;
+  readonly operator: FilterOperator;
+  readonly value:
+    | string
+    | number
+    | boolean
+    | readonly (string | number | boolean)[];
+  readonly caseSensitive?: boolean;
+}
+
+/**
+ * Metadata filter for filtering based on metric metadata.
+ */
+export interface MetadataFilter {
+  readonly field: keyof MetricMetadata;
+  readonly operator: FilterOperator;
+  readonly value: string;
+  readonly caseSensitive?: boolean;
+}
+
+/**
+ * Value filter for filtering based on metric values.
+ */
+export interface ValueFilter {
+  readonly operator: NumericFilterOperator;
+  readonly value: number | readonly [number, number]; // Array for between operations
+  readonly unit?: string; // For number_with_unit metrics
+}
+
+/**
+ * Filter operators for string and general comparisons.
+ */
+export type FilterOperator =
+  | "equals"
+  | "not_equals"
+  | "contains"
+  | "not_contains"
+  | "starts_with"
+  | "ends_with"
+  | "regex"
+  | "in"
+  | "not_in";
+
+/**
+ * Numeric filter operators for value-based filtering.
+ */
+export type NumericFilterOperator =
+  | "equals"
+  | "not_equals"
+  | "greater_than"
+  | "greater_than_or_equal"
+  | "less_than"
+  | "less_than_or_equal"
+  | "between"
+  | "not_between";
+
+/**
+ * Sort criteria for ordering filtered results.
+ */
+export interface SortCriteria {
+  readonly field: SortField;
+  readonly direction: SortDirection;
+  readonly secondarySort?: SortCriteria;
+}
+
+/**
+ * Fields available for sorting.
+ */
+export type SortField = "name" | "timestamp" | "type" | "value" | "source";
+
+/**
+ * Sort direction options.
+ */
+export type SortDirection = "asc" | "desc";
 // Histogram and Distribution Specific Types
 
 /**
@@ -282,6 +369,70 @@ export interface ExportConfiguration {
   readonly exportInterval?: Duration.Duration;
   readonly includeMetadata: boolean;
   readonly compressionEnabled: boolean;
+  readonly enableCustomFormats: boolean;
+  readonly customTemplates?: readonly ExportTemplate[];
+  readonly defaultMetadataFields?: readonly (keyof MetricMetadata)[];
+}
+
+/**
+ * Export template for custom format support.
+ */
+export interface ExportTemplate {
+  readonly name: string;
+  readonly format: EnhancedExportFormat;
+  readonly template: string; // Template string with placeholders
+  readonly fileExtension?: string;
+  readonly mimeType?: string;
+  readonly includeHeaders?: boolean;
+  readonly customFormatters?: Record<string, TemplateFormatter>;
+}
+
+/**
+ * Template formatter function for custom field formatting.
+ */
+export type TemplateFormatter = (value: unknown, metric: Metric) => string;
+
+/**
+ * Export metadata options for controlling what metadata is included.
+ */
+export interface ExportMetadataOptions {
+  readonly includeAll: boolean;
+  readonly includeFields?: readonly (keyof MetricMetadata)[];
+  readonly excludeFields?: readonly (keyof MetricMetadata)[];
+  readonly includeSystemMetadata?: boolean; // Export timestamp, format info, etc.
+  readonly includeFilterInfo?: boolean; // Include filter criteria used
+}
+
+/**
+ * Basic export format types.
+ */
+export type ExportFormat = "prometheus" | "json" | "csv";
+
+/**
+ * Enhanced export format with custom format support.
+ */
+export type EnhancedExportFormat = ExportFormat | "xml" | "yaml" | "custom";
+
+/**
+ * Export result with metadata and statistics.
+ */
+export interface ExportResult {
+  readonly data: string;
+  readonly metadata: ExportResultMetadata;
+}
+
+/**
+ * Metadata about the export result.
+ */
+export interface ExportResultMetadata {
+  readonly format: EnhancedExportFormat;
+  readonly exportedAt: Date;
+  readonly metricCount: number;
+  readonly sizeBytes: number;
+  readonly filter?: MetricFilter;
+  readonly template?: string;
+  readonly compressionUsed?: boolean;
+  readonly processingTimeMs: number;
 }
 
 /**
