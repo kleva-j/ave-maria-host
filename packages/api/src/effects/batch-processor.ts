@@ -229,26 +229,31 @@ export class BatchProcessorImpl implements BatchProcessor {
 
         // Update statistics on successful flush
         yield* _(
-          Ref.update(self.state, (state) => ({
-            ...state,
-            stats: {
-              ...state.stats,
-              totalBatches: state.stats.totalBatches + 1,
-              totalMetrics: state.stats.totalMetrics + metrics.length,
-              successfulBatches: state.stats.successfulBatches + 1,
-              averageBatchSize: Math.round(
-                (state.stats.totalMetrics + metrics.length) /
-                  (state.stats.totalBatches + 1)
-              ),
-              averageProcessingTime: Math.round(
-                (state.stats.averageProcessingTime * state.stats.totalBatches +
-                  (Date.now() - startTime)) /
-                  (state.stats.totalBatches + 1)
-              ),
-              lastFlushTime: new Date(),
-              pendingMetrics: 0,
-            },
-          }))
+          Ref.update(self.state, (state) => {
+            const newTotalBatches = state.stats.totalBatches + 1;
+            const newTotalMetrics = state.stats.totalMetrics + metrics.length;
+            const newSuccessfulBatches = state.stats.successfulBatches + 1;
+            const newFailureRate = newTotalBatches > 0 ? state.stats.failedBatches / newTotalBatches : 0;
+            
+            return {
+              ...state,
+              stats: {
+                ...state.stats,
+                totalBatches: newTotalBatches,
+                totalMetrics: newTotalMetrics,
+                successfulBatches: newSuccessfulBatches,
+                averageBatchSize: Math.round(newTotalMetrics / newTotalBatches),
+                averageProcessingTime: Math.round(
+                  (state.stats.averageProcessingTime * state.stats.totalBatches +
+                    (Date.now() - startTime)) /
+                    newTotalBatches
+                ),
+                lastFlushTime: new Date(),
+                pendingMetrics: 0,
+                failureRate: newFailureRate,
+              },
+            };
+          })
         );
 
         yield* _(
@@ -288,14 +293,21 @@ export class BatchProcessorImpl implements BatchProcessor {
           yield* _(Queue.offer(self.pendingQueue, item));
         }
         yield* _(
-          Ref.update(self.state, (state) => ({
-            ...state,
-            stats: {
-              ...state.stats,
-              totalBatches: state.stats.totalBatches + 1,
-              failedBatches: state.stats.failedBatches + 1,
-            },
-          }))
+          Ref.update(self.state, (state) => {
+            const newTotalBatches = state.stats.totalBatches + 1;
+            const newFailedBatches = state.stats.failedBatches + 1;
+            const newFailureRate = newTotalBatches > 0 ? newFailedBatches / newTotalBatches : 0;
+            
+            return {
+              ...state,
+              stats: {
+                ...state.stats,
+                totalBatches: newTotalBatches,
+                failedBatches: newFailedBatches,
+                failureRate: newFailureRate,
+              },
+            };
+          })
         );
 
         yield* _(
