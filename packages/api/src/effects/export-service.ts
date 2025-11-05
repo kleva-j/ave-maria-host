@@ -1533,6 +1533,14 @@ ${xmlMetrics}
 </metrics>`;
 }
 
+const escapeXml = (value: unknown): string =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+
 /**
  * Transform metric to XML format.
  */
@@ -1541,7 +1549,10 @@ function transformMetricToXml(
   metadataOptions: ExportMetadataOptions
 ): string {
   const labels = Object.entries(metric.labels)
-    .map(([key, value]) => `<label key="${key}">${value}</label>`)
+    .map(
+      ([key, value]) =>
+        `<label key="${escapeXml(key)}">${escapeXml(value)}</label>`
+    )
     .join("");
 
   let metadataXml = "";
@@ -1552,12 +1563,12 @@ function transformMetricToXml(
     metadataXml = `<metadata>${metadataXml}</metadata>`;
   }
 
-  return `    <metric>
-      <id>${metric.id}</id>
-      <name>${metric.name}</name>
-      <type>${metric.type}</type>
-      <value>${serializeMetricValueForCsv(metric.value)}</value>
-      <timestamp>${metric.timestamp.toISOString()}</timestamp>
+  return `<metric>
+      <id>${escapeXml(metric.id)}</id>
+      <name>${escapeXml(metric.name)}</name>
+      <type>${escapeXml(metric.type)}</type>
+      <value>${escapeXml(serializeMetricValueForCsv(metric.value))}</value>
+      <timestamp>${escapeXml(metric.timestamp.toISOString())}</timestamp>
       <labels>${labels}</labels>
       ${metadataXml}
     </metric>`;
