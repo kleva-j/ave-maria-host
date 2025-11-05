@@ -1116,6 +1116,23 @@ function transformMetricForJsonExport(
 }
 
 /**
+ * Escapes a value for inclusion in a CSV field.
+ *
+ * This function escapes special characters (`"` and newline) and encloses the
+ * value in double quotes if it contains any special characters or a newline.
+ *
+ * @param value - The value to escape.
+ * @returns The escaped value.
+ */
+
+const escapeCsvField = (value: unknown): string => {
+  const stringValue = String(value ?? "");
+  return /["\n,]/.test(stringValue)
+    ? `"${stringValue.replace(/"/g, '""')}"`
+    : stringValue;
+};
+
+/**
  * Export histogram metrics to CSV format.
  */
 function exportHistogramToCsv(metrics: readonly Metric[]): string {
@@ -1148,7 +1165,10 @@ function exportHistogramToCsv(metrics: readonly Metric[]): string {
     ];
   });
 
-  return [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
+  return [
+    headers.join(","),
+    ...rows.map((row) => row.map(escapeCsvField).join(",")),
+  ].join("\n");
 }
 
 /**
@@ -1175,7 +1195,10 @@ function exportMetricsToCsv(metrics: readonly Metric[]): string {
     metric.metadata ? JSON.stringify(metric.metadata) : "",
   ]);
 
-  return [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
+  return [
+    headers.join(","),
+    ...rows.map((row) => row.map(escapeCsvField).join(",")),
+  ].join("\n");
 }
 
 /**
@@ -1594,15 +1617,15 @@ function transformMetricToYaml(
   metadataOptions: ExportMetadataOptions
 ): string {
   const labels = Object.entries(metric.labels)
-    .map(([key, value]) => `    ${key}: ${JSON.stringify(value)}`)
+    .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
     .join("\n");
 
   let metadataYaml = "";
   if (metric.metadata && metadataOptions.includeAll) {
     metadataYaml = Object.entries(metric.metadata)
-      .map(([key, value]) => `    ${key}: ${JSON.stringify(value)}`)
+      .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
       .join("\n");
-    metadataYaml = `  metadata:\n${metadataYaml}`;
+    metadataYaml = `metadata:\n${metadataYaml}`;
   }
 
   return `  - id: ${metric.id}
@@ -1666,7 +1689,10 @@ function exportMetricsToCsvWithMetadata(
     return [...baseRow, ...metadataRow];
   });
 
-  return [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
+  return [
+    headers.join(","),
+    ...rows.map((row) => row.map(escapeCsvField).join(",")),
+  ].join("\n");
 }
 
 /**
