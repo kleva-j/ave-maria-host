@@ -2,7 +2,7 @@ import { Context, Data } from "effect";
 
 /**
  * Database configuration interface defining connection parameters and limits.
- * 
+ *
  * @example
  * ```typescript
  * const dbConfig: DatabaseConfig = {
@@ -23,7 +23,7 @@ export interface DatabaseConfig {
 
 /**
  * Authentication configuration interface for JWT and session management.
- * 
+ *
  * @example
  * ```typescript
  * const authConfig: AuthConfig = {
@@ -44,7 +44,7 @@ export interface AuthConfig {
 
 /**
  * HTTP server configuration interface including CORS settings.
- * 
+ *
  * @example
  * ```typescript
  * const serverConfig: ServerConfig = {
@@ -73,7 +73,7 @@ export interface ServerConfig {
 
 /**
  * Logging configuration interface for application-wide logging settings.
- * 
+ *
  * @example
  * ```typescript
  * const loggingConfig: LoggingConfig = {
@@ -85,17 +85,32 @@ export interface ServerConfig {
  */
 export interface LoggingConfig {
   /** Minimum log level to output */
-  readonly level: "debug" | "info" | "warn" | "error";
+  readonly level: keyof typeof LOG_LEVELS;
   /** Log output format */
-  readonly format: "json" | "pretty";
+  readonly format: keyof typeof LOG_FORMATS;
   /** Whether to include correlation IDs in log entries */
   readonly enableCorrelationId: boolean;
 }
 
+export const LOG_LEVELS = {
+  debug: "debug",
+  info: "info",
+  warn: "warn",
+  error: "error",
+} as const;
+
+export const LOG_FORMATS = {
+  json: "json",
+  pretty: "pretty",
+} as const;
+
+export type LogFormat = LoggingConfig["format"];
+export type LogLevel = LoggingConfig["level"];
+
 /**
  * Complete application configuration combining all subsystem configurations.
  * This is the root configuration interface used throughout the application.
- * 
+ *
  * @example
  * ```typescript
  * const appConfig: AppConfig = {
@@ -120,7 +135,7 @@ export interface AppConfig {
 /**
  * Tagged error class for configuration-related failures.
  * Used when configuration validation fails or required configuration is missing.
- * 
+ *
  * @example
  * ```typescript
  * // Throw configuration error
@@ -128,7 +143,7 @@ export interface AppConfig {
  *   message: "Invalid database URL format",
  *   field: "database.url"
  * });
- * 
+ *
  * // Handle configuration error
  * Effect.catchTag("ConfigError", (error) => {
  *   console.error(`Config error in ${error.field}: ${error.message}`);
@@ -146,7 +161,7 @@ export class ConfigError extends Data.TaggedError("ConfigError")<{
 /**
  * Effect.ts service context tag for application configuration dependency injection.
  * Use this tag to access application configuration in Effect computations.
- * 
+ *
  * @example
  * ```typescript
  * // Access configuration in an Effect
@@ -155,7 +170,7 @@ export class ConfigError extends Data.TaggedError("ConfigError")<{
  *   console.log(`Server running on port ${config.server.port}`);
  *   return config.database.url;
  * });
- * 
+ *
  * // Provide configuration to an Effect
  * const program = Effect.provide(
  *   useConfig,

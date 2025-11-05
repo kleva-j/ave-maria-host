@@ -32,11 +32,16 @@
  * ```
  */
 
+import type {
+  MetricValue as CanonicalMetricValue,
+  MetricLabels,
+  MetricType,
+  Metric,
+} from "./enhanced-types";
+
 import {
   Duration,
   Schedule,
-  FiberRef,
-  LogLevel,
   Context,
   Effect,
   Data,
@@ -45,41 +50,13 @@ import {
   Ref,
 } from "effect";
 
-import { LogSpan, StructuredLogging, CorrelationId } from "./logging";
+import { createNumericValue } from "./enhanced-types";
+import { StructuredLogging } from "./logging";
 
 /**
- * Metric types for different kinds of measurements.
+ * Re-export the canonical MetricValue type from enhanced-types to ensure consistency.
  */
-export type MetricType =
-  | "histogram"
-  | "counter"
-  | "summary"
-  | "gauge"
-  | "timer";
-
-/**
- * Metric value types.
- */
-export type MetricValue = number;
-
-/**
- * Metric labels for categorization and filtering.
- */
-export interface MetricLabels {
-  readonly [key: string]: string | number | boolean;
-}
-
-/**
- * Metric data structure that integrates with Effect's logging.
- */
-export interface Metric {
-  readonly name: string;
-  readonly value: MetricValue;
-  readonly type: MetricType;
-  readonly labels?: MetricLabels;
-  readonly timestamp: Date;
-  readonly unit?: string;
-}
+export type MetricValue = CanonicalMetricValue;
 
 /**
  * Health check status enumeration.
@@ -149,7 +126,7 @@ export interface MonitoringService {
    */
   readonly recordMetric: (
     name: string,
-    value: MetricValue,
+    value: number,
     labels?: MetricLabels,
     type?: MetricType
   ) => Effect.Effect<void, MonitoringError>;
@@ -175,7 +152,7 @@ export interface MonitoringService {
    */
   readonly setGauge: (
     name: string,
-    value: MetricValue,
+    value: number,
     labels?: MetricLabels
   ) => Effect.Effect<void, MonitoringError>;
 
@@ -267,7 +244,7 @@ class EffectMonitoringService implements MonitoringService {
 
   recordMetric(
     name: string,
-    value: MetricValue,
+    value: number,
     labels?: MetricLabels,
     type: MetricType = "gauge"
   ): Effect.Effect<void, MonitoringError> {
@@ -275,11 +252,12 @@ class EffectMonitoringService implements MonitoringService {
 
     return pipe(
       Effect.gen(function* (_) {
-        // Create the metric object
+        // Create the metric object using enhanced types
         const metric: Metric = {
-          name,
+          id: `${name}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          name: name as Metric["name"], // Cast to the branded type
+          value: createNumericValue(value),
           type,
-          value,
           labels: labels || {},
           timestamp: new Date(),
         };
@@ -346,7 +324,7 @@ class EffectMonitoringService implements MonitoringService {
 
   setGauge(
     name: string,
-    value: MetricValue,
+    value: number,
     labels?: MetricLabels
   ): Effect.Effect<void, MonitoringError> {
     return this.recordMetric(name, value, labels, "gauge");

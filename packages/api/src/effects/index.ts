@@ -50,6 +50,61 @@ export * from "./logging";
 // Monitoring and observability services with Effect integration
 export * from "./monitoring";
 
+// Enhanced storage backend implementations
+export * from "./storage";
+
+// Retention policy enforcement with Effect scheduling
+export * from "./retention";
+
+// Batch processor with Effect scheduling and failure handling
+export * from "./batch-processor";
+
+// Histogram and distribution metrics with Effect state management
+export * from "./histogram-metrics";
+
+// Enhanced health check system with dependencies and advanced features
+export {
+  EnhancedHealthCheckRegistry,
+  EnhancedHealthCheckRegistryLive,
+  EnhancedHealthCheckUtils,
+  DependencyResolutionError,
+  type EnhancedHealthCheckResult,
+  type EnhancedSystemHealth,
+  type HealthCheckConfig,
+  type BackoffStrategy,
+  type RetryPolicy as EnhancedHealthCheckRetryPolicy,
+} from "./enhanced-health-checks";
+
+// Health check timeout and retry policies using Effect patterns
+export {
+  HealthCheckPolicies,
+  HealthCheckTimeoutError,
+  RetryExhaustedError,
+  type TimeoutConfig,
+  type RetryPolicy as HealthCheckPolicyRetryPolicy,
+} from "./health-check-policies";
+
+// Advanced health check caching and performance optimization
+export * from "./health-check-cache";
+
+// Export service with JSON and streaming support for metrics
+export {
+  type ExportServiceInterface,
+  type StreamingExportOptions,
+  type JsonExportOptions,
+  type ExportService,
+  type ExportFormat,
+  DEFAULT_JSON_EXPORT_OPTIONS,
+  DEFAULT_STREAMING_EXPORT_OPTIONS,
+  MockExportServiceLayer,
+  createExportService,
+  ExportServiceLayer,
+  MockExportService,
+  ExportServiceTag,
+  ExportUtils,
+  ExportError,
+} from "./export-service";
+
 // The application now uses native @effect/rpc implementation
 
 // Re-export commonly used Effect types for convenience

@@ -5,8 +5,8 @@
  * It includes Promise-based adapters for easier integration with existing React Query code.
  */
 
-import { RpcClient, RpcSerialization } from "@effect/rpc";
 import { FetchHttpClient, Headers } from "@effect/platform";
+import { RpcClient, RpcSerialization } from "@effect/rpc";
 import { AuthMiddleware } from "@host/api/rpc/auth-rpc";
 import { authClient } from "@/lib/auth-client";
 import { AppRpcs } from "@host/api/rpc/server";
