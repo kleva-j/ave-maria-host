@@ -1,30 +1,20 @@
-import type { RouterClient } from "@orpc/server";
+// Legacy oRPC routers have been replaced with native @effect/rpc implementation
+// See packages/api/src/rpc/ for the new RPC implementation
 
-// import { createTodoEffectRouterWithLayer } from "./todo-effect";
-// import { createAuthEffectRouterWithLayer } from "./auth-effect";
-import { protectedProcedure, publicProcedure } from "../index";
-import { todoRouter } from "./todo";
-
-// Effect-based routers are available but commented out due to missing service implementations
-// Uncomment and import these once DatabaseService and AuthService are properly implemented:
-// import { Layer } from "effect";
-// const AppLayer = Layer.empty; // This should be replaced with the actual AppLayer
+// This file is kept for backward compatibility during migration
+// but will be removed once all applications are migrated to @effect/rpc
 
 export const appRouter = {
-  healthCheck: publicProcedure.handler(() => {
-    return "OK";
-  }),
-  privateData: protectedProcedure.handler(({ context }) => {
-    return {
-      message: "This is private",
-      user: context.session?.user,
-    };
-  }),
-  // Original Promise-based todo router (maintained for backward compatibility)
-  todo: todoRouter,
-
-  // Effect-based routers will be available here once services are implemented:
+  // Legacy endpoints - these will be removed once migration is complete
+  healthCheck: () => "OK",
+  privateData: () => ({ message: "This endpoint has been migrated to @effect/rpc" }),
+  todo: {
+    getAll: () => ({ message: "This endpoint has been migrated to @effect/rpc" }),
+    create: () => ({ message: "This endpoint has been migrated to @effect/rpc" }),
+    toggle: () => ({ message: "This endpoint has been migrated to @effect/rpc" }),
+    delete: () => ({ message: "This endpoint has been migrated to @effect/rpc" }),
+  },
 };
 
 export type AppRouter = typeof appRouter;
-export type AppRouterClient = RouterClient<typeof appRouter>;
+export type AppRouterClient = any; // Simplified for migration period

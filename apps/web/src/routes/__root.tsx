@@ -1,17 +1,12 @@
-import type { AppRouterClient } from "@host/api/routers/index";
 import type { QueryClient } from "@tanstack/react-query";
-
-import { type orpc, link } from "@/utils/orpc";
+import type { orpc } from "@/utils/orpc";
 
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { createTanstackQueryUtils } from "@orpc/tanstack-query";
+import { MigrationStatus } from "@/components/migration-status";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { createORPCClient } from "@orpc/client";
 import { Loader } from "@/components/loader";
-import { MigrationStatus } from "@/components/migration-status";
-import { useState } from "react";
 
 import {
   createRootRouteWithContext,
@@ -41,8 +36,8 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 function RootComponent() {
   const isFetching = useRouterState({ select: (s) => s.isLoading });
 
-  const [client] = useState<AppRouterClient>(() => createORPCClient(link));
-  const [orpcUtils] = useState(() => createTanstackQueryUtils(client));
+  // const [client] = useState<AppRouterClient>(() => createORPCClient(link));
+  // const [orpcUtils] = useState(() => createTanstackQueryUtils(client));
 
   return (
     <>

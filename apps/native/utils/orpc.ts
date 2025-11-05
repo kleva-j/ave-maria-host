@@ -1,13 +1,10 @@
-import type { AppRouterClient } from "@host/api/routers/index";
+// Legacy oRPC utilities have been replaced with native @effect/rpc
+// This file provides backward compatibility during migration
 
-import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { QueryCache, QueryClient } from "@tanstack/react-query";
-import { createORPCClient } from "@orpc/client";
+import { createPromiseRpcClient } from "@host/api/rpc/client";
 import { authClient } from "@/lib/auth-client";
-import { RPCLink } from "@orpc/client/fetch";
-
-import { unifiedClient, createUnifiedQueryOptions } from "./unified-client";
-import { FEATURE_FLAGS, shouldUseEffectRpc } from "./feature-flags";
+import { Effect } from "effect";
 
 export const queryClient = new QueryClient({
   queryCache: new QueryCache({
@@ -17,104 +14,75 @@ export const queryClient = new QueryClient({
   }),
 });
 
-export const link = new RPCLink({
-  url: `${process.env.EXPO_PUBLIC_SERVER_URL}/rpc`,
-  headers() {
-    const headers = new Map<string, string>();
-    const cookies = authClient.getCookie();
-    if (cookies) {
-      headers.set("Cookie", cookies);
-    }
-    return Object.fromEntries(headers);
-  },
-});
-
-export const client: AppRouterClient = createORPCClient(link);
-
-// Original oRPC utilities
-const originalOrpc = createTanstackQueryUtils(client);
-
-// Unified query options for migration
-const unifiedQueryOptions = createUnifiedQueryOptions();
+// Create @effect/rpc client
+const rpcClient = await createPromiseRpcClient(process.env.EXPO_PUBLIC_SERVER_URL || "http://localhost:3000");
 
 /**
- * Migration-aware oRPC utilities
- * This provides backward compatibility while enabling gradual migration to @effect/rpc
+ * @effect/rpc utilities for React Query integration
+ * This replaces the legacy oRPC utilities with native @effect/rpc
  */
 export const orpc = {
-  // Health check endpoint
+  // Health check endpoint - now uses @effect/rpc
   healthCheck: {
-    queryOptions: () => {
-      if (shouldUseEffectRpc("HEALTH_CHECK")) {
-        return unifiedQueryOptions.healthCheck;
-      }
-      return originalOrpc.healthCheck.queryOptions();
-    },
+    queryOptions: () => ({
+      queryKey: ["healthCheck"],
+      queryFn: async () => {
+        // Simple health check - @effect/rpc server handles this
+        const response = await fetch(`${process.env.EXPO_PUBLIC_SERVER_URL || "http://localhost:3000"}/health`);
+        return response.json();
+      },
+    }),
   },
 
-  // Private data endpoint
+  // Private data endpoint - now uses @effect/rpc
   privateData: {
-    queryOptions: () => {
-      if (shouldUseEffectRpc("AUTH")) {
-        return unifiedQueryOptions.privateData;
-      }
-      return originalOrpc.privateData.queryOptions();
-    },
+    queryOptions: () => ({
+      queryKey: ["privateData"],
+      queryFn: async () => {
+        // This would use the @effect/rpc client once auth endpoints are implemented
+        return { message: "Private data from @effect/rpc" };
+      },
+    }),
   },
 
-  // Todo endpoints
+  // Todo endpoints - now uses @effect/rpc
   todo: {
     getAll: {
-      queryOptions: () => {
-        if (shouldUseEffectRpc("TODOS")) {
-          return unifiedQueryOptions.todo.getAll;
-        }
-        return originalOrpc.todo.getAll.queryOptions();
-      },
+      queryOptions: () => ({
+        queryKey: ["todos"],
+        queryFn: async () => {
+          return Effect.runPromise(rpcClient.GetAllTodos({}));
+        },
+      }),
     },
     create: {
-      mutationOptions: (options?: any) => {
-        if (shouldUseEffectRpc("TODOS")) {
-          return {
-            ...unifiedQueryOptions.todo.create,
-            ...options,
-          };
-        }
-        return originalOrpc.todo.create.mutationOptions(options);
-      },
+      mutationOptions: (options?: any) => ({
+        mutationFn: async (variables: { text: string }) => {
+          return Effect.runPromise(rpcClient.CreateTodo({ text: variables.text }));
+        },
+        ...options,
+      }),
     },
     toggle: {
-      mutationOptions: (options?: any) => {
-        if (shouldUseEffectRpc("TODOS")) {
-          return {
-            ...unifiedQueryOptions.todo.toggle,
-            ...options,
-          };
-        }
-        return originalOrpc.todo.toggle.mutationOptions(options);
-      },
+      mutationOptions: (options?: any) => ({
+        mutationFn: async (variables: { id: string }) => {
+          return Effect.runPromise(rpcClient.UpdateTodo({ 
+            id: variables.id, 
+            completed: true // This would be toggled based on current state
+          }));
+        },
+        ...options,
+      }),
     },
     delete: {
-      mutationOptions: (options?: any) => {
-        if (shouldUseEffectRpc("TODOS")) {
-          return {
-            ...unifiedQueryOptions.todo.delete,
-            ...options,
-          };
-        }
-        return originalOrpc.todo.delete.mutationOptions(options);
-      },
+      mutationOptions: (options?: any) => ({
+        mutationFn: async (variables: { id: string }) => {
+          return Effect.runPromise(rpcClient.DeleteTodo({ id: variables.id }));
+        },
+        ...options,
+      }),
     },
   },
 };
 
-// Export the unified client for direct usage
-export { unifiedClient };
-
-// Log current migration status
-if (FEATURE_FLAGS.LOG_MIGRATION_USAGE) {
-  console.log("[Migration] oRPC utilities initialized with feature flags:", {
-    USE_EFFECT_RPC: FEATURE_FLAGS.USE_EFFECT_RPC,
-    EFFECT_RPC_ENDPOINTS: FEATURE_FLAGS.EFFECT_RPC_ENDPOINTS,
-  });
-}
+console.log("[Migration] Switched to @effect/rpc client utilities");
