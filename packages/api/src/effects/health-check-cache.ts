@@ -804,6 +804,20 @@ class HealthCheckCacheImpl implements HealthCheckCache {
         // Get the health check effect
         const healthCheckEffect = healthCheckEffects[checkName];
         if (!healthCheckEffect) {
+          // Clear refresh in progress flag before returning
+          yield* _(
+            Ref.update(self.cacheRef, (cache) => {
+              const newCache = new Map(cache);
+              const currentEntry = newCache.get(checkName);
+              if (currentEntry) {
+                newCache.set(checkName, {
+                  ...currentEntry,
+                  refreshInProgress: false,
+                });
+              }
+              return newCache;
+            })
+          );
           yield* _(
             Effect.logWarning(
               `No health check effect found for background refresh: ${checkName}`
@@ -840,6 +854,28 @@ class HealthCheckCacheImpl implements HealthCheckCache {
           yield* _(
             Effect.logDebug(`Background refresh completed: ${checkName}`),
             Effect.annotateLogs("healthCheck.name", checkName)
+          );
+        } else {
+          // Failed refresh, clear the refresh in progress flag
+          yield* _(
+            Ref.update(self.cacheRef, (cache) => {
+              const newCache = new Map(cache);
+              const currentEntry = newCache.get(checkName);
+              if (currentEntry) {
+                newCache.set(checkName, {
+                  ...currentEntry,
+                  refreshInProgress: false,
+                });
+              }
+              return newCache;
+            })
+          );
+          yield* _(
+            Effect.logWarning(
+              `Background refresh failed for: ${checkName}`
+            ),
+            Effect.annotateLogs("healthCheck.name", checkName),
+            Effect.annotateLogs("error", String(result.left))
           );
         }
       }),
