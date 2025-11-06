@@ -14,6 +14,10 @@ export default defineConfig({
       "@host/api": "./src",
       "@host/db": "../db/src",
       "@host/auth": "../auth/src",
+      "@host/infrastructure": "../infrastructure/src",
+      "@host/application": "../application/src",
+      "@host/domain": "../domain/src",
+      "@host/shared": "../shared/src",
     },
   },
 });

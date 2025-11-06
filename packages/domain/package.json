@@ -6,28 +6,15 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "default": "./src/index.ts"
     },
-    "./entities": {
-      "types": "./dist/entities/index.d.ts",
-      "import": "./dist/entities/index.js"
-    },
-    "./value-objects": {
-      "types": "./dist/value-objects/index.d.ts",
-      "import": "./dist/value-objects/index.js"
-    },
-    "./repositories": {
-      "types": "./dist/repositories/index.d.ts",
-      "import": "./dist/repositories/index.js"
-    },
-    "./services": {
-      "types": "./dist/services/index.d.ts",
-      "import": "./dist/services/index.js"
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./src/*.ts"
     }
   },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "tsdown",
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
@@ -35,7 +22,9 @@
     "effect": "catalog:"
   },
   "devDependencies": {
-    "tsdown": "catalog:",
-    "typescript": "catalog:"
+    "tsdown": "catalog:"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
   }
 }

@@ -6,29 +6,22 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "default": "./src/index.ts"
     },
-    "./database": {
-      "types": "./dist/database/index.d.ts",
-      "import": "./dist/database/index.js"
-    },
-    "./payment": {
-      "types": "./dist/payment/index.d.ts",
-      "import": "./dist/payment/index.js"
-    },
-    "./notifications": {
-      "types": "./dist/notifications/index.d.ts",
-      "import": "./dist/notifications/index.js"
-    },
-    "./external-apis": {
-      "types": "./dist/external-apis/index.d.ts",
-      "import": "./dist/external-apis/index.js"
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./src/*.ts"
     }
   },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "tsdown",
     "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "tsdown": "catalog:"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
   },
   "dependencies": {
     "@host/domain": "workspace:*",
@@ -38,9 +31,5 @@
     "@effect/schema": "catalog:",
     "effect": "catalog:",
     "drizzle-orm": "catalog:"
-  },
-  "devDependencies": {
-    "tsdown": "catalog:",
-    "typescript": "catalog:"
   }
 }

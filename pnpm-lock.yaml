@@ -584,13 +584,13 @@ importers:
       effect:
         specifier: 'catalog:'
         version: 3.18.4
+      typescript:
+        specifier: ^5
+        version: 5.9.3
     devDependencies:
       tsdown:
         specifier: 'catalog:'
         version: 0.15.7(typescript@5.9.3)
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
 
   packages/auth:
     dependencies:
@@ -686,13 +686,13 @@ importers:
       effect:
         specifier: 'catalog:'
         version: 3.18.4
+      typescript:
+        specifier: ^5
+        version: 5.9.3
     devDependencies:
       tsdown:
         specifier: 'catalog:'
         version: 0.15.7(typescript@5.9.3)
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
 
   packages/infrastructure:
     dependencies:
@@ -717,13 +717,13 @@ importers:
       effect:
         specifier: 'catalog:'
         version: 3.18.4
+      typescript:
+        specifier: ^5
+        version: 5.9.3
     devDependencies:
       tsdown:
         specifier: 'catalog:'
         version: 0.15.7(typescript@5.9.3)
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
 
   packages/shared:
     dependencies:
@@ -733,6 +733,9 @@ importers:
       effect:
         specifier: 'catalog:'
         version: 3.18.4
+      typescript:
+        specifier: ^5
+        version: 5.9.3
       zod:
         specifier: 'catalog:'
         version: 4.1.12
@@ -740,9 +743,6 @@ importers:
       tsdown:
         specifier: 'catalog:'
         version: 0.15.7(typescript@5.9.3)
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
 
 packages:
 

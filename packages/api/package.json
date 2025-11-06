@@ -3,32 +3,16 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "default": "./src/index.ts"
     },
-    "./controllers": {
-      "types": "./dist/controllers/index.d.ts",
-      "import": "./dist/controllers/index.js"
-    },
-    "./routers": {
-      "types": "./dist/routers/index.d.ts",
-      "import": "./dist/routers/index.js"
-    },
-    "./middleware": {
-      "types": "./dist/middleware/index.d.ts",
-      "import": "./dist/middleware/index.js"
-    },
-    "./rpc": {
-      "types": "./dist/rpc/index.d.ts",
-      "import": "./dist/rpc/index.js"
-    },
-    "./effect": {
-      "types": "./dist/effect/index.d.ts",
-      "import": "./dist/effect/index.js"
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./src/*.ts"
     }
   },
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "tsdown",
     "test": "vitest --run",
     "test:watch": "vitest"
   },

@@ -6,24 +6,15 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "default": "./src/index.ts"
     },
-    "./schemas": {
-      "types": "./dist/schemas/index.d.ts",
-      "import": "./dist/schemas/index.js"
-    },
-    "./errors": {
-      "types": "./dist/errors/index.d.ts",
-      "import": "./dist/errors/index.js"
-    },
-    "./types": {
-      "types": "./dist/types/index.d.ts",
-      "import": "./dist/types/index.js"
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./src/*.ts"
     }
   },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "tsdown",
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
@@ -32,7 +23,9 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "tsdown": "catalog:",
-    "typescript": "catalog:"
+    "tsdown": "catalog:"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
   }
 }

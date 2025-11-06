@@ -9,8 +9,8 @@ import { Layer } from "effect";
 import { Hono } from "hono";
 
 // Import @effect/rpc integration
-import { integrateWithHono } from "@host/api";
 import { DatabaseServiceLive } from "@host/db";
+import { integrateWithHono } from "@host/api";
 import { AuthServiceLive } from "@host/auth";
 
 // Import Effect.ts integration
