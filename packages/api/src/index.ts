@@ -1,8 +1,12 @@
-// Legacy oRPC procedures have been replaced with native @effect/rpc implementation
-// See packages/api/src/rpc/ for the new RPC implementation
+// API Layer - Interface Adapters
+// This layer contains controllers, routers, and middleware for the AV-Daily API
+// It coordinates between the web/HTTP layer and the application layer
 
-// Export Effect.ts utilities
-export * from "./effects";
+// Export existing implementations
+export * from "./effects/index.js";
+export * from "./rpc/index.js";
 
-// Export new RPC implementation
-export * from "./rpc";
+// Export clean architecture components
+export * from "./controllers/index.js";
+export * from "./routers/index.js";
+export * from "./middleware/index.js";

@@ -9,7 +9,7 @@ import { Layer } from "effect";
 import { Hono } from "hono";
 
 // Import @effect/rpc integration
-import { integrateWithHono } from "@host/api/rpc/server";
+import { integrateWithHono } from "@host/api";
 import { DatabaseServiceLive } from "@host/db";
 import { AuthServiceLive } from "@host/auth";
 

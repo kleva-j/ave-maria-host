@@ -3,16 +3,32 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "default": "./src/index.ts"
+      "import": "./dist/index.js"
     },
-    "./*": {
-      "types": "./dist/*.d.ts",
-      "default": "./src/*.ts"
+    "./controllers": {
+      "types": "./dist/controllers/index.d.ts",
+      "import": "./dist/controllers/index.js"
+    },
+    "./routers": {
+      "types": "./dist/routers/index.d.ts",
+      "import": "./dist/routers/index.js"
+    },
+    "./middleware": {
+      "types": "./dist/middleware/index.d.ts",
+      "import": "./dist/middleware/index.js"
+    },
+    "./rpc": {
+      "types": "./dist/rpc/index.d.ts",
+      "import": "./dist/rpc/index.js"
+    },
+    "./effect": {
+      "types": "./dist/effect/index.d.ts",
+      "import": "./dist/effect/index.js"
     }
   },
   "type": "module",
   "scripts": {
-    "build": "tsdown",
+    "build": "tsc",
     "test": "vitest --run",
     "test:watch": "vitest"
   },
@@ -24,6 +40,12 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@host/domain": "workspace:*",
+    "@host/application": "workspace:*",
+    "@host/infrastructure": "workspace:*",
+    "@host/shared": "workspace:*",
+    "@host/auth": "workspace:*",
+    "@host/db": "workspace:*",
     "@orpc/server": "catalog:",
     "@orpc/client": "catalog:",
     "@orpc/openapi": "catalog:",
@@ -36,8 +58,6 @@
     "dotenv": "catalog:",
     "zod": "catalog:",
     "effect": "catalog:",
-    "@effect/schema": "catalog:",
-    "@host/auth": "workspace:*",
-    "@host/db": "workspace:*"
+    "@effect/schema": "catalog:"
   }
 }
