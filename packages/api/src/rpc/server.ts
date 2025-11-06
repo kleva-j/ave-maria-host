@@ -13,6 +13,7 @@
  */
 
 // Import services
+import type { HttpServer } from "@effect/platform";
 import type { DatabaseService } from "@host/db";
 import type { Hono } from "hono";
 
@@ -21,8 +22,7 @@ import { AuthService } from "@host/auth";
 // Import Effect tools
 import { RpcServer, RpcSerialization } from "@effect/rpc";
 import { HttpRouter, Headers } from "@effect/platform";
-import type { HttpServer } from "@effect/platform";
-import { Effect, Layer, Option } from "effect";
+import { Effect, Layer, Option, Schema } from "effect";
 
 // Import RPC groups
 import { TodoRpcs, TodoHandlersLive } from "./todo-rpc";

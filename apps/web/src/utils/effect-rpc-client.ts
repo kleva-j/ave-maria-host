@@ -71,7 +71,7 @@ export const createEffectRpcClient = (baseUrl: string) =>
  * Promise-based client adapter for easier integration with existing code
  */
 export class PromiseRpcClient {
-  private clientEffect: Effect.Effect<any, never, never>;
+  private clientEffect: Effect.Effect<AppRpcClient, never, AppRpcClient>;
 
   constructor(baseUrl: string) {
     this.clientEffect = createEffectRpcClient(baseUrl);
