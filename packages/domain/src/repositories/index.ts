@@ -1,7 +1,43 @@
 // Domain Repository Interfaces
 // Abstract interfaces for data persistence - no implementation details
 
-// Placeholder for repository interfaces - will be implemented in subsequent tasks
-export type DomainRepository = {
-  // This will be populated with actual repository interfaces like SavingsRepository, etc.
-};
+import { Data } from "effect";
+
+export type { TransactionRepository } from "./transaction-repository";
+export type { SavingsRepository } from "./savings-repository";
+export type {
+  WalletRepository,
+  Wallet,
+  WalletTransactionSummary,
+} from "./wallet-repository";
+
+/**
+ * Repository error class
+ */
+export interface RepositoryErrorProps {
+  readonly operation: string;
+  readonly entity: string;
+  readonly cause?: unknown;
+}
+
+export class RepositoryError extends Data.TaggedError(
+  "RepositoryError"
+)<RepositoryErrorProps> {
+  constructor(params: RepositoryErrorProps) {
+    super(params);
+    this.message = `Repository error in ${params.operation} for ${params.entity}${
+      params.cause ? `: ${params.cause}` : ""
+    }`;
+  }
+
+  /**
+   * Create a new RepositoryError
+   */
+  static create(
+    operation: string,
+    entity: string,
+    cause?: unknown
+  ): RepositoryError {
+    return new RepositoryError({ operation, entity, cause });
+  }
+}
