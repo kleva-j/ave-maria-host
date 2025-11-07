@@ -19,7 +19,7 @@ export const UserSchema = Schema.Struct({
   updatedAt: Schema.Date,
 });
 
-export type User = Schema.Schema.Type<typeof UserSchema>;
+export type User = typeof UserSchema.Type;
 
 /**
  * Session schema for Effect programs
@@ -35,7 +35,7 @@ export const SessionSchema = Schema.Struct({
   userAgent,
 });
 
-export type Session = Schema.Schema.Type<typeof SessionSchema>;
+export type Session = typeof SessionSchema.Type;
 
 /**
  * Authentication context containing user and session information
@@ -45,7 +45,7 @@ export const AuthContextSchema = Schema.Struct({
   session: SessionSchema,
 });
 
-export type AuthContext = Schema.Schema.Type<typeof AuthContextSchema>;
+export type AuthContext = typeof AuthContextSchema.Type;
 
 /**
  * Login credentials schema
@@ -56,9 +56,7 @@ export const LoginCredentialsSchema = Schema.Struct({
   password,
 });
 
-export type LoginCredentials = Schema.Schema.Type<
-  typeof LoginCredentialsSchema
->;
+export type LoginCredentials = typeof LoginCredentialsSchema.Type;
 
 /**
  * Registration data schema
@@ -69,7 +67,7 @@ export const RegisterDataSchema = Schema.Struct({
   password,
 });
 
-export type RegisterData = Schema.Schema.Type<typeof RegisterDataSchema>;
+export type RegisterData = typeof RegisterDataSchema.Type;
 
 /**
  * Session creation options
@@ -80,4 +78,4 @@ export const SessionOptionsSchema = Schema.Struct({
   expiresIn: Schema.optional(Schema.Number), // Duration in seconds
 });
 
-export type SessionOptions = Schema.Schema.Type<typeof SessionOptionsSchema>;
+export type SessionOptions = typeof SessionOptionsSchema.Type;

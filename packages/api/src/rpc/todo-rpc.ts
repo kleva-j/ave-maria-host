@@ -110,7 +110,7 @@ export class CreateTodoPayload extends Schema.Class<CreateTodoPayload>(
   ),
 }) {}
 
-type CreateTodoPayloadType = Schema.Schema.Type<typeof CreateTodoPayload>;
+type CreateTodoPayloadType = typeof CreateTodoPayload.Type;
 
 /**
  * Todo Update Payload
@@ -122,7 +122,7 @@ export class UpdateTodoPayload extends Schema.Class<UpdateTodoPayload>(
   completed: Schema.Boolean,
 }) {}
 
-type UpdateTodoPayloadType = Schema.Schema.Type<typeof UpdateTodoPayload>;
+type UpdateTodoPayloadType = typeof UpdateTodoPayload.Type;
 
 /**
  * Todo Delete Payload
@@ -133,7 +133,7 @@ export class DeleteTodoPayload extends Schema.Class<DeleteTodoPayload>(
   id: Schema.Number.pipe(Schema.int(), Schema.positive()),
 }) {}
 
-type DeleteTodoPayloadType = Schema.Schema.Type<typeof DeleteTodoPayload>;
+type DeleteTodoPayloadType = typeof DeleteTodoPayload.Type;
 
 /**
  * Todo Get By Id Payload
@@ -144,7 +144,7 @@ export class GetTodoByIdPayload extends Schema.Class<GetTodoByIdPayload>(
   id: Schema.Number.pipe(Schema.int(), Schema.positive()),
 }) {}
 
-type GetTodoByIdPayloadType = Schema.Schema.Type<typeof GetTodoByIdPayload>;
+type GetTodoByIdPayloadType = typeof GetTodoByIdPayload.Type;
 
 /**
  * Todo Bulk Toggle Payload
@@ -159,9 +159,7 @@ export class BulkToggleTodosPayload extends Schema.Class<BulkToggleTodosPayload>
   completed: Schema.Boolean,
 }) {}
 
-type BulkToggleTodosPayloadType = Schema.Schema.Type<
-  typeof BulkToggleTodosPayload
->;
+type BulkToggleTodosPayloadType = typeof BulkToggleTodosPayload.Type;
 
 /**
  * Todo RPC Group Definition

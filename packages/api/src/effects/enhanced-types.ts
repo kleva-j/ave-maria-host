@@ -80,12 +80,12 @@ export const MetricLabelKeySchema = Schema.String.pipe(
 /**
  * Branded type for metric names to prevent invalid values.
  */
-export type MetricName = Schema.Schema.Type<typeof MetricNameSchema>;
+export type MetricName = typeof MetricNameSchema.Type;
 
 /**
  * Branded type for metric label keys to ensure valid label names.
  */
-export type MetricLabelKey = Schema.Schema.Type<typeof MetricLabelKeySchema>;
+export type MetricLabelKey = typeof MetricLabelKeySchema.Type;
 
 /**
  * Enhanced metric labels with branded keys.

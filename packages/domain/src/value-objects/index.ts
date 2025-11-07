@@ -1,7 +1,8 @@
 // Domain Value Objects
 // Immutable objects that represent concepts in the business domain
 
-// Placeholder for value objects - will be implemented in subsequent tasks
-export type DomainValueObject = {
-  // This will be populated with actual value objects like Money, PlanId, etc.
-};
+export * from "./transaction-id";
+export * from "./plan-progress";
+export * from "./plan-id";
+export * from "./user-id";
+export * from "./money";
