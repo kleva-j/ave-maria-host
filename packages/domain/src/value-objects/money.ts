@@ -3,7 +3,9 @@ import { Equal, Schema } from "effect";
 /**
  * Supported currencies for the AV-Daily platform
  */
-export const Currency = Schema.Literal("NGN");
+const AVAILABLE_CURRENCIES = ["NGN"];
+export const DEFAULT_CURRENCY = AVAILABLE_CURRENCIES[0] as Currency;
+export const Currency = Schema.Literal(...AVAILABLE_CURRENCIES);
 export type Currency = typeof Currency.Type;
 
 /**
@@ -28,9 +30,9 @@ export class Money {
     Schema.decodeUnknownSync(MoneySchema)({ value, currency });
   }
   /**
-   * Create Money from a number value with default NGN currency
+   * Create Money from a number value with default currency
    */
-  static fromNumber(value: number, currency: Currency = "NGN"): Money {
+  static fromNumber(value: number, currency: Currency = DEFAULT_CURRENCY): Money {
     if (value < 0) {
       throw new Error("Money value cannot be negative");
     }
@@ -38,9 +40,9 @@ export class Money {
   }
 
   /**
-   * Create zero money with specified currency
+   * Create zero money with default currency
    */
-  static zero(currency: Currency = "NGN"): Money {
+  static zero(currency: Currency = DEFAULT_CURRENCY): Money {
     return new Money(0, currency);
   }
 
