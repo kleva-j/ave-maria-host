@@ -1,7 +1,9 @@
 // Shared Schema Definitions
 // Effect Schema and Zod schemas used across the application
 
-// Placeholder for shared schemas - will be implemented in subsequent tasks
-export type SharedSchema = {
-  // This will be populated with actual schemas for validation
-};
+export * from "./analytics-schemas.js";
+export * from "./savings-schemas.js";
+export * from "./common-schemas.js";
+export * from "./wallet-schemas.js";
+export * from "./group-schemas.js";
+export * from "./user-schemas.js";
