@@ -113,9 +113,7 @@ export class UserNotFoundError extends Data.TaggedError("UserNotFoundError")<{
  * Error thrown when authentication or authorization fails
  * Used for access control and permission checks
  */
-export class AuthorizationError extends Data.TaggedError(
-  "AuthorizationError"
-)<{
+export class AuthorizationError extends Data.TaggedError("AuthorizationError")<{
   readonly userId: string;
   readonly resource: string;
   readonly action: string;
@@ -219,22 +217,22 @@ export class BusinessRuleViolationError extends Data.TaggedError(
  * Use this type for comprehensive error handling in Effect pipelines
  */
 export type FinancialError =
+  | BusinessRuleViolationError
+  | WithdrawalNotAllowedError
+  | TransactionNotFoundError
+  | InvalidContributionError
   | InsufficientFundsError
-  | PlanNotFoundError
+  | DuplicateResourceError
+  | InvalidPlanStateError
+  | ExternalServiceError
+  | WalletOperationError
   | InvalidKycTierError
   | PaymentGatewayError
-  | ValidationError
-  | DatabaseError
-  | TransactionNotFoundError
-  | WalletOperationError
   | GroupOperationError
-  | UserNotFoundError
   | AuthorizationError
-  | InvalidContributionError
-  | WithdrawalNotAllowedError
-  | InvalidPlanStateError
+  | UserNotFoundError
+  | PlanNotFoundError
   | NotificationError
-  | ExternalServiceError
+  | ValidationError
   | RateLimitError
-  | DuplicateResourceError
-  | BusinessRuleViolationError;
+  | DatabaseError;
