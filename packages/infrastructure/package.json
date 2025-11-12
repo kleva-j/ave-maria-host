@@ -18,18 +18,21 @@
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {
+    "@types/ioredis": "^5.0.0",
+    "ioredis": "^5.8.2",
     "tsdown": "catalog:"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
-    "@host/domain": "workspace:*",
-    "@host/application": "workspace:*",
-    "@host/shared": "workspace:*",
-    "@host/db": "workspace:*",
     "@effect/schema": "catalog:",
-    "effect": "catalog:",
-    "drizzle-orm": "catalog:"
+    "@host/api": "workspace:*",
+    "@host/application": "workspace:*",
+    "@host/db": "workspace:*",
+    "@host/domain": "workspace:*",
+    "@host/shared": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "effect": "catalog:"
   }
 }

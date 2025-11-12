@@ -1,7 +1,7 @@
-// Notification Infrastructure
-// Implementations for SMS, push notifications, and email services
+// Notification Service Implementations
+// Concrete implementations of notification service port interface
 
-// Placeholder for notification implementations - will be implemented in subsequent tasks
-export type NotificationImplementation = {
-  // This will be populated with actual notification service implementations
-};
+// Note: These are stub implementations that need to be completed
+// with actual integration code for Twilio, Firebase, and email services
+
+export * from "./stub-notification-service.js";

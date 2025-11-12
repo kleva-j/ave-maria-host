@@ -1,7 +1,12 @@
-// Payment Gateway Infrastructure
-// Implementations for payment processing services like Paystack, Flutterwave
+// Payment Gateway Service Implementations
+// Concrete implementations of payment service port interface
 
-// Placeholder for payment implementations - will be implemented in subsequent tasks
-export type PaymentImplementation = {
-  // This will be populated with actual payment service implementations
-};
+export {
+  PaystackPaymentService,
+  PaystackPaymentServiceLive,
+} from "./paystack-payment-service.js";
+
+export {
+  FlutterwavePaymentService,
+  FlutterwavePaymentServiceLive,
+} from "./flutterwave-payment-service.js";
