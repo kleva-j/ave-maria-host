@@ -1,7 +1,7 @@
 // Analytics and Reporting Validation Schemas using Effect Schema
 // Input/output schemas for analytics and insights operations
 
-import { Schema } from "@effect/schema";
+import { Schema } from "effect";
 
 // ============================================================================
 // Input Schemas
@@ -10,22 +10,24 @@ import { Schema } from "@effect/schema";
 /**
  * Schema for getting savings analytics
  */
-export const GetSavingsAnalyticsSchema = Schema.Struct({
+export class GetSavingsAnalyticsSchema extends Schema.Class<GetSavingsAnalyticsSchema>(
+  "GetSavingsAnalyticsSchema"
+)({
   startDate: Schema.optional(Schema.DateTimeUtc),
   endDate: Schema.optional(Schema.DateTimeUtc),
   granularity: Schema.optional(
     Schema.Literal("daily", "weekly", "monthly", "yearly")
   ),
-});
+}) {}
 
-export type GetSavingsAnalyticsInput = Schema.Schema.Type<
-  typeof GetSavingsAnalyticsSchema
->;
+export type GetSavingsAnalyticsInput = typeof GetSavingsAnalyticsSchema.Type;
 
 /**
  * Schema for generating progress report
  */
-export const GenerateProgressReportSchema = Schema.Struct({
+export class GenerateProgressReportSchema extends Schema.Class<GenerateProgressReportSchema>(
+  "GenerateProgressReportSchema"
+)({
   planId: Schema.optional(
     Schema.UUID.annotations({ message: () => "Invalid plan ID format" })
   ),
@@ -35,37 +37,36 @@ export const GenerateProgressReportSchema = Schema.Struct({
     })
   ),
   includeProjections: Schema.optional(Schema.Boolean),
-});
+}) {}
 
-export type GenerateProgressReportInput = Schema.Schema.Type<
-  typeof GenerateProgressReportSchema
->;
+export type GenerateProgressReportInput =
+  typeof GenerateProgressReportSchema.Type;
 
 /**
  * Schema for calculating rewards
  */
-export const CalculateRewardsSchema = Schema.Struct({
+export class CalculateRewardsSchema extends Schema.Class<CalculateRewardsSchema>(
+  "CalculateRewardsSchema"
+)({
   period: Schema.optional(
     Schema.Literal("current_month", "last_month", "all_time")
   ),
-});
+}) {}
 
-export type CalculateRewardsInput = Schema.Schema.Type<
-  typeof CalculateRewardsSchema
->;
+export type CalculateRewardsInput = typeof CalculateRewardsSchema.Type;
 
 /**
  * Schema for getting spending insights
  */
-export const GetSpendingInsightsSchema = Schema.Struct({
+export class GetSpendingInsightsSchema extends Schema.Class<GetSpendingInsightsSchema>(
+  "GetSpendingInsightsSchema"
+)({
   startDate: Schema.DateTimeUtc,
   endDate: Schema.DateTimeUtc,
   categories: Schema.optional(Schema.Array(Schema.String)),
-});
+}) {}
 
-export type GetSpendingInsightsInput = Schema.Schema.Type<
-  typeof GetSpendingInsightsSchema
->;
+export type GetSpendingInsightsInput = typeof GetSpendingInsightsSchema.Type;
 
 // ============================================================================
 // Output Schemas
@@ -74,43 +75,53 @@ export type GetSpendingInsightsInput = Schema.Schema.Type<
 /**
  * Schema for savings trend data point
  */
-export const SavingsTrendDataPointSchema = Schema.Struct({
+export class SavingsTrendDataPointSchema extends Schema.Class<SavingsTrendDataPointSchema>(
+  "SavingsTrendDataPointSchema"
+)({
   date: Schema.DateTimeUtc,
   amount: Schema.Number,
   contributionCount: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
-});
+}) {}
 
-export type SavingsTrendDataPoint = Schema.Schema.Type<
-  typeof SavingsTrendDataPointSchema
->;
+export type SavingsTrendDataPoint = typeof SavingsTrendDataPointSchema.Type;
+
+/**
+ * Schema for top performing plan
+ */
+export class TopPerformingPlanSchema extends Schema.Class<TopPerformingPlanSchema>(
+  "TopPerformingPlanSchema"
+)({
+  planId: Schema.UUID,
+  planName: Schema.String,
+  totalSaved: Schema.Number,
+}) {}
+
+export type TopPerformingPlan = typeof TopPerformingPlanSchema.Type;
 
 /**
  * Schema for savings analytics response
  */
-export const GetSavingsAnalyticsOutputSchema = Schema.Struct({
+export class GetSavingsAnalyticsOutputSchema extends Schema.Class<GetSavingsAnalyticsOutputSchema>(
+  "GetSavingsAnalyticsOutputSchema"
+)({
   totalSaved: Schema.Number,
   averageDailyContribution: Schema.Number,
   contributionFrequency: Schema.Number,
   savingsGrowthRate: Schema.Number,
   trendData: Schema.Array(SavingsTrendDataPointSchema),
-  topPerformingPlan: Schema.NullOr(
-    Schema.Struct({
-      planId: Schema.UUID,
-      planName: Schema.String,
-      totalSaved: Schema.Number,
-    })
-  ),
+  topPerformingPlan: Schema.NullOr(TopPerformingPlanSchema),
   insights: Schema.Array(Schema.String),
-});
+}) {}
 
-export type GetSavingsAnalyticsOutput = Schema.Schema.Type<
-  typeof GetSavingsAnalyticsOutputSchema
->;
+export type GetSavingsAnalyticsOutput =
+  typeof GetSavingsAnalyticsOutputSchema.Type;
 
 /**
  * Schema for plan comparison data
  */
-export const PlanComparisonSchema = Schema.Struct({
+export class PlanComparisonSchema extends Schema.Class<PlanComparisonSchema>(
+  "PlanComparisonSchema"
+)({
   planId: Schema.UUID,
   planName: Schema.String,
   targetAmount: Schema.Number,
@@ -118,32 +129,50 @@ export const PlanComparisonSchema = Schema.Struct({
   progressPercentage: Schema.Number.pipe(Schema.between(0, 100)),
   daysActive: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
   averageDailyContribution: Schema.Number,
-});
+}) {}
 
-export type PlanComparison = Schema.Schema.Type<typeof PlanComparisonSchema>;
+export type PlanComparison = typeof PlanComparisonSchema.Type;
+
+/**
+ * Schema for Report Summary
+ */
+export class ReportSummarySchema extends Schema.Class<ReportSummarySchema>(
+  "ReportSummarySchema"
+)({
+  totalPlans: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
+  activePlans: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
+  completedPlans: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
+  totalSaved: Schema.Number.pipe(Schema.nonNegative()),
+  totalTarget: Schema.Number.pipe(Schema.nonNegative()),
+  overallProgress: Schema.Number.pipe(Schema.between(0, 100)),
+}) {}
+
+export type ReportSummary = typeof ReportSummarySchema.Type;
+
+/**
+ * Schema for Report Projections
+ */
+export class ReportProjectionsSchema extends Schema.Class<ReportProjectionsSchema>(
+  "ReportProjectionsSchema"
+)({
+  estimatedCompletionDate: Schema.DateTimeUtc,
+  projectedTotalSavings: Schema.Number,
+  recommendedDailyAmount: Schema.Number,
+}) {}
+
+export type ReportProjections = typeof ReportProjectionsSchema.Type;
 
 /**
  * Schema for progress report response
  */
-export const GenerateProgressReportOutputSchema = Schema.Struct({
+export class GenerateProgressReportOutputSchema extends Schema.Class<GenerateProgressReportOutputSchema>(
+  "GenerateProgressReportOutputSchema"
+)({
   reportId: Schema.UUID,
   generatedAt: Schema.DateTimeUtc,
-  summary: Schema.Struct({
-    totalPlans: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
-    activePlans: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
-    completedPlans: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
-    totalSaved: Schema.Number,
-    totalTarget: Schema.Number,
-    overallProgress: Schema.Number.pipe(Schema.between(0, 100)),
-  }),
+  summary: ReportSummarySchema,
   planComparisons: Schema.optional(Schema.Array(PlanComparisonSchema)),
-  projections: Schema.optional(
-    Schema.Struct({
-      estimatedCompletionDate: Schema.DateTimeUtc,
-      projectedTotalSavings: Schema.Number,
-      recommendedDailyAmount: Schema.Number,
-    })
-  ),
+  projections: Schema.optional(ReportProjectionsSchema),
   achievements: Schema.Array(
     Schema.Struct({
       title: Schema.String,
@@ -151,16 +180,15 @@ export const GenerateProgressReportOutputSchema = Schema.Struct({
       earnedAt: Schema.DateTimeUtc,
     })
   ),
-});
+}) {}
 
-export type GenerateProgressReportOutput = Schema.Schema.Type<
-  typeof GenerateProgressReportOutputSchema
->;
+export type GenerateProgressReportOutput =
+  typeof GenerateProgressReportOutputSchema.Type;
 
 /**
  * Schema for reward details
  */
-export const RewardSchema = Schema.Struct({
+export class RewardSchema extends Schema.Class<RewardSchema>("RewardSchema")({
   id: Schema.UUID,
   type: Schema.Literal("badge", "points", "discount", "cashback"),
   title: Schema.String,
@@ -169,69 +197,89 @@ export const RewardSchema = Schema.Struct({
   earnedAt: Schema.DateTimeUtc,
   expiresAt: Schema.NullOr(Schema.DateTimeUtc),
   isRedeemed: Schema.Boolean,
-});
+}) {}
 
-export type Reward = Schema.Schema.Type<typeof RewardSchema>;
+export type Reward = typeof RewardSchema.Type;
+
+/**
+ * Next Milestone
+ */
+export class NextMilestoneSchema extends Schema.Class<NextMilestoneSchema>(
+  "NextMilestoneSchema"
+)({
+  title: Schema.String,
+  requiredPoints: Schema.Number.pipe(Schema.int()),
+  currentPoints: Schema.Number.pipe(Schema.int()),
+  progressPercentage: Schema.Number.pipe(Schema.between(0, 100)),
+}) {}
+
+export type NextMilestone = typeof NextMilestoneSchema.Type;
 
 /**
  * Schema for calculate rewards response
  */
-export const CalculateRewardsOutputSchema = Schema.Struct({
+export class CalculateRewardsOutputSchema extends Schema.Class<CalculateRewardsOutputSchema>(
+  "CalculateRewardsOutputSchema"
+)({
   totalPoints: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
   availableRewards: Schema.Array(RewardSchema),
-  nextMilestone: Schema.NullOr(
-    Schema.Struct({
-      title: Schema.String,
-      requiredPoints: Schema.Number.pipe(Schema.int()),
-      currentPoints: Schema.Number.pipe(Schema.int()),
-      progressPercentage: Schema.Number.pipe(Schema.between(0, 100)),
-    })
-  ),
+  nextMilestone: Schema.NullOr(NextMilestoneSchema),
   streakBonus: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
   recommendations: Schema.Array(Schema.String),
-});
+}) {}
 
-export type CalculateRewardsOutput = Schema.Schema.Type<
-  typeof CalculateRewardsOutputSchema
->;
+export type CalculateRewardsOutput = typeof CalculateRewardsOutputSchema.Type;
 
 /**
  * Schema for spending category breakdown
  */
-export const SpendingCategorySchema = Schema.Struct({
+export class SpendingCategorySchema extends Schema.Class<SpendingCategorySchema>(
+  "SpendingCategorySchema"
+)({
   category: Schema.String,
   amount: Schema.Number,
   percentage: Schema.Number.pipe(Schema.between(0, 100)),
   transactionCount: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
-});
+}) {}
 
-export type SpendingCategory = Schema.Schema.Type<
-  typeof SpendingCategorySchema
->;
+export type SpendingCategory = typeof SpendingCategorySchema.Type;
+
+/**
+ * Comparison To Previous Period
+ */
+export class ComparisonToPreviousPeriodSchema extends Schema.Class<ComparisonToPreviousPeriodSchema>(
+  "ComparisonToPreviousPeriodSchema"
+)({
+  percentageChange: Schema.Number,
+  trend: Schema.Literal("increasing", "decreasing", "stable"),
+}) {}
+
+export type ComparisonToPreviousPeriod =
+  typeof ComparisonToPreviousPeriodSchema.Type;
 
 /**
  * Schema for spending insights response
  */
-export const GetSpendingInsightsOutputSchema = Schema.Struct({
+export class GetSpendingInsightsOutputSchema extends Schema.Class<GetSpendingInsightsOutputSchema>(
+  "GetSpendingInsightsOutputSchema"
+)({
   totalSpent: Schema.Number,
   categoryBreakdown: Schema.Array(SpendingCategorySchema),
   averageDailySpending: Schema.Number,
-  comparisonToPreviousPeriod: Schema.Struct({
-    percentageChange: Schema.Number,
-    trend: Schema.Literal("increasing", "decreasing", "stable"),
-  }),
+  comparisonToPreviousPeriod: ComparisonToPreviousPeriodSchema,
   insights: Schema.Array(Schema.String),
   recommendations: Schema.Array(Schema.String),
-});
+}) {}
 
-export type GetSpendingInsightsOutput = Schema.Schema.Type<
-  typeof GetSpendingInsightsOutputSchema
->;
+export type GetSpendingInsightsOutput =
+  typeof GetSpendingInsightsOutputSchema.Type;
 
 /**
  * Schema for achievement/badge
  */
-export const AchievementSchema = Schema.Struct({
+export class AchievementSchema extends Schema.Class<AchievementSchema>(
+  "AchievementSchema"
+)({
   id: Schema.UUID,
   title: Schema.String,
   description: Schema.String,
@@ -246,20 +294,26 @@ export const AchievementSchema = Schema.Struct({
   earnedAt: Schema.NullOr(Schema.DateTimeUtc),
   progress: Schema.Number.pipe(Schema.between(0, 100)),
   isUnlocked: Schema.Boolean,
-});
+}) {}
 
-export type Achievement = Schema.Schema.Type<typeof AchievementSchema>;
+export type Achievement = typeof AchievementSchema.Type;
 
 /**
  * Schema for user achievements list
  */
-export const GetAchievementsOutputSchema = Schema.Struct({
+export class GetAchievementsSchema extends Schema.Class<GetAchievementsSchema>(
+  "GetAchievementsSchema"
+)({}) {}
+
+export type GetAchievementsInput = typeof GetAchievementsSchema.Type;
+
+export class GetAchievementsOutputSchema extends Schema.Class<GetAchievementsOutputSchema>(
+  "GetAchievementsOutputSchema"
+)({
   achievements: Schema.Array(AchievementSchema),
   totalUnlocked: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
   totalAvailable: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
   recentlyEarned: Schema.Array(AchievementSchema),
-});
+}) {}
 
-export type GetAchievementsOutput = Schema.Schema.Type<
-  typeof GetAchievementsOutputSchema
->;
+export type GetAchievementsOutput = typeof GetAchievementsOutputSchema.Type;

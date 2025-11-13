@@ -1,7 +1,7 @@
 // Wallet Validation Schemas using Effect Schema
 // Input/output schemas for all wallet-related API operations
 
-import { Schema } from "@effect/schema";
+import { Schema } from "effect";
 
 // ============================================================================
 // Input Schemas
@@ -11,7 +11,9 @@ import { Schema } from "@effect/schema";
  * Schema for getting wallet balance
  * No input parameters required - uses authenticated user context
  */
-export const GetBalanceSchema = Schema.Struct({});
+export class GetBalanceSchema extends Schema.Class<GetBalanceSchema>(
+  "GetBalanceSchema"
+)({}) {}
 
 export type GetBalanceInput = Schema.Schema.Type<typeof GetBalanceSchema>;
 
@@ -19,7 +21,9 @@ export type GetBalanceInput = Schema.Schema.Type<typeof GetBalanceSchema>;
  * Schema for funding wallet from external source
  * Validates payment method and amount
  */
-export const FundWalletSchema = Schema.Struct({
+export class FundWalletSchema extends Schema.Class<FundWalletSchema>(
+  "FundWalletSchema"
+)({
   amount: Schema.Number.pipe(
     Schema.positive({ message: () => "Funding amount must be positive" }),
     Schema.lessThanOrEqualTo(10000000, {
@@ -36,7 +40,7 @@ export const FundWalletSchema = Schema.Struct({
       Schema.minLength(1, { message: () => "Payment reference is required" })
     )
   ),
-});
+}) {}
 
 export type FundWalletInput = Schema.Schema.Type<typeof FundWalletSchema>;
 
@@ -44,7 +48,9 @@ export type FundWalletInput = Schema.Schema.Type<typeof FundWalletSchema>;
  * Schema for withdrawing funds from wallet to bank account
  * Validates withdrawal amount and destination
  */
-export const WithdrawSchema = Schema.Struct({
+export class WithdrawSchema extends Schema.Class<WithdrawSchema>(
+  "WithdrawSchema"
+)({
   amount: Schema.Number.pipe(
     Schema.positive({ message: () => "Withdrawal amount must be positive" }),
     Schema.greaterThanOrEqualTo(100, {
@@ -61,14 +67,16 @@ export const WithdrawSchema = Schema.Struct({
       })
     )
   ),
-});
+}) {}
 
 export type WithdrawInput = Schema.Schema.Type<typeof WithdrawSchema>;
 
 /**
  * Schema for linking a bank account to wallet
  */
-export const LinkBankAccountSchema = Schema.Struct({
+export class LinkBankAccountSchema extends Schema.Class<LinkBankAccountSchema>(
+  "LinkBankAccountSchema"
+)({
   accountNumber: Schema.String.pipe(
     Schema.pattern(/^\d{10}$/, {
       message: () => "Account number must be exactly 10 digits",
@@ -86,7 +94,7 @@ export const LinkBankAccountSchema = Schema.Struct({
     }),
     Schema.trimmed()
   ),
-});
+}) {}
 
 export type LinkBankAccountInput = Schema.Schema.Type<
   typeof LinkBankAccountSchema
@@ -95,7 +103,9 @@ export type LinkBankAccountInput = Schema.Schema.Type<
 /**
  * Schema for getting transaction history with filters
  */
-export const GetTransactionHistorySchema = Schema.Struct({
+export class GetTransactionHistorySchema extends Schema.Class<GetTransactionHistorySchema>(
+  "GetTransactionHistorySchema"
+)({
   startDate: Schema.optional(Schema.DateTimeUtc),
   endDate: Schema.optional(Schema.DateTimeUtc),
   type: Schema.optional(
@@ -122,7 +132,7 @@ export const GetTransactionHistorySchema = Schema.Struct({
       Schema.nonNegative({ message: () => "Offset must be non-negative" })
     )
   ),
-});
+}) {}
 
 export type GetTransactionHistoryInput = Schema.Schema.Type<
   typeof GetTransactionHistorySchema
@@ -131,11 +141,13 @@ export type GetTransactionHistoryInput = Schema.Schema.Type<
 /**
  * Schema for verifying a payment transaction
  */
-export const VerifyPaymentSchema = Schema.Struct({
+export class VerifyPaymentSchema extends Schema.Class<VerifyPaymentSchema>(
+  "VerifyPaymentSchema"
+)({
   reference: Schema.String.pipe(
     Schema.minLength(1, { message: () => "Payment reference is required" })
   ),
-});
+}) {}
 
 export type VerifyPaymentInput = Schema.Schema.Type<typeof VerifyPaymentSchema>;
 
@@ -146,7 +158,9 @@ export type VerifyPaymentInput = Schema.Schema.Type<typeof VerifyPaymentSchema>;
 /**
  * Schema for wallet balance response
  */
-export const GetBalanceOutputSchema = Schema.Struct({
+export class GetBalanceOutputSchema extends Schema.Class<GetBalanceOutputSchema>(
+  "GetBalanceOutputSchema"
+)({
   balance: Schema.Number,
   currency: Schema.String.pipe(
     Schema.pattern(/^[A-Z]{3}$/, {
@@ -156,7 +170,7 @@ export const GetBalanceOutputSchema = Schema.Struct({
   lastUpdated: Schema.DateTimeUtc,
   availableBalance: Schema.Number,
   pendingBalance: Schema.Number,
-});
+}) {}
 
 export type GetBalanceOutput = Schema.Schema.Type<
   typeof GetBalanceOutputSchema
@@ -165,14 +179,16 @@ export type GetBalanceOutput = Schema.Schema.Type<
 /**
  * Schema for fund wallet response
  */
-export const FundWalletOutputSchema = Schema.Struct({
+export class FundWalletOutputSchema extends Schema.Class<FundWalletOutputSchema>(
+  "FundWalletOutputSchema"
+)({
   transactionId: Schema.UUID,
   status: Schema.Literal("success", "pending", "failed"),
   newBalance: Schema.Number,
   paymentUrl: Schema.optional(Schema.String),
   reference: Schema.String,
   message: Schema.optional(Schema.String),
-});
+}) {}
 
 export type FundWalletOutput = Schema.Schema.Type<
   typeof FundWalletOutputSchema
@@ -181,20 +197,24 @@ export type FundWalletOutput = Schema.Schema.Type<
 /**
  * Schema for withdrawal response
  */
-export const WithdrawOutputSchema = Schema.Struct({
+export class WithdrawOutputSchema extends Schema.Class<WithdrawOutputSchema>(
+  "WithdrawOutputSchema"
+)({
   transactionId: Schema.UUID,
   status: Schema.Literal("success", "pending", "failed"),
   estimatedArrival: Schema.DateTimeUtc,
   newBalance: Schema.Number,
   message: Schema.optional(Schema.String),
-});
+}) {}
 
 export type WithdrawOutput = Schema.Schema.Type<typeof WithdrawOutputSchema>;
 
 /**
  * Schema for transaction details
  */
-export const TransactionSchema = Schema.Struct({
+export class TransactionSchema extends Schema.Class<TransactionSchema>(
+  "TransactionSchema"
+)({
   id: Schema.UUID,
   userId: Schema.UUID,
   planId: Schema.NullOr(Schema.UUID),
@@ -211,18 +231,20 @@ export const TransactionSchema = Schema.Struct({
   description: Schema.NullOr(Schema.String),
   createdAt: Schema.DateTimeUtc,
   completedAt: Schema.NullOr(Schema.DateTimeUtc),
-});
+}) {}
 
 export type Transaction = Schema.Schema.Type<typeof TransactionSchema>;
 
 /**
  * Schema for transaction history response
  */
-export const GetTransactionHistoryOutputSchema = Schema.Struct({
+export class GetTransactionHistoryOutputSchema extends Schema.Class<GetTransactionHistoryOutputSchema>(
+  "GetTransactionHistoryOutputSchema"
+)({
   transactions: Schema.Array(TransactionSchema),
   total: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
   hasMore: Schema.Boolean,
-});
+}) {}
 
 export type GetTransactionHistoryOutput = Schema.Schema.Type<
   typeof GetTransactionHistoryOutputSchema
@@ -231,7 +253,9 @@ export type GetTransactionHistoryOutput = Schema.Schema.Type<
 /**
  * Schema for bank account details
  */
-export const BankAccountSchema = Schema.Struct({
+export class BankAccountSchema extends Schema.Class<BankAccountSchema>(
+  "BankAccountSchema"
+)({
   id: Schema.UUID,
   userId: Schema.UUID,
   accountNumber: Schema.String,
@@ -240,18 +264,20 @@ export const BankAccountSchema = Schema.Struct({
   bankName: Schema.String,
   isDefault: Schema.Boolean,
   createdAt: Schema.DateTimeUtc,
-});
+}) {}
 
 export type BankAccount = Schema.Schema.Type<typeof BankAccountSchema>;
 
 /**
  * Schema for link bank account response
  */
-export const LinkBankAccountOutputSchema = Schema.Struct({
+export class LinkBankAccountOutputSchema extends Schema.Class<LinkBankAccountOutputSchema>(
+  "LinkBankAccountOutputSchema"
+)({
   account: BankAccountSchema,
   status: Schema.Literal("success", "error"),
   message: Schema.String,
-});
+}) {}
 
 export type LinkBankAccountOutput = Schema.Schema.Type<
   typeof LinkBankAccountOutputSchema
@@ -260,14 +286,16 @@ export type LinkBankAccountOutput = Schema.Schema.Type<
 /**
  * Schema for payment verification response
  */
-export const VerifyPaymentOutputSchema = Schema.Struct({
+export class VerifyPaymentOutputSchema extends Schema.Class<VerifyPaymentOutputSchema>(
+  "VerifyPaymentOutputSchema"
+)({
   verified: Schema.Boolean,
   status: Schema.Literal("success", "pending", "failed"),
   amount: Schema.Number,
   reference: Schema.String,
   paidAt: Schema.NullOr(Schema.DateTimeUtc),
   message: Schema.optional(Schema.String),
-});
+}) {}
 
 export type VerifyPaymentOutput = Schema.Schema.Type<
   typeof VerifyPaymentOutputSchema

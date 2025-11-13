@@ -1,7 +1,7 @@
 // Common Validation Schemas using Effect Schema
 // Reusable schemas and validation patterns used across the application
 
-import { Schema } from "@effect/schema";
+import { Schema } from "effect";
 
 // ============================================================================
 // Common Value Objects
@@ -9,25 +9,45 @@ import { Schema } from "@effect/schema";
 
 /**
  * Schema for Money value object
- * Represents monetary amounts with currency
+ * Represents monetary amounts with currency (ISO_4217_CODES)
  */
-export const MoneySchema = Schema.Struct({
+export const CURRENCY_CODES = ["NGN", "USD", "EUR", "GBP"] as const;
+
+export const CurrencyCodeSchema = Schema.Literal(...CURRENCY_CODES).pipe(
+  Schema.brand("CurrencyCode")
+);
+
+export type CurrencyCode = typeof CurrencyCodeSchema.Type;
+
+export const NGNCurrencyCode = CurrencyCodeSchema.make("NGN");
+
+export class MoneySchema extends Schema.Class<MoneySchema>("MoneySchema")({
   value: Schema.Number.pipe(
     Schema.nonNegative({ message: () => "Amount cannot be negative" })
   ),
-  currency: Schema.Literal("NGN", "USD", "EUR", "GBP").pipe(
-    Schema.annotations({
-      description: "ISO 4217 currency code",
-    })
-  ),
-});
+  currency: CurrencyCodeSchema,
+}) {}
 
-export type Money = Schema.Schema.Type<typeof MoneySchema>;
+export type Money = typeof MoneySchema.Type;
+
+/**
+ * Schema for amount validation
+ */
+export const Amount = Schema.BigInt.pipe(
+  Schema.filter((n) => n >= 0n, {
+    message: () => "Amount must be non-negative",
+  }),
+  Schema.filter((n) => n <= BigInt("9007199254740991"), {
+    message: () => "Amount exceeds safe BigInt limit",
+  })
+);
 
 /**
  * Schema for pagination parameters
  */
-export const PaginationSchema = Schema.Struct({
+export class PaginationSchema extends Schema.Class<PaginationSchema>(
+  "PaginationSchema"
+)({
   limit: Schema.optional(
     Schema.Number.pipe(
       Schema.int(),
@@ -42,9 +62,9 @@ export const PaginationSchema = Schema.Struct({
       Schema.nonNegative({ message: () => "Offset must be non-negative" })
     )
   ),
-});
+}) {}
 
-export type Pagination = Schema.Schema.Type<typeof PaginationSchema>;
+export type Pagination = typeof PaginationSchema.Type;
 
 /**
  * Schema for date range filters
@@ -64,7 +84,7 @@ export const DateRangeSchema = Schema.Struct({
   })
 );
 
-export type DateRange = Schema.Schema.Type<typeof DateRangeSchema>;
+export type DateRange = typeof DateRangeSchema.Type;
 
 /**
  * Schema for API response wrapper
@@ -111,7 +131,7 @@ export const UuidSchema = Schema.UUID.annotations({
 /**
  * Schema for phone number validation (international format)
  */
-export const PhoneNumberSchema = Schema.String.pipe(
+export const PhoneNumberSchema = Schema.Trimmed.pipe(
   Schema.pattern(/^\+?[1-9]\d{1,14}$/, {
     message: () =>
       "Invalid phone number format. Use international format (e.g., +2348012345678)",
@@ -121,7 +141,7 @@ export const PhoneNumberSchema = Schema.String.pipe(
 /**
  * Schema for email validation
  */
-export const EmailSchema = Schema.String.pipe(
+export const EmailSchema = Schema.Trimmed.pipe(
   Schema.pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, {
     message: () => "Invalid email format",
   })
@@ -130,7 +150,7 @@ export const EmailSchema = Schema.String.pipe(
 /**
  * Schema for Nigerian Bank Verification Number (BVN)
  */
-export const BvnSchema = Schema.String.pipe(
+export const BvnSchema = Schema.Trimmed.pipe(
   Schema.pattern(/^\d{11}$/, {
     message: () => "BVN must be exactly 11 digits",
   })
@@ -139,7 +159,7 @@ export const BvnSchema = Schema.String.pipe(
 /**
  * Schema for Nigerian bank account number
  */
-export const NigerianAccountNumberSchema = Schema.String.pipe(
+export const NigerianAccountNumberSchema = Schema.Trimmed.pipe(
   Schema.pattern(/^\d{10}$/, {
     message: () => "Account number must be exactly 10 digits",
   })
@@ -148,7 +168,7 @@ export const NigerianAccountNumberSchema = Schema.String.pipe(
 /**
  * Schema for Nigerian bank code
  */
-export const NigerianBankCodeSchema = Schema.String.pipe(
+export const NigerianBankCodeSchema = Schema.Trimmed.pipe(
   Schema.pattern(/^\d{3}$/, {
     message: () => "Bank code must be exactly 3 digits",
   })
@@ -157,7 +177,7 @@ export const NigerianBankCodeSchema = Schema.String.pipe(
 /**
  * Schema for time in HH:MM format
  */
-export const TimeSchema = Schema.String.pipe(
+export const TimeSchema = Schema.Trimmed.pipe(
   Schema.pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
     message: () => "Invalid time format. Use HH:MM (e.g., 09:00)",
   })
@@ -167,6 +187,7 @@ export const TimeSchema = Schema.String.pipe(
  * Schema for percentage (0-100)
  */
 export const PercentageSchema = Schema.Number.pipe(
+  Schema.int({ message: () => "Must be a whole number" }),
   Schema.between(0, 100, {
     message: () => "Percentage must be between 0 and 100",
   })
@@ -191,7 +212,7 @@ export const NonNegativeIntSchema = Schema.Number.pipe(
 /**
  * Schema for URL validation
  */
-export const UrlSchema = Schema.String.pipe(
+export const UrlSchema = Schema.Trimmed.pipe(
   Schema.pattern(/^https?:\/\/.+/, {
     message: () => "Invalid URL format. Must start with http:// or https://",
   })
@@ -200,25 +221,35 @@ export const UrlSchema = Schema.String.pipe(
 /**
  * Schema for ISO country code (2 letters)
  */
-export const CountryCodeSchema = Schema.String.pipe(
+export const CountryCodeSchema = Schema.Trimmed.pipe(
   Schema.pattern(/^[A-Z]{2}$/, {
     message: () => "Country code must be a 2-letter ISO code (e.g., NG, US)",
   })
 );
 
 /**
- * Schema for currency code (3 letters)
+ * Schema for currency code (3 letters) Might Remove later
  */
-export const CurrencyCodeSchema = Schema.String.pipe(
-  Schema.pattern(/^[A-Z]{3}$/, {
-    message: () => "Currency code must be a 3-letter ISO code (e.g., NGN, USD)",
-  })
-);
+// export const CurrencyCodeSchema = Schema.Trimmed.pipe(
+//   Schema.pattern(/^[A-Z]{3}$/, {
+//     message: () => "Currency code must be a 3-letter ISO code (e.g., NGN, USD)",
+//   }),
+//   Schema.filter(
+//     (s) => {
+//       const codes = CURRENCY_CODES as readonly string[];
+//       return codes.includes(s);
+//     },
+//     {
+//       message: (s) => `${s} is not a valid ISO 4217 currency code`,
+//     }
+//   ),
+//   Schema.brand("CurrencyCode")
+// );
 
 /**
  * Schema for invite code (6 alphanumeric characters)
  */
-export const InviteCodeSchema = Schema.String.pipe(
+export const InviteCodeSchema = Schema.Trimmed.pipe(
   Schema.pattern(/^[A-Z0-9]{6}$/, {
     message: () => "Invite code must be 6 alphanumeric characters",
   })
@@ -227,7 +258,7 @@ export const InviteCodeSchema = Schema.String.pipe(
 /**
  * Schema for OTP (6 digits)
  */
-export const OtpSchema = Schema.String.pipe(
+export const OtpSchema = Schema.Trimmed.pipe(
   Schema.pattern(/^\d{6}$/, {
     message: () => "OTP must be exactly 6 digits",
   })
@@ -236,7 +267,7 @@ export const OtpSchema = Schema.String.pipe(
 /**
  * Schema for password validation
  */
-export const PasswordSchema = Schema.String.pipe(
+export const PasswordSchema = Schema.Trimmed.pipe(
   Schema.minLength(8, {
     message: () => "Password must be at least 8 characters",
   }),
@@ -259,9 +290,7 @@ export const TransactionStatusSchema = Schema.Literal(
   "cancelled"
 );
 
-export type TransactionStatus = Schema.Schema.Type<
-  typeof TransactionStatusSchema
->;
+export type TransactionStatus = typeof TransactionStatusSchema.Type;
 
 /**
  * Schema for plan status
@@ -273,7 +302,7 @@ export const PlanStatusSchema = Schema.Literal(
   "cancelled"
 );
 
-export type PlanStatus = Schema.Schema.Type<typeof PlanStatusSchema>;
+export type PlanStatus = typeof PlanStatusSchema.Type;
 
 /**
  * Schema for KYC status
@@ -285,7 +314,7 @@ export const KycStatusSchema = Schema.Literal(
   "under_review"
 );
 
-export type KycStatus = Schema.Schema.Type<typeof KycStatusSchema>;
+export type KycStatus = typeof KycStatusSchema.Type;
 
 /**
  * Schema for notification channel
@@ -297,9 +326,7 @@ export const NotificationChannelSchema = Schema.Literal(
   "in_app"
 );
 
-export type NotificationChannel = Schema.Schema.Type<
-  typeof NotificationChannelSchema
->;
+export type NotificationChannel = typeof NotificationChannelSchema.Type;
 
 /**
  * Schema for payment method
@@ -311,7 +338,7 @@ export const PaymentMethodSchema = Schema.Literal(
   "wallet"
 );
 
-export type PaymentMethod = Schema.Schema.Type<typeof PaymentMethodSchema>;
+export type PaymentMethod = typeof PaymentMethodSchema.Type;
 
 // ============================================================================
 // Validation Helpers

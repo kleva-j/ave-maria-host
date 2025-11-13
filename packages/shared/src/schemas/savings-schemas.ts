@@ -1,7 +1,7 @@
 // Savings Plan Validation Schemas using Effect Schema
 // Input/output schemas for all savings-related API operations
 
-import { Schema } from "@effect/schema";
+import { Schema } from "effect";
 
 // ============================================================================
 // Input Schemas
@@ -11,13 +11,14 @@ import { Schema } from "@effect/schema";
  * Schema for creating a new savings plan
  * Validates all required fields and business rules for plan creation
  */
-export const CreatePlanSchema = Schema.Struct({
-  planName: Schema.String.pipe(
+export class CreatePlanSchema extends Schema.Class<CreatePlanSchema>(
+  "CreatePlanSchema"
+)({
+  planName: Schema.Trimmed.pipe(
     Schema.minLength(1, { message: () => "Plan name is required" }),
     Schema.maxLength(100, {
       message: () => "Plan name must not exceed 100 characters",
-    }),
-    Schema.trimmed()
+    })
   ),
   dailyAmount: Schema.Number.pipe(
     Schema.positive({ message: () => "Daily amount must be positive" }),
@@ -33,26 +34,29 @@ export const CreatePlanSchema = Schema.Struct({
   ),
   targetAmount: Schema.optional(
     Schema.Number.pipe(
+      Schema.int(),
       Schema.positive({ message: () => "Target amount must be positive" })
     )
   ),
   autoSaveEnabled: Schema.optional(Schema.Boolean),
   autoSaveTime: Schema.optional(
-    Schema.String.pipe(
+    Schema.Trimmed.pipe(
       Schema.pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
         message: () => "Invalid time format. Use HH:MM (e.g., 09:00)",
       })
     )
   ),
-});
+}) {}
 
-export type CreatePlanInput = Schema.Schema.Type<typeof CreatePlanSchema>;
+export type CreatePlanInput = typeof CreatePlanSchema.Type;
 
 /**
  * Schema for making a contribution to a savings plan
  * Validates contribution amount and source
  */
-export const MakeContributionSchema = Schema.Struct({
+export class MakeContributionSchema extends Schema.Class<MakeContributionSchema>(
+  "MakeContributionSchema"
+)({
   planId: Schema.UUID.annotations({ message: () => "Invalid plan ID format" }),
   amount: Schema.Number.pipe(
     Schema.positive({ message: () => "Contribution amount must be positive" })
@@ -62,27 +66,38 @@ export const MakeContributionSchema = Schema.Struct({
       description: "Source of funds for the contribution",
     })
   ),
-});
+}) {}
 
-export type MakeContributionInput = Schema.Schema.Type<
-  typeof MakeContributionSchema
->;
+export type MakeContributionInput = typeof MakeContributionSchema.Type;
 
 /**
  * Schema for retrieving plan progress information
  */
-export const GetPlanProgressSchema = Schema.Struct({
+export class GetPlanProgressSchema extends Schema.Class<GetPlanProgressSchema>(
+  "GetPlanProgressSchema"
+)({
   planId: Schema.UUID.annotations({ message: () => "Invalid plan ID format" }),
-});
+}) {}
 
-export type GetPlanProgressInput = Schema.Schema.Type<
-  typeof GetPlanProgressSchema
->;
+export type GetPlanProgressInput = typeof GetPlanProgressSchema.Type;
+
+/**
+ * Schema for retrieving a savings plan
+ */
+export class GetPlanSchema extends Schema.Class<GetPlanSchema>(
+  "GetPlanSchema"
+)({
+  planId: Schema.UUID.annotations({ message: () => "Invalid plan ID format" }),
+}) {}
+
+export type GetPlanInput = typeof GetPlanSchema.Type;
 
 /**
  * Schema for updating a savings plan
  */
-export const UpdatePlanSchema = Schema.Struct({
+export class UpdatePlanSchema extends Schema.Class<UpdatePlanSchema>(
+  "UpdatePlanSchema"
+)({
   planId: Schema.UUID.annotations({ message: () => "Invalid plan ID format" }),
   planName: Schema.optional(
     Schema.String.pipe(
@@ -95,30 +110,41 @@ export const UpdatePlanSchema = Schema.Struct({
   autoSaveTime: Schema.optional(
     Schema.String.pipe(Schema.pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/))
   ),
-});
+}) {}
 
-export type UpdatePlanInput = Schema.Schema.Type<typeof UpdatePlanSchema>;
+export type UpdatePlanInput = typeof UpdatePlanSchema.Type;
+
+export class UpdatePlanOutputSchema extends Schema.Class<UpdatePlanOutputSchema>(
+  "UpdatePlanOutputSchema"
+)({
+  status: Schema.Literal("success", "error"),
+  message: Schema.String,
+}) {}
+
+export type UpdatePlanOutput = typeof UpdatePlanOutputSchema.Type;
 
 /**
  * Schema for pausing or resuming a savings plan
  */
-export const ChangePlanStatusSchema = Schema.Struct({
+export class ChangePlanStatusSchema extends Schema.Class<ChangePlanStatusSchema>(
+  "ChangePlanStatusSchema"
+)({
   planId: Schema.UUID.annotations({ message: () => "Invalid plan ID format" }),
   action: Schema.Literal("pause", "resume", "cancel").pipe(
     Schema.annotations({
       description: "Action to perform on the plan",
     })
   ),
-});
+}) {}
 
-export type ChangePlanStatusInput = Schema.Schema.Type<
-  typeof ChangePlanStatusSchema
->;
+export type ChangePlanStatusInput = typeof ChangePlanStatusSchema.Type;
 
 /**
  * Schema for withdrawing from a completed savings plan
  */
-export const WithdrawFromPlanSchema = Schema.Struct({
+export class WithdrawFromPlanSchema extends Schema.Class<WithdrawFromPlanSchema>(
+  "WithdrawFromPlanSchema"
+)({
   planId: Schema.UUID.annotations({ message: () => "Invalid plan ID format" }),
   amount: Schema.Number.pipe(
     Schema.positive({ message: () => "Withdrawal amount must be positive" })
@@ -127,16 +153,26 @@ export const WithdrawFromPlanSchema = Schema.Struct({
   bankAccountId: Schema.optional(
     Schema.UUID.annotations({ message: () => "Invalid bank account ID" })
   ),
-});
+}) {}
 
-export type WithdrawFromPlanInput = Schema.Schema.Type<
-  typeof WithdrawFromPlanSchema
->;
+export type WithdrawFromPlanInput = typeof WithdrawFromPlanSchema.Type;
+
+export class WithdrawFromPlanOutputSchema extends Schema.Class<WithdrawFromPlanOutputSchema>(
+  "WithdrawFromPlanOutputSchema"
+)({
+  transactionId: Schema.UUID,
+  status: Schema.Literal("success", "pending", "failed"),
+  message: Schema.String,
+}) {}
+
+export type WithdrawFromPlanOutput = typeof WithdrawFromPlanOutputSchema.Type;
 
 /**
  * Schema for listing user's savings plans with filters
  */
-export const ListPlansSchema = Schema.Struct({
+export class ListPlansSchema extends Schema.Class<ListPlansSchema>(
+  "ListPlansSchema"
+)({
   status: Schema.optional(
     Schema.Literal("active", "paused", "completed", "cancelled")
   ),
@@ -154,9 +190,9 @@ export const ListPlansSchema = Schema.Struct({
       Schema.nonNegative({ message: () => "Offset must be non-negative" })
     )
   ),
-});
+}) {}
 
-export type ListPlansInput = Schema.Schema.Type<typeof ListPlansSchema>;
+export type ListPlansInput = typeof ListPlansSchema.Type;
 
 // ============================================================================
 // Output Schemas
@@ -165,34 +201,36 @@ export type ListPlansInput = Schema.Schema.Type<typeof ListPlansSchema>;
 /**
  * Schema for create plan response
  */
-export const CreatePlanOutputSchema = Schema.Struct({
+export class CreatePlanOutputSchema extends Schema.Class<CreatePlanOutputSchema>(
+  "CreatePlanOutputSchema"
+)({
   planId: Schema.UUID,
   status: Schema.Literal("success", "error"),
   message: Schema.String,
-});
+}) {}
 
-export type CreatePlanOutput = Schema.Schema.Type<
-  typeof CreatePlanOutputSchema
->;
+export type CreatePlanOutput = typeof CreatePlanOutputSchema.Type;
 
 /**
  * Schema for contribution response
  */
-export const MakeContributionOutputSchema = Schema.Struct({
+export class MakeContributionOutputSchema extends Schema.Class<MakeContributionOutputSchema>(
+  "MakeContributionOutputSchema"
+)({
   transactionId: Schema.UUID,
   newBalance: Schema.Number,
   status: Schema.Literal("success", "failed", "pending"),
   message: Schema.optional(Schema.String),
-});
+}) {}
 
-export type MakeContributionOutput = Schema.Schema.Type<
-  typeof MakeContributionOutputSchema
->;
+export type MakeContributionOutput = typeof MakeContributionOutputSchema.Type;
 
 /**
  * Schema for plan progress response
  */
-export const GetPlanProgressOutputSchema = Schema.Struct({
+export class GetPlanProgressOutputSchema extends Schema.Class<GetPlanProgressOutputSchema>(
+  "GetPlanProgressOutputSchema"
+)({
   currentAmount: Schema.Number,
   targetAmount: Schema.Number,
   daysRemaining: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
@@ -200,16 +238,16 @@ export const GetPlanProgressOutputSchema = Schema.Struct({
   progressPercentage: Schema.Number.pipe(Schema.between(0, 100)),
   totalContributions: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
   lastContributionDate: Schema.NullOr(Schema.DateTimeUtc),
-});
+}) {}
 
-export type GetPlanProgressOutput = Schema.Schema.Type<
-  typeof GetPlanProgressOutputSchema
->;
+export type GetPlanProgressOutput = typeof GetPlanProgressOutputSchema.Type;
 
 /**
  * Schema for savings plan details
  */
-export const SavingsPlanSchema = Schema.Struct({
+export class SavingsPlanSchema extends Schema.Class<SavingsPlanSchema>(
+  "SavingsPlanSchema"
+)({
   id: Schema.UUID,
   userId: Schema.UUID,
   planName: Schema.String,
@@ -225,17 +263,19 @@ export const SavingsPlanSchema = Schema.Struct({
   interestRate: Schema.Number,
   createdAt: Schema.DateTimeUtc,
   updatedAt: Schema.DateTimeUtc,
-});
+}) {}
 
-export type SavingsPlan = Schema.Schema.Type<typeof SavingsPlanSchema>;
+export type SavingsPlan = typeof SavingsPlanSchema.Type;
 
 /**
  * Schema for list plans response
  */
-export const ListPlansOutputSchema = Schema.Struct({
+export class ListPlansOutputSchema extends Schema.Class<ListPlansOutputSchema>(
+  "ListPlansOutputSchema"
+)({
   plans: Schema.Array(SavingsPlanSchema),
   total: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
   hasMore: Schema.Boolean,
-});
+}) {}
 
-export type ListPlansOutput = Schema.Schema.Type<typeof ListPlansOutputSchema>;
+export type ListPlansOutput = typeof ListPlansOutputSchema.Type;

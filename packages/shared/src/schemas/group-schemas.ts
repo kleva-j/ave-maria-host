@@ -1,7 +1,7 @@
 // Ajo/Esusu Group Validation Schemas using Effect Schema
 // Input/output schemas for all group-related API operations
 
-import { Schema } from "@effect/schema";
+import { Schema } from "effect";
 
 // ============================================================================
 // Input Schemas
@@ -11,7 +11,9 @@ import { Schema } from "@effect/schema";
  * Schema for creating a new Ajo/Esusu group
  * Validates group configuration and membership rules
  */
-export const CreateGroupSchema = Schema.Struct({
+export class CreateGroupSchema extends Schema.Class<CreateGroupSchema>(
+  "CreateGroupSchema"
+)({
   groupName: Schema.Trimmed.pipe(
     Schema.minLength(1, { message: () => "Group name is required" }),
     Schema.maxLength(100, {
@@ -50,14 +52,16 @@ export const CreateGroupSchema = Schema.Struct({
     )
   ),
   isPrivate: Schema.optional(Schema.Boolean),
-});
+}) {}
 
-export type CreateGroupInput = Schema.Schema.Type<typeof CreateGroupSchema>;
+export type CreateGroupInput = typeof CreateGroupSchema.Type;
 
 /**
  * Schema for joining an existing group
  */
-export const JoinGroupSchema = Schema.Struct({
+export class JoinGroupSchema extends Schema.Class<JoinGroupSchema>(
+  "JoinGroupSchema"
+)({
   groupId: Schema.UUID.annotations({
     message: () => "Invalid group ID format",
   }),
@@ -68,14 +72,16 @@ export const JoinGroupSchema = Schema.Struct({
       })
     )
   ),
-});
+}) {}
 
-export type JoinGroupInput = Schema.Schema.Type<typeof JoinGroupSchema>;
+export type JoinGroupInput = typeof JoinGroupSchema.Type;
 
 /**
  * Schema for making a group contribution
  */
-export const MakeGroupContributionSchema = Schema.Struct({
+export class MakeGroupContributionSchema extends Schema.Class<MakeGroupContributionSchema>(
+  "MakeGroupContributionSchema"
+)({
   groupId: Schema.UUID.annotations({
     message: () => "Invalid group ID format",
   }),
@@ -84,16 +90,17 @@ export const MakeGroupContributionSchema = Schema.Struct({
       message: () => "Contribution amount must be positive",
     })
   ),
-});
+}) {}
 
-export type MakeGroupContributionInput = Schema.Schema.Type<
-  typeof MakeGroupContributionSchema
->;
+export type MakeGroupContributionInput =
+  typeof MakeGroupContributionSchema.Type;
 
 /**
  * Schema for updating group settings (organizer only)
  */
-export const UpdateGroupSchema = Schema.Struct({
+export class UpdateGroupSchema extends Schema.Class<UpdateGroupSchema>(
+  "UpdateGroupSchema"
+)({
   groupId: Schema.UUID.annotations({
     message: () => "Invalid group ID format",
   }),
@@ -102,14 +109,16 @@ export const UpdateGroupSchema = Schema.Struct({
   ),
   description: Schema.optional(Schema.String.pipe(Schema.maxLength(500))),
   isPrivate: Schema.optional(Schema.Boolean),
-});
+}) {}
 
-export type UpdateGroupInput = Schema.Schema.Type<typeof UpdateGroupSchema>;
+export type UpdateGroupInput = typeof UpdateGroupSchema.Type;
 
 /**
  * Schema for setting rotation order (organizer only)
  */
-export const SetRotationOrderSchema = Schema.Struct({
+export class SetRotationOrderSchema extends Schema.Class<SetRotationOrderSchema>(
+  "SetRotationOrderSchema"
+)({
   groupId: Schema.UUID.annotations({
     message: () => "Invalid group ID format",
   }),
@@ -120,16 +129,16 @@ export const SetRotationOrderSchema = Schema.Struct({
       message: () => "At least 2 members required for rotation",
     })
   ),
-});
+}) {}
 
-export type SetRotationOrderInput = Schema.Schema.Type<
-  typeof SetRotationOrderSchema
->;
+export type SetRotationOrderInput = typeof SetRotationOrderSchema.Type;
 
 /**
  * Schema for leaving a group
  */
-export const LeaveGroupSchema = Schema.Struct({
+export class LeaveGroupSchema extends Schema.Class<LeaveGroupSchema>(
+  "LeaveGroupSchema"
+)({
   groupId: Schema.UUID.annotations({
     message: () => "Invalid group ID format",
   }),
@@ -140,27 +149,29 @@ export const LeaveGroupSchema = Schema.Struct({
       })
     )
   ),
-});
+}) {}
 
-export type LeaveGroupInput = Schema.Schema.Type<typeof LeaveGroupSchema>;
+export type LeaveGroupInput = typeof LeaveGroupSchema.Type;
 
 /**
  * Schema for getting group details
  */
-export const GetGroupDetailsSchema = Schema.Struct({
+export class GetGroupDetailsSchema extends Schema.Class<GetGroupDetailsSchema>(
+  "GetGroupDetailsSchema"
+)({
   groupId: Schema.UUID.annotations({
     message: () => "Invalid group ID format",
   }),
-});
+}) {}
 
-export type GetGroupDetailsInput = Schema.Schema.Type<
-  typeof GetGroupDetailsSchema
->;
+export type GetGroupDetailsInput = typeof GetGroupDetailsSchema.Type;
 
 /**
  * Schema for listing groups with filters
  */
-export const ListGroupsSchema = Schema.Struct({
+export class ListGroupsSchema extends Schema.Class<ListGroupsSchema>(
+  "ListGroupsSchema"
+)({
   status: Schema.optional(
     Schema.Literal("recruiting", "active", "completed", "cancelled")
   ),
@@ -179,9 +190,9 @@ export const ListGroupsSchema = Schema.Struct({
       Schema.nonNegative({ message: () => "Offset must be non-negative" })
     )
   ),
-});
+}) {}
 
-export type ListGroupsInput = Schema.Schema.Type<typeof ListGroupsSchema>;
+export type ListGroupsInput = typeof ListGroupsSchema.Type;
 
 // ============================================================================
 // Output Schemas
@@ -190,7 +201,9 @@ export type ListGroupsInput = Schema.Schema.Type<typeof ListGroupsSchema>;
 /**
  * Schema for group member details
  */
-export const GroupMemberSchema = Schema.Struct({
+export class GroupMemberSchema extends Schema.Class<GroupMemberSchema>(
+  "GroupMemberSchema"
+)({
   id: Schema.UUID,
   userId: Schema.UUID,
   groupId: Schema.UUID,
@@ -201,14 +214,16 @@ export const GroupMemberSchema = Schema.Struct({
   totalContributions: Schema.Number,
   missedContributions: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
   joinedAt: Schema.DateTimeUtc,
-});
+}) {}
 
-export type GroupMember = Schema.Schema.Type<typeof GroupMemberSchema>;
+export type GroupMember = typeof GroupMemberSchema.Type;
 
 /**
  * Schema for group details
  */
-export const AjoGroupSchema = Schema.Struct({
+export class AjoGroupSchema extends Schema.Class<AjoGroupSchema>(
+  "AjoGroupSchema"
+)({
   id: Schema.UUID,
   organizerId: Schema.UUID,
   groupName: Schema.String,
@@ -227,81 +242,86 @@ export const AjoGroupSchema = Schema.Struct({
   nextPayoutDate: Schema.NullOr(Schema.DateTimeUtc),
   createdAt: Schema.DateTimeUtc,
   updatedAt: Schema.DateTimeUtc,
-});
+}) {}
 
-export type AjoGroup = Schema.Schema.Type<typeof AjoGroupSchema>;
+export type AjoGroup = typeof AjoGroupSchema.Type;
 
 /**
  * Schema for create group response
  */
-export const CreateGroupOutputSchema = Schema.Struct({
+export class CreateGroupOutputSchema extends Schema.Class<CreateGroupOutputSchema>(
+  "CreateGroupOutputSchema"
+)({
   groupId: Schema.UUID,
   inviteCode: Schema.String,
   status: Schema.Literal("success", "error"),
   message: Schema.String,
-});
+}) {}
 
-export type CreateGroupOutput = Schema.Schema.Type<
-  typeof CreateGroupOutputSchema
->;
+export type CreateGroupOutput = typeof CreateGroupOutputSchema.Type;
 
 /**
  * Schema for join group response
  */
-export const JoinGroupOutputSchema = Schema.Struct({
+export class JoinGroupOutputSchema extends Schema.Class<JoinGroupOutputSchema>(
+  "JoinGroupOutputSchema"
+)({
   memberId: Schema.UUID,
   groupId: Schema.UUID,
   status: Schema.Literal("success", "error"),
   message: Schema.String,
-});
+}) {}
 
-export type JoinGroupOutput = Schema.Schema.Type<typeof JoinGroupOutputSchema>;
+export type JoinGroupOutput = typeof JoinGroupOutputSchema.Type;
 
 /**
  * Schema for group contribution response
  */
-export const MakeGroupContributionOutputSchema = Schema.Struct({
+export class MakeGroupContributionOutputSchema extends Schema.Class<MakeGroupContributionOutputSchema>(
+  "MakeGroupContributionOutputSchema"
+)({
   transactionId: Schema.UUID,
   status: Schema.Literal("success", "pending", "failed"),
   message: Schema.optional(Schema.String),
-});
+}) {}
 
-export type MakeGroupContributionOutput = Schema.Schema.Type<
-  typeof MakeGroupContributionOutputSchema
->;
+export type MakeGroupContributionOutput =
+  typeof MakeGroupContributionOutputSchema.Type;
 
 /**
  * Schema for group details with members
  */
-export const GetGroupDetailsOutputSchema = Schema.Struct({
+export class GetGroupDetailsOutputSchema extends Schema.Class<GetGroupDetailsOutputSchema>(
+  "GetGroupDetailsOutputSchema"
+)({
   group: AjoGroupSchema,
   members: Schema.Array(GroupMemberSchema),
   currentMember: Schema.NullOr(GroupMemberSchema),
   totalCollected: Schema.Number,
   userMembership: Schema.NullOr(GroupMemberSchema),
-});
+}) {}
 
-export type GetGroupDetailsOutput = Schema.Schema.Type<
-  typeof GetGroupDetailsOutputSchema
->;
+export type GetGroupDetailsOutput = typeof GetGroupDetailsOutputSchema.Type;
 
 /**
  * Schema for list groups response
  */
-export const ListGroupsOutputSchema = Schema.Struct({
+export class ListGroupsOutputSchema extends Schema.Class<ListGroupsOutputSchema>(
+  "ListGroupsOutputSchema"
+)({
   groups: Schema.Array(AjoGroupSchema),
   total: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
   hasMore: Schema.Boolean,
-});
+}) {}
 
-export type ListGroupsOutput = Schema.Schema.Type<
-  typeof ListGroupsOutputSchema
->;
+export type ListGroupsOutput = typeof ListGroupsOutputSchema.Type;
 
 /**
  * Schema for group contribution history
  */
-export const GroupContributionSchema = Schema.Struct({
+export class GroupContributionSchema extends Schema.Class<GroupContributionSchema>(
+  "GroupContributionSchema"
+)({
   id: Schema.UUID,
   groupId: Schema.UUID,
   memberId: Schema.UUID,
@@ -309,16 +329,16 @@ export const GroupContributionSchema = Schema.Struct({
   round: Schema.Number.pipe(Schema.int()),
   status: Schema.Literal("pending", "completed", "failed"),
   createdAt: Schema.DateTimeUtc,
-});
+}) {}
 
-export type GroupContribution = Schema.Schema.Type<
-  typeof GroupContributionSchema
->;
+export type GroupContribution = typeof GroupContributionSchema.Type;
 
 /**
  * Schema for group payout details
  */
-export const GroupPayoutSchema = Schema.Struct({
+export class GroupPayoutSchema extends Schema.Class<GroupPayoutSchema>(
+  "GroupPayoutSchema"
+)({
   id: Schema.UUID,
   groupId: Schema.UUID,
   recipientId: Schema.UUID,
@@ -329,6 +349,6 @@ export const GroupPayoutSchema = Schema.Struct({
   status: Schema.Literal("pending", "completed", "failed"),
   paidAt: Schema.NullOr(Schema.DateTimeUtc),
   createdAt: Schema.DateTimeUtc,
-});
+}) {}
 
-export type GroupPayout = Schema.Schema.Type<typeof GroupPayoutSchema>;
+export type GroupPayout = typeof GroupPayoutSchema.Type;
