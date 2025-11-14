@@ -1,18 +1,29 @@
 import type {
+  InvalidRefreshTokenError,
+  InsufficientKycTierError,
   InvalidCredentialsError,
+  PhoneVerificationError,
   SessionValidationError,
+  AccountSuspendedError,
   SessionCreationError,
+  KycVerificationError,
   SessionExpiredError,
+  BiometricAuthError,
   InvalidTokenError,
-  UnauthorizedError,
   UserNotFoundError,
+  UnauthorizedError,
+  InvalidOtpError,
   AuthError,
 } from "./auth-errors.js";
 
 import type {
+  BiometricRegistration,
+  BiometricAuthRequest,
   LoginCredentials,
   SessionOptions,
   RegisterData,
+  KycTier1Data,
+  KycTier2Data,
   AuthContext,
   Session,
   User,
@@ -120,6 +131,82 @@ export interface AuthService {
   readonly getUserSessions: (
     userId: string
   ) => Effect.Effect<Session[], UserNotFoundError>;
+
+  /**
+   * Refresh an access token using a refresh token
+   */
+  readonly refreshToken: (
+    refreshToken: string
+  ) => Effect.Effect<
+    { session: Session; user: User },
+    InvalidRefreshTokenError | SessionExpiredError | UserNotFoundError
+  >;
+
+  /**
+   * Request phone verification OTP
+   */
+  readonly requestPhoneVerification: (
+    phoneNumber: string
+  ) => Effect.Effect<{ expiresAt: Date }, PhoneVerificationError>;
+
+  /**
+   * Verify phone number with OTP
+   */
+  readonly verifyPhone: (
+    phoneNumber: string,
+    otp: string
+  ) => Effect.Effect<void, InvalidOtpError | PhoneVerificationError>;
+
+  /**
+   * Submit KYC Tier 1 verification
+   */
+  readonly submitKycTier1: (
+    userId: string,
+    data: KycTier1Data
+  ) => Effect.Effect<void, KycVerificationError | UserNotFoundError>;
+
+  /**
+   * Submit KYC Tier 2 verification
+   */
+  readonly submitKycTier2: (
+    userId: string,
+    tier1Data: KycTier1Data,
+    tier2Data: KycTier2Data
+  ) => Effect.Effect<void, KycVerificationError | UserNotFoundError>;
+
+  /**
+   * Check if user meets required KYC tier
+   */
+  readonly checkKycTier: (
+    userId: string,
+    requiredTier: number
+  ) => Effect.Effect<boolean, InsufficientKycTierError | UserNotFoundError>;
+
+  /**
+   * Register biometric authentication for a device
+   */
+  readonly registerBiometric: (
+    userId: string,
+    registration: BiometricRegistration
+  ) => Effect.Effect<void, BiometricAuthError | UserNotFoundError>;
+
+  /**
+   * Authenticate using biometric
+   */
+  readonly authenticateBiometric: (
+    request: BiometricAuthRequest
+  ) => Effect.Effect<
+    AuthContext,
+    BiometricAuthError | UserNotFoundError | AccountSuspendedError
+  >;
+
+  /**
+   * Disable biometric authentication for a device
+   */
+  readonly disableBiometric: (
+    userId: string,
+    deviceId: string
+  ) => Effect.Effect<void, BiometricAuthError | UserNotFoundError>;
 }
 
 /**
