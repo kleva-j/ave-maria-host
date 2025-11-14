@@ -16,15 +16,31 @@
 import type { HttpServer } from "@effect/platform";
 import type { DatabaseService } from "@host/db";
 import type { Hono } from "hono";
+import type {
+  GenerateProgressReportUseCase,
+  ValidateContributionUseCase,
+  ProcessContributionUseCase,
+  GetSavingsAnalyticsUseCase,
+  CreateSavingsPlanUseCase,
+  UpdateSavingsPlanUseCase,
+  CalculateRewardsUseCase,
+  GetWalletBalanceUseCase,
+  WithdrawFundsUseCase,
+  FundWalletUseCase,
+} from "@host/application";
 
+// Import service layer
 import { AuthService } from "@host/auth";
 
 // Import Effect tools
 import { RpcServer, RpcSerialization } from "@effect/rpc";
 import { HttpRouter, Headers } from "@effect/platform";
-import { Effect, Layer, Option, Schema } from "effect";
+import { Effect, Layer, Option } from "effect";
 
 // Import RPC groups
+import { AnalyticsRpcs, AnalyticsHandlersLive } from "./analytics-rpc";
+import { SavingsRpcs, SavingsHandlersLive } from "./savings-rpc";
+import { WalletRpcs, WalletHandlersLive } from "./wallet-rpc";
 import { TodoRpcs, TodoHandlersLive } from "./todo-rpc";
 import {
   AuthenticationError,
@@ -35,10 +51,25 @@ import {
   AuthRpcs,
 } from "./auth-rpc";
 
+export type AppUseCaseGroup =
+  | GenerateProgressReportUseCase
+  | ValidateContributionUseCase
+  | ProcessContributionUseCase
+  | GetSavingsAnalyticsUseCase
+  | CreateSavingsPlanUseCase
+  | UpdateSavingsPlanUseCase
+  | GetWalletBalanceUseCase
+  | CalculateRewardsUseCase
+  | WithdrawFundsUseCase
+  | FundWalletUseCase;
+
 /**
  * Combined RPC groups for the entire application
  */
-export const AppRpcs = TodoRpcs.merge(AuthRpcs);
+export const AppRpcs = TodoRpcs.merge(AuthRpcs)
+  .merge(AnalyticsRpcs)
+  .merge(SavingsRpcs)
+  .merge(WalletRpcs);
 
 /**
  * Authentication middleware implementation for the server
@@ -131,57 +162,29 @@ export const AuthMiddlewareLive: Layer.Layer<
 /**
  * Web handler for RPC communication
  * Creates a complete RPC web handler with all services integrated
+ * 
+ * TODO: Full implementation requires proper use case layer setup and dependency injection
  */
 export const createRpcWebHandler = (
-  authServiceLayer: Layer.Layer<AuthService>,
-  databaseServiceLayer: Layer.Layer<DatabaseService>
+  _authServiceLayer: Layer.Layer<AuthService>,
+  _databaseServiceLayer: Layer.Layer<DatabaseService>
 ) => {
-  return Effect.succeed((request: Request) => {
-    // Check if this is an RPC request
-    const url = new URL(request.url);
-    if (!url.pathname.startsWith("/rpc")) {
-      return Promise.resolve(new Response("Not Found", { status: 404 }));
-    }
-
-    // Create the complete service layer including protocol
-    const serviceLayer = Layer.mergeAll(
-      authServiceLayer,
-      databaseServiceLayer,
-      AuthMiddlewareLive,
-      RpcHttpProtocolLive
-    );
-
-    // Process RPC request
-    const rpcProgram = Effect.gen(function* (_) {
-      // Initialize the RPC server with all handlers
-      yield* _(
-        RpcServer.make(AppRpcs),
-        Effect.provide(TodoHandlersLive),
-        Effect.provide(AuthHandlersLive)
-      );
-
-      // Parse the request body for RPC calls
-      const body = yield* _(
-        Effect.tryPromise({
-          try: () => request.text(),
-          catch: (error) => new Error(`Failed to read request body: ${error}`),
-        })
-      );
-
-      // Process the RPC request with full protocol handler
-      // The RPC server is now fully initialized and ready to process actual RPC calls
-      return new Response(
+  return Effect.succeed((_request: Request) => {
+    // For now, return a simple response indicating RPC is available
+    // Full implementation requires proper use case layer setup
+    return Promise.resolve(
+      new Response(
         JSON.stringify({
-          message:
-            "RPC request processed successfully with full protocol handler",
+          message: "RPC endpoint available",
           timestamp: new Date().toISOString(),
-          method: request.method,
-          url: request.url,
-          bodyLength: body.length,
-          rpcServer: "fully initialized and processing requests",
-          handlers: ["TodoHandlersLive", "AuthHandlersLive"],
-          middleware: ["AuthMiddleware"],
-          status: "RPC integration complete - ready for production use",
+          status: "RPC handlers registered (use case integration pending)",
+          handlers: [
+            "TodoHandlersLive",
+            "AuthHandlersLive",
+            "SavingsHandlersLive",
+            "WalletHandlersLive",
+            "AnalyticsHandlersLive",
+          ],
         }),
         {
           status: 200,
@@ -192,35 +195,8 @@ export const createRpcWebHandler = (
             "Access-Control-Allow-Headers": "Content-Type, Authorization",
           },
         }
-      );
-    }).pipe(
-      Effect.catchAll((error) => {
-        console.error("RPC request error:", error);
-
-        return Effect.succeed(
-          new Response(
-            JSON.stringify({
-              error: "RPC_ERROR",
-              message:
-                error instanceof Error ? error.message : "Unknown RPC error",
-              timestamp: new Date().toISOString(),
-            }),
-            {
-              status: 500,
-              headers: { "Content-Type": "application/json" },
-            }
-          )
-        );
-      }),
-      Effect.provide(
-        serviceLayer.pipe(
-          Layer.provide(authServiceLayer),
-          Layer.provide(databaseServiceLayer)
-        )
       )
     );
-
-    return Effect.runPromise(rpcProgram);
   });
 };
 
@@ -228,15 +204,22 @@ export const createRpcWebHandler = (
  * Combined RPC server layer with all handlers
  * Requires AuthService and DatabaseService to be provided
  */
-export const RpcServerLive: Layer.Layer<
-  never,
-  never,
-  AuthService | DatabaseService | RpcServer.Protocol
-> = RpcServer.layer(AppRpcs).pipe(
-  Layer.provide(TodoHandlersLive),
-  Layer.provide(AuthHandlersLive),
-  Layer.provide(AuthMiddlewareLive)
-);
+
+type RpcServerDeps =
+  | AuthService
+  | DatabaseService
+  | RpcServer.Protocol
+  | AppUseCaseGroup;
+
+export const RpcServerLive: Layer.Layer<never, never, RpcServerDeps> =
+  RpcServer.layer(AppRpcs).pipe(
+    Layer.provide(TodoHandlersLive),
+    Layer.provide(AuthHandlersLive),
+    Layer.provide(SavingsHandlersLive),
+    Layer.provide(WalletHandlersLive),
+    Layer.provide(AnalyticsHandlersLive),
+    Layer.provide(AuthMiddlewareLive)
+  );
 
 /**
  * HTTP protocol layer for RPC communication
@@ -248,12 +231,12 @@ export const RpcHttpProtocolLive: Layer.Layer<RpcServer.Protocol> =
 
 /**
  * Complete RPC layer ready for integration with HTTP server
- * Requires AuthService and DatabaseService to be provided
+ * Requires AuthService, DatabaseService, and all use cases to be provided
  */
 export const RpcLayerLive: Layer.Layer<
   never,
   never,
-  AuthService | DatabaseService | HttpServer.HttpServer
+  AuthService | DatabaseService | HttpServer.HttpServer | AppUseCaseGroup
 > = HttpRouter.Default.serve().pipe(
   Layer.provide(RpcServerLive),
   Layer.provide(RpcHttpProtocolLive)
@@ -262,9 +245,12 @@ export const RpcLayerLive: Layer.Layer<
 /**
  * Create a complete RPC layer with all dependencies provided
  *
+ * Note: This function requires all use case layers to be provided separately.
+ * The use cases are not automatically wired up yet.
+ *
  * @param authServiceLayer - The authentication service layer
  * @param databaseServiceLayer - The database service layer
- * @returns A complete RPC layer ready for use
+ * @returns A complete RPC layer ready for use (requires use case layers)
  *
  * @example
  * ```typescript
@@ -275,12 +261,13 @@ export const RpcLayerLive: Layer.Layer<
  *   AuthServiceLive,
  *   DatabaseServiceLive
  * );
+ * // Note: You still need to provide use case layers
  * ```
  */
 export const createCompleteRpcLayer = (
   authServiceLayer: Layer.Layer<AuthService>,
   databaseServiceLayer: Layer.Layer<DatabaseService>
-): Layer.Layer<never, never, HttpServer.HttpServer> =>
+): Layer.Layer<never, never, HttpServer.HttpServer | AppUseCaseGroup> =>
   RpcLayerLive.pipe(
     Layer.provide(authServiceLayer),
     Layer.provide(databaseServiceLayer)
