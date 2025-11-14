@@ -45,6 +45,7 @@ export function getStatusCode(error: unknown): number {
       case "PlanNotFoundError":
         return 404;
       case "InvalidKycTierError":
+      case "InsufficientKycTierError":
         return 403;
       case "PaymentGatewayError":
         return 502;
@@ -53,9 +54,27 @@ export function getStatusCode(error: unknown): number {
       case "DatabaseError":
         return 500;
       case "AuthenticationError":
+      case "InvalidCredentialsError":
+      case "InvalidTokenError":
+      case "SessionExpiredError":
+      case "InvalidRefreshTokenError":
         return 401;
       case "AuthorizationError":
+      case "UnauthorizedError":
+      case "AccountSuspendedError":
         return 403;
+      case "UserNotFoundError":
+        return 404;
+      case "SessionValidationError":
+      case "SessionCreationError":
+        return 500;
+      case "KycVerificationError":
+        return 400;
+      case "PhoneVerificationError":
+      case "InvalidOtpError":
+        return 400;
+      case "BiometricAuthError":
+        return 401;
       case "RateLimitExceededError":
         return 429;
       default:
@@ -91,6 +110,7 @@ export function getErrorMessage(error: unknown): string {
         case "PlanNotFoundError":
           return "Savings plan not found";
         case "InvalidKycTierError":
+        case "InsufficientKycTierError":
           return "Your KYC tier does not allow this operation";
         case "PaymentGatewayError":
           return "Payment gateway error occurred";
@@ -99,9 +119,33 @@ export function getErrorMessage(error: unknown): string {
         case "DatabaseError":
           return "Database error occurred";
         case "AuthenticationError":
+        case "InvalidCredentialsError":
           return "Authentication failed";
+        case "InvalidTokenError":
+          return "Invalid authentication token";
+        case "SessionExpiredError":
+          return "Your session has expired. Please log in again";
+        case "InvalidRefreshTokenError":
+          return "Invalid refresh token";
         case "AuthorizationError":
+        case "UnauthorizedError":
           return "You are not authorized to perform this action";
+        case "AccountSuspendedError":
+          return "Your account has been suspended";
+        case "UserNotFoundError":
+          return "User not found";
+        case "SessionValidationError":
+          return "Session validation failed";
+        case "SessionCreationError":
+          return "Failed to create session";
+        case "KycVerificationError":
+          return "KYC verification failed";
+        case "PhoneVerificationError":
+          return "Phone verification failed";
+        case "InvalidOtpError":
+          return "Invalid OTP code";
+        case "BiometricAuthError":
+          return "Biometric authentication failed";
         case "RateLimitExceededError":
           return "Rate limit exceeded. Please try again later";
         default:
