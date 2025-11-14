@@ -1,5 +1,6 @@
-import type { AuthContext } from "./auth-types.js";
+import type { AuthContext } from "./auth-types";
 
+import { createHash, createVerify, randomBytes } from "node:crypto";
 import { Effect } from "effect";
 
 import {
@@ -7,10 +8,12 @@ import {
   type SessionExpiredError,
   type UserNotFoundError,
   type InvalidTokenError,
+  InsufficientKycTierError,
+  AccountSuspendedError,
   UnauthorizedError,
-} from "./auth-errors.js";
+} from "./auth-errors";
 
-import { AuthService } from "./auth-service.js";
+import { AuthService } from "./auth-service";
 
 /**
  * Utility function to require authentication for an Effect program
@@ -167,3 +170,182 @@ export const withAuthAndPermission =
       ),
       program
     );
+
+/**
+ * Generate a 6-digit OTP
+ */
+export const generateOtp = (): string => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+/**
+ * Generate a secure refresh token
+ */
+export const generateRefreshToken = (): string => {
+  return randomBytes(32).toString("hex");
+};
+
+/**
+ * Hash a refresh token for storage
+ */
+export const hashRefreshToken = (token: string): string => {
+  return createHash("sha256").update(token).digest("hex");
+};
+
+/**
+ * Verify a biometric signature
+ */
+export const verifyBiometricSignature = (
+  publicKey: string,
+  signature: string,
+  challenge: string
+): Effect.Effect<boolean, Error> => {
+  return Effect.try({
+    try: () => {
+      const verify = createVerify("SHA256");
+      verify.update(challenge);
+      verify.end();
+      return verify.verify(publicKey, signature, "base64");
+    },
+    catch: (error) => new Error(`Biometric verification failed: ${error}`),
+  });
+};
+
+/**
+ * Generate a challenge for biometric authentication
+ */
+export const generateBiometricChallenge = (): string => {
+  return randomBytes(32).toString("base64");
+};
+
+/**
+ * Calculate OTP expiration time (5 minutes from now)
+ */
+export const getOtpExpiration = (): Date => {
+  const expiration = new Date();
+  expiration.setMinutes(expiration.getMinutes() + 5);
+  return expiration;
+};
+
+/**
+ * Calculate refresh token expiration (30 days from now)
+ */
+export const getRefreshTokenExpiration = (): Date => {
+  const expiration = new Date();
+  expiration.setDate(expiration.getDate() + 30);
+  return expiration;
+};
+
+/**
+ * Validate phone number format (E.164)
+ */
+export const validatePhoneNumber = (phoneNumber: string): boolean => {
+  const e164Regex = /^\+?[1-9]\d{1,14}$/;
+  return e164Regex.test(phoneNumber);
+};
+
+/**
+ * Normalize phone number to E.164 format
+ */
+export const normalizePhoneNumber = (phoneNumber: string): string => {
+  // Remove all non-digit characters except leading +
+  let normalized = phoneNumber.replace(/[^\d+]/g, "");
+
+  // Add + if not present
+  if (!normalized.startsWith("+")) {
+    // Assume Nigerian number if no country code
+    if (normalized.startsWith("0")) {
+      normalized = `+234${normalized.substring(1)}`;
+    } else if (normalized.length === 10) {
+      normalized = `+234${normalized}`;
+    } else {
+      normalized = `+${normalized}`;
+    }
+  }
+
+  return normalized;
+};
+
+/**
+ * Check if KYC tier is sufficient for operation
+ */
+export const checkKycTierRequirement = (
+  currentTier: number,
+  requiredTier: number
+): boolean => {
+  return currentTier >= requiredTier;
+};
+
+/**
+ * Get transaction limits based on KYC tier
+ */
+export const getTransactionLimits = (
+  kycTier: number
+): { daily: number; monthly: number; perTransaction: number } => {
+  switch (kycTier) {
+    case 0: // Unverified
+      return { daily: 0, monthly: 0, perTransaction: 0 };
+    case 1: // Tier 1 - Basic
+      return { daily: 50000, monthly: 500000, perTransaction: 10000 }; // NGN
+    case 2: // Tier 2 - Full
+      return { daily: 500000, monthly: 5000000, perTransaction: 100000 }; // NGN
+    default:
+      return { daily: 0, monthly: 0, perTransaction: 0 };
+  }
+};
+
+/**
+ * Utility to require minimum KYC tier for an operation
+ */
+export const requireKycTier =
+  (requiredTier: number, operation: string) =>
+  (
+    authContext: AuthContext
+  ): Effect.Effect<AuthContext, InsufficientKycTierError, never> => {
+    if (authContext.user.kycTier < requiredTier) {
+      return Effect.fail(
+        new InsufficientKycTierError({
+          message: `Operation '${operation}' requires KYC Tier ${requiredTier}`,
+          userId: authContext.user.id,
+          requiredTier,
+          currentTier: authContext.user.kycTier,
+          operation,
+        })
+      );
+    }
+    return Effect.succeed(authContext);
+  };
+
+/**
+ * Utility to check if account is active and not suspended
+ */
+export const requireActiveAccount = (
+  authContext: AuthContext
+): Effect.Effect<
+  AuthContext,
+  AccountSuspendedError | UnauthorizedError,
+  never
+> => {
+  if (!authContext.user.isActive) {
+    return Effect.fail(
+      new UnauthorizedError({
+        message: "Account is not active",
+        action: "access",
+        userId: authContext.user.id,
+      })
+    );
+  }
+
+  if (authContext.user.isSuspended) {
+    return Effect.fail(
+      new AccountSuspendedError({
+        message: "Account is suspended",
+        userId: authContext.user.id,
+        suspendedAt: new Date(), // Should come from user data
+        reason: "Account suspended by administrator",
+      })
+    );
+  }
+
+  return Effect.succeed(authContext);
+};
