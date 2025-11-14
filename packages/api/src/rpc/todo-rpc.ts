@@ -13,8 +13,8 @@
 
 import type { Layer } from "effect";
 
-import { DatabaseService } from "@host/db/effects/database";
 import { Rpc, RpcGroup } from "@effect/rpc";
+import { DatabaseService } from "@host/db";
 import { Effect, Schema } from "effect";
 
 /**

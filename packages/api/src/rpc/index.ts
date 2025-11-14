@@ -33,6 +33,9 @@ export {
 } from "@effect/rpc";
 
 // Export our RPC groups
+export * from "./analytics-rpc";
+export * from "./savings-rpc";
+export * from "./wallet-rpc";
 export * from "./todo-rpc";
 export * from "./auth-rpc";
 export * from "./server";
