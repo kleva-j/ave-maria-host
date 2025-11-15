@@ -7,6 +7,7 @@ import {
   type FinancialError,
   AuthorizationError,
   PlanNotFoundError,
+  DEFAULT_CURRENCY,
   ValidationError,
   DatabaseError,
 } from "@host/shared";
@@ -97,7 +98,7 @@ export const ValidateContributionUseCaseLive = Layer.effect(
           // Create value objects
           const userId = UserId.fromString(validatedInput.userId);
           const planId = PlanId.fromString(validatedInput.planId);
-          const amount = Money.fromNumber(validatedInput.amount, "NGN");
+          const amount = Money.fromNumber(validatedInput.amount, DEFAULT_CURRENCY);
 
           // Retrieve the savings plan
           const plan = yield* savingsRepository.findById(planId).pipe(

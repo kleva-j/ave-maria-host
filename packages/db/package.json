@@ -40,6 +40,7 @@
     "@effect/sql": "^0.46.0",
     "@effect/sql-drizzle": "^0.45.0",
     "@effect/sql-pg": "^0.47.0",
+    "@host/shared": "workspace:*",
     "dotenv": "catalog:",
     "drizzle-orm": "catalog:",
     "effect": "^3.18.4",

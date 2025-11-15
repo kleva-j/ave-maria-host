@@ -1,8 +1,8 @@
 import type { TransactionRepository, SavingsRepository } from "@host/domain";
 
 import { Effect, Context, Layer } from "effect";
-import { Schema } from "@effect/schema";
 import { UserId } from "@host/domain";
+import { Schema } from "effect";
 
 import {
   type FinancialError,
@@ -51,7 +51,22 @@ export interface Badge {
 /**
  * Reward tier levels
  */
-export type RewardTier = "bronze" | "silver" | "gold" | "platinum" | "diamond";
+export const RewardTier = {
+  Bronze: "bronze",
+  Silver: "silver",
+  Gold: "gold",
+  Platinum: "platinum",
+  Diamond: "diamond",
+} as const;
+
+export const RewardTierSchema = Schema.Literal(
+  RewardTier.Bronze,
+  RewardTier.Silver,
+  RewardTier.Gold,
+  RewardTier.Platinum,
+  RewardTier.Diamond
+);
+export type RewardTier = typeof RewardTierSchema.Type;
 
 /**
  * Output from calculating rewards
@@ -277,25 +292,25 @@ export const CalculateRewardsUseCaseLive = Layer.effect(
           totalPoints += consistencyBonus;
 
           // Determine tier
-          let currentTier: RewardTier = "bronze";
-          let nextTier: RewardTier | null = "silver";
+          let currentTier: RewardTier = RewardTier.Bronze;
+          let nextTier: RewardTier | null = RewardTier.Silver;
           let pointsToNextTier = 500;
 
           if (totalPoints >= 5000) {
-            currentTier = "diamond";
+            currentTier = RewardTier.Diamond;
             nextTier = null;
             pointsToNextTier = 0;
           } else if (totalPoints >= 2500) {
-            currentTier = "platinum";
-            nextTier = "diamond";
+            currentTier = RewardTier.Platinum;
+            nextTier = RewardTier.Diamond;
             pointsToNextTier = 5000 - totalPoints;
           } else if (totalPoints >= 1000) {
-            currentTier = "gold";
-            nextTier = "platinum";
+            currentTier = RewardTier.Gold;
+            nextTier = RewardTier.Platinum;
             pointsToNextTier = 2500 - totalPoints;
           } else if (totalPoints >= 500) {
-            currentTier = "silver";
-            nextTier = "gold";
+            currentTier = RewardTier.Silver;
+            nextTier = RewardTier.Gold;
             pointsToNextTier = 1000 - totalPoints;
           }
 

@@ -8,6 +8,8 @@ import type {
   Bank,
 } from "@host/domain";
 
+import { DEFAULT_CURRENCY, type CurrencyCode } from "@host/shared";
+
 import { Effect, Context, Layer, Config, Data, pipe, Redacted } from "effect";
 import { PaymentError, PaymentStatus } from "@host/domain";
 import {
@@ -420,11 +422,11 @@ export const PaystackPaymentServiceLive = Layer.effect(
             status,
             amount: {
               value: result.amount / 100,
-              currency: result.currency as "NGN" | "USD" | "EUR",
+              currency: result.currency as CurrencyCode,
             } as Money,
             fees: {
               value: result.fees / 100,
-              currency: result.currency as "NGN" | "USD" | "EUR",
+              currency: result.currency as CurrencyCode,
             } as Money,
             message: `Transaction ${status}`,
             providerResponse: result,
@@ -458,7 +460,10 @@ export const PaystackPaymentServiceLive = Layer.effect(
       getSupportedBanks: () =>
         Effect.gen(function* () {
           const banks = yield* pipe(
-            client.listBanks({ country: "nigeria", currency: "NGN" }),
+            client.listBanks({
+              country: "nigeria",
+              currency: DEFAULT_CURRENCY,
+            }),
             Effect.catchAll((error) =>
               Effect.fail(
                 new PaymentError({
@@ -504,7 +509,10 @@ export const PaystackPaymentServiceLive = Layer.effect(
 
           // Fetch bank name from banks list
           const banks = yield* pipe(
-            client.listBanks({ country: "nigeria", currency: "NGN" }),
+            client.listBanks({
+              country: "nigeria",
+              currency: DEFAULT_CURRENCY,
+            }),
             Effect.catchAll(() => Effect.succeed([]))
           );
           const bank = banks.find((b) => b.code === bankCode);
@@ -520,7 +528,7 @@ export const PaystackPaymentServiceLive = Layer.effect(
       calculateFees: (amount: Money, _transactionType: string) =>
         Effect.succeed({
           value:
-            amount.currency === "NGN"
+            amount.currency === DEFAULT_CURRENCY
               ? Math.min(amount.value * 0.015, 2000)
               : amount.value * 0.039 + 100,
           currency: amount.currency,
@@ -555,11 +563,11 @@ export const PaystackPaymentServiceLive = Layer.effect(
               status: PaymentStatus.SUCCESS,
               amount: {
                 value: (data.amount as number) / 100,
-                currency: data.currency as "NGN" | "USD" | "EUR",
+                currency: data.currency as CurrencyCode,
               } as Money,
               fees: {
                 value: ((data.fees as number) || 0) / 100,
-                currency: data.currency as "NGN" | "USD" | "EUR",
+                currency: data.currency as CurrencyCode,
               } as Money,
               message: `Webhook event: ${event}`,
               providerResponse: data,

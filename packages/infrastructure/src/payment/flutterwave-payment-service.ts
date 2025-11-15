@@ -1,3 +1,4 @@
+import type { HttpClientError } from "@effect/platform";
 import type { UserId, Money } from "@host/domain";
 import type {
   PaymentService,
@@ -7,10 +8,15 @@ import type {
   Bank,
 } from "@host/domain";
 
-import { PaymentError, PaymentStatus } from "@host/domain";
+import { DEFAULT_CURRENCY, type CurrencyCode } from "@host/shared";
+
 import { Effect, Context, Layer, Config, Data, pipe, Redacted } from "effect";
-import { HttpClient, HttpClientRequest, HttpClientResponse } from "@effect/platform";
-import type { HttpClientError } from "@effect/platform";
+import { PaymentError, PaymentStatus } from "@host/domain";
+import {
+  HttpClientResponse,
+  HttpClientRequest,
+  HttpClient,
+} from "@effect/platform";
 
 /**
  * Flutterwave API configuration
@@ -182,9 +188,7 @@ class FlutterwaveClient {
     });
   }
 
-  listBanks(
-    country = "NG"
-  ): Effect.Effect<
+  listBanks(country = "NG"): Effect.Effect<
     Array<{
       id: number;
       code: string;
@@ -357,11 +361,11 @@ export const FlutterwavePaymentServiceLive = Layer.effect(
             status,
             amount: {
               value: result.amount,
-              currency: result.currency as "NGN" | "USD" | "EUR",
+              currency: result.currency as CurrencyCode,
             } as Money,
             fees: {
               value: result.app_fee,
-              currency: result.currency as "NGN" | "USD" | "EUR",
+              currency: result.currency as CurrencyCode,
             } as Money,
             message: `Transaction ${status}`,
             providerResponse: result,
@@ -415,7 +419,7 @@ export const FlutterwavePaymentServiceLive = Layer.effect(
                 name: bank.name,
                 slug: bank.name.toLowerCase().replace(/\s+/g, "-"),
                 country: "NG",
-                currency: "NGN",
+                currency: DEFAULT_CURRENCY,
               }) as Bank
           );
         }),
@@ -456,7 +460,7 @@ export const FlutterwavePaymentServiceLive = Layer.effect(
       calculateFees: (amount: Money, _transactionType: string) =>
         Effect.succeed({
           value:
-            amount.currency === "NGN"
+            amount.currency === DEFAULT_CURRENCY
               ? Math.min(amount.value * 0.014, 2000)
               : amount.value * 0.038,
           currency: amount.currency,
@@ -489,11 +493,11 @@ export const FlutterwavePaymentServiceLive = Layer.effect(
                   : PaymentStatus.FAILED,
               amount: {
                 value: data.amount as number,
-                currency: data.currency as "NGN" | "USD" | "EUR",
+                currency: data.currency as CurrencyCode,
               } as Money,
               fees: {
                 value: (data.app_fee as number) || 0,
-                currency: data.currency as "NGN" | "USD" | "EUR",
+                currency: data.currency as CurrencyCode,
               } as Money,
               message: `Webhook event: ${event}`,
               providerResponse: data,

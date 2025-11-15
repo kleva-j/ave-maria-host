@@ -2,8 +2,9 @@ import type { TransactionType, PaymentSource } from "../entities/transaction";
 import type { SavingsPlan } from "../entities/savings-plan";
 import type { UserId, PlanId } from "../value-objects";
 
-import { DEFAULT_CURRENCY, Money } from "../value-objects";
+import { DEFAULT_CURRENCY } from "@host/shared";
 
+import { Money } from "../value-objects";
 /**
  * Validation result interface
  */

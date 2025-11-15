@@ -17,15 +17,20 @@ export const CurrencyCodeSchema = Schema.Literal(...CURRENCY_CODES).pipe(
   Schema.brand("CurrencyCode")
 );
 
+export const DEFAULT_CURRENCY = CurrencyCodeSchema.make("NGN");
+
 export type CurrencyCode = typeof CurrencyCodeSchema.Type;
 
-export const NGNCurrencyCode = CurrencyCodeSchema.make("NGN");
-
+/**
+ * Schema for Money validation
+ */
 export class MoneySchema extends Schema.Class<MoneySchema>("MoneySchema")({
   value: Schema.Number.pipe(
     Schema.nonNegative({ message: () => "Amount cannot be negative" })
   ),
   currency: CurrencyCodeSchema,
+}).annotations({
+  description: "Money value object representing monetary amounts with currency",
 }) {}
 
 export type Money = typeof MoneySchema.Type;

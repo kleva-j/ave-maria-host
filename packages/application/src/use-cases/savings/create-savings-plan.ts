@@ -8,12 +8,12 @@ import type {
 } from "@host/domain";
 
 import { SavingsPlan, UserId, Money } from "@host/domain";
-import { Effect, Context, Layer } from "effect";
-import { Schema } from "@effect/schema";
+import { Effect, Context, Schema, Layer } from "effect";
 
 import {
   type FinancialError,
   InsufficientFundsError,
+  CurrencyCodeSchema,
   ValidationError,
   DatabaseError,
 } from "@host/shared";
@@ -25,7 +25,7 @@ export const CreateSavingsPlanInput = Schema.Struct({
   userId: Schema.UUID,
   planName: Schema.String.pipe(Schema.minLength(1), Schema.maxLength(100)),
   dailyAmount: Schema.Number.pipe(Schema.positive()),
-  currency: Schema.Literal("NGN", "USD", "EUR"),
+  currency: CurrencyCodeSchema,
   cycleDuration: Schema.Number.pipe(Schema.int(), Schema.between(7, 365)),
   targetAmount: Schema.optional(Schema.Number.pipe(Schema.positive())),
   autoSaveEnabled: Schema.optional(Schema.Boolean),

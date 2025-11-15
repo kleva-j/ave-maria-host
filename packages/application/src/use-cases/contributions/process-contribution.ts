@@ -20,6 +20,7 @@ import {
   InsufficientFundsError,
   AuthorizationError,
   PlanNotFoundError,
+  DEFAULT_CURRENCY,
   ValidationError,
   DatabaseError,
 } from "@host/shared";
@@ -114,7 +115,7 @@ export const ProcessContributionUseCaseLive = Layer.effect(
           // Create value objects
           const userId = UserId.fromString(validatedInput.userId);
           const planId = PlanId.fromString(validatedInput.planId);
-          const amount = Money.fromNumber(validatedInput.amount, "NGN");
+          const amount = Money.fromNumber(validatedInput.amount, DEFAULT_CURRENCY);
 
           // Retrieve the savings plan
           const plan = yield* savingsRepository.findById(planId).pipe(
@@ -193,7 +194,7 @@ export const ProcessContributionUseCaseLive = Layer.effect(
                 new InsufficientFundsError({
                   available: currentBalance.value,
                   required: validatedInput.amount,
-                  currency: "NGN",
+                  currency: DEFAULT_CURRENCY,
                 })
               );
             }

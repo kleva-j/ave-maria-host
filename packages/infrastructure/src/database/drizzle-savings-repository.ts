@@ -1,5 +1,6 @@
 import type { SavingsRepository, PlanId, UserId } from "@host/domain";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import type { CurrencyCode, PlanStatus } from "@host/shared";
 
 import { DatabaseService, savingsPlans } from "@host/db";
 import { Effect, Context, Layer } from "effect";
@@ -20,15 +21,15 @@ function mapToDomainEntity(row: typeof savingsPlans.$inferSelect): SavingsPlan {
     { value: row.id } as PlanId,
     { value: row.userId } as UserId,
     row.planName,
-    Money.fromNumber(Number(row.dailyAmount), row.currency),
+    Money.fromNumber(Number(row.dailyAmount), row.currency as CurrencyCode),
     row.cycleDuration,
     row.targetAmount
-      ? Money.fromNumber(Number(row.targetAmount), row.currency)
+      ? Money.fromNumber(Number(row.targetAmount), row.currency as CurrencyCode)
       : null,
-    Money.fromNumber(Number(row.currentAmount), row.currency),
+    Money.fromNumber(Number(row.currentAmount), row.currency as CurrencyCode),
     row.autoSaveEnabled,
     row.autoSaveTime,
-    row.status as "active" | "paused" | "completed" | "cancelled",
+    row.status as PlanStatus,
     new Date(row.startDate),
     new Date(row.endDate),
     Number(row.interestRate),
@@ -286,7 +287,7 @@ export const DrizzleSavingsRepositoryLive = Layer.effect(
           )
         ),
 
-      findByStatus: (status: "active" | "paused" | "completed" | "cancelled") =>
+      findByStatus: (status: PlanStatus) =>
         Effect.gen(function* () {
           const result = yield* db.withDrizzle(
             async (drizzle: NodePgDatabase) => {

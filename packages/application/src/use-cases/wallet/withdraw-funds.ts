@@ -2,7 +2,7 @@ import type { TransactionRepository, WalletRepository } from "@host/domain";
 
 import { UserId, Money, TransactionId, Transaction } from "@host/domain";
 import { Effect, Context, Layer } from "effect";
-import { Schema } from "@effect/schema";
+import { Schema } from "effect";
 
 import { PaymentGatewayPort } from "./fund-wallet.js";
 
@@ -11,6 +11,7 @@ import {
   InsufficientFundsError,
   ValidationError,
   DatabaseError,
+  CurrencyCodeSchema,
 } from "@host/shared";
 
 /**
@@ -19,7 +20,7 @@ import {
 export const WithdrawFundsInput = Schema.Struct({
   userId: Schema.UUID,
   amount: Schema.Number.pipe(Schema.positive()),
-  currency: Schema.Literal("NGN", "USD", "EUR"),
+  currency: CurrencyCodeSchema,
   bankAccountId: Schema.UUID,
   reason: Schema.optional(Schema.String.pipe(Schema.maxLength(200))),
   metadata: Schema.optional(

@@ -17,7 +17,7 @@ export class PlanId extends Schema.Class<PlanIdType>("PlanId")({
    */
   static generate(): PlanId {
     const uuid = crypto.randomUUID();
-    return PlanId.fromString(uuid);
+    return PlanId.fromString(PlanIdSchema.make(uuid));
   }
 
   /**

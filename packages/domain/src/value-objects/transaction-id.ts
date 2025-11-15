@@ -19,7 +19,7 @@ export class TransactionId extends Schema.Class<TransactionId>("TransactionId")(
    */
   static generate(): TransactionId {
     const uuid = crypto.randomUUID();
-    return TransactionId.fromString(uuid);
+    return TransactionId.fromString(TransactionIdSchema.make(uuid));
   }
 
   /**

@@ -17,7 +17,7 @@ export class UserId extends Schema.Class<UserId>("UserId")({
    */
   static generate(): UserId {
     const uuid = crypto.randomUUID();
-    return UserId.fromString(uuid);
+    return UserId.fromString(UserIdSchema.make(uuid));
   }
 
   /**

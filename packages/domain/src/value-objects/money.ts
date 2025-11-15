@@ -1,22 +1,7 @@
+import type { CurrencyCode } from "@host/shared";
+
+import { DEFAULT_CURRENCY, MoneySchema } from "@host/shared";
 import { Equal, Schema } from "effect";
-
-/**
- * Supported currencies for the AV-Daily platform
- */
-const AVAILABLE_CURRENCIES = ["NGN"];
-export const DEFAULT_CURRENCY = AVAILABLE_CURRENCIES[0] as Currency;
-export const Currency = Schema.Literal(...AVAILABLE_CURRENCIES);
-export type Currency = typeof Currency.Type;
-
-/**
- * Schema for Money validation
- */
-export const MoneySchema = Schema.Struct({
-  value: Schema.Number.pipe(Schema.nonNegative()),
-  currency: Currency,
-}).annotations({
-  description: "Money value object representing monetary amounts with currency",
-});
 
 /**
  * Money value object representing monetary amounts with currency
@@ -24,7 +9,7 @@ export const MoneySchema = Schema.Struct({
 export class Money {
   constructor(
     public readonly value: number,
-    public readonly currency: Currency
+    public readonly currency: CurrencyCode
   ) {
     // Validate the money object
     Schema.decodeUnknownSync(MoneySchema)({ value, currency });
@@ -32,7 +17,10 @@ export class Money {
   /**
    * Create Money from a number value with default currency
    */
-  static fromNumber(value: number, currency: Currency = DEFAULT_CURRENCY): Money {
+  static fromNumber(
+    value: number,
+    currency: CurrencyCode = DEFAULT_CURRENCY
+  ): Money {
     if (value < 0) {
       throw new Error("Money value cannot be negative");
     }
@@ -42,7 +30,7 @@ export class Money {
   /**
    * Create zero money with default currency
    */
-  static zero(currency: Currency = DEFAULT_CURRENCY): Money {
+  static zero(currency: CurrencyCode = DEFAULT_CURRENCY): Money {
     return new Money(0, currency);
   }
 

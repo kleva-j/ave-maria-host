@@ -1,4 +1,5 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { DEFAULT_CURRENCY, type CurrencyCode } from "@host/shared";
 
 import type {
   TransactionRepository,
@@ -28,10 +29,7 @@ function mapToDomainEntity(row: typeof transactions.$inferSelect): Transaction {
     { value: row.id } as TransactionId,
     { value: row.userId } as UserId,
     row.planId ? ({ value: row.planId } as PlanId) : null,
-    MoneyVO.fromNumber(
-      Number(row.amount),
-      row.currency as "NGN" | "USD" | "EUR"
-    ),
+    MoneyVO.fromNumber(Number(row.amount), row.currency as CurrencyCode),
     row.type as TransactionType,
     row.status as TransactionStatus,
     null, // source - not stored in current schema
@@ -88,13 +86,15 @@ export const DrizzleTransactionRepositoryLive = Layer.effect(
 
       findById: (id: TransactionId) =>
         Effect.gen(function* () {
-          const result = yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
-            return await drizzle
-              .select()
-              .from(transactions)
-              .where(eq(transactions.id, id.value))
-              .limit(1);
-          });
+          const result = yield* db.withDrizzle(
+            async (drizzle: NodePgDatabase) => {
+              return await drizzle
+                .select()
+                .from(transactions)
+                .where(eq(transactions.id, id.value))
+                .limit(1);
+            }
+          );
 
           return result[0] ? mapToDomainEntity(result[0]) : null;
         }).pipe(
@@ -107,15 +107,17 @@ export const DrizzleTransactionRepositoryLive = Layer.effect(
 
       findByUserId: (userId: UserId, limit = 50, offset = 0) =>
         Effect.gen(function* () {
-          const result = yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
-            return await drizzle
-              .select()
-              .from(transactions)
-              .where(eq(transactions.userId, userId.value))
-              .orderBy(desc(transactions.createdAt))
-              .limit(limit)
-              .offset(offset);
-          });
+          const result = yield* db.withDrizzle(
+            async (drizzle: NodePgDatabase) => {
+              return await drizzle
+                .select()
+                .from(transactions)
+                .where(eq(transactions.userId, userId.value))
+                .orderBy(desc(transactions.createdAt))
+                .limit(limit)
+                .offset(offset);
+            }
+          );
 
           return result.map(mapToDomainEntity);
         }).pipe(
@@ -128,13 +130,15 @@ export const DrizzleTransactionRepositoryLive = Layer.effect(
 
       findByPlanId: (planId: PlanId) =>
         Effect.gen(function* () {
-          const result = yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
-            return await drizzle
-              .select()
-              .from(transactions)
-              .where(eq(transactions.planId, planId.value))
-              .orderBy(desc(transactions.createdAt));
-          });
+          const result = yield* db.withDrizzle(
+            async (drizzle: NodePgDatabase) => {
+              return await drizzle
+                .select()
+                .from(transactions)
+                .where(eq(transactions.planId, planId.value))
+                .orderBy(desc(transactions.createdAt));
+            }
+          );
 
           return result.map(mapToDomainEntity);
         }).pipe(
@@ -147,13 +151,15 @@ export const DrizzleTransactionRepositoryLive = Layer.effect(
 
       findByReference: (reference: string) =>
         Effect.gen(function* () {
-          const result = yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
-            return await drizzle
-              .select()
-              .from(transactions)
-              .where(eq(transactions.reference, reference))
-              .limit(1);
-          });
+          const result = yield* db.withDrizzle(
+            async (drizzle: NodePgDatabase) => {
+              return await drizzle
+                .select()
+                .from(transactions)
+                .where(eq(transactions.reference, reference))
+                .limit(1);
+            }
+          );
 
           return result[0] ? mapToDomainEntity(result[0]) : null;
         }).pipe(
@@ -184,13 +190,15 @@ export const DrizzleTransactionRepositoryLive = Layer.effect(
 
       findByStatus: (status: TransactionStatus) =>
         Effect.gen(function* () {
-          const result = yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
-            return await drizzle
-              .select()
-              .from(transactions)
-              .where(eq(transactions.status, status))
-              .orderBy(desc(transactions.createdAt));
-          });
+          const result = yield* db.withDrizzle(
+            async (drizzle: NodePgDatabase) => {
+              return await drizzle
+                .select()
+                .from(transactions)
+                .where(eq(transactions.status, status))
+                .orderBy(desc(transactions.createdAt));
+            }
+          );
 
           return result.map(mapToDomainEntity);
         }).pipe(
@@ -203,19 +211,21 @@ export const DrizzleTransactionRepositoryLive = Layer.effect(
 
       findByTypeAndUser: (type: TransactionType, userId: UserId, limit = 50) =>
         Effect.gen(function* () {
-          const result = yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
-            return await drizzle
-              .select()
-              .from(transactions)
-              .where(
-                and(
-                  eq(transactions.type, type),
-                  eq(transactions.userId, userId.value)
+          const result = yield* db.withDrizzle(
+            async (drizzle: NodePgDatabase) => {
+              return await drizzle
+                .select()
+                .from(transactions)
+                .where(
+                  and(
+                    eq(transactions.type, type),
+                    eq(transactions.userId, userId.value)
+                  )
                 )
-              )
-              .orderBy(desc(transactions.createdAt))
-              .limit(limit);
-          });
+                .orderBy(desc(transactions.createdAt))
+                .limit(limit);
+            }
+          );
 
           return result.map(mapToDomainEntity);
         }).pipe(
@@ -234,21 +244,23 @@ export const DrizzleTransactionRepositoryLive = Layer.effect(
         offset = 0
       ) =>
         Effect.gen(function* () {
-          const result = yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
-            return await drizzle
-              .select()
-              .from(transactions)
-              .where(
-                and(
-                  eq(transactions.userId, userId.value),
-                  gte(transactions.createdAt, startDate),
-                  lte(transactions.createdAt, endDate)
+          const result = yield* db.withDrizzle(
+            async (drizzle: NodePgDatabase) => {
+              return await drizzle
+                .select()
+                .from(transactions)
+                .where(
+                  and(
+                    eq(transactions.userId, userId.value),
+                    gte(transactions.createdAt, startDate),
+                    lte(transactions.createdAt, endDate)
+                  )
                 )
-              )
-              .orderBy(desc(transactions.createdAt))
-              .limit(limit)
-              .offset(offset);
-          });
+                .orderBy(desc(transactions.createdAt))
+                .limit(limit)
+                .offset(offset);
+            }
+          );
 
           return result.map(mapToDomainEntity);
         }).pipe(
@@ -274,30 +286,35 @@ export const DrizzleTransactionRepositoryLive = Layer.effect(
           const endOfDay = new Date(date);
           endOfDay.setHours(23, 59, 59, 999);
 
-          const result = yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
-            const query = drizzle
-              .select({
-                total: sql<string>`COALESCE(SUM(${transactions.amount}), 0)`,
-                currency: transactions.currency,
-              })
-              .from(transactions)
-              .where(
-                and(
-                  eq(transactions.userId, userId.value),
-                  eq(transactions.status, TransactionStatusEnum.COMPLETED),
-                  gte(transactions.createdAt, startOfDay),
-                  lte(transactions.createdAt, endOfDay),
-                  types && types.length > 0
-                    ? inArray(transactions.type, types)
-                    : undefined
-                )
-              );
+          const result = yield* db.withDrizzle(
+            async (drizzle: NodePgDatabase) => {
+              const query = drizzle
+                .select({
+                  total: sql<string>`COALESCE(SUM(${transactions.amount}), 0)`,
+                  currency: transactions.currency,
+                })
+                .from(transactions)
+                .where(
+                  and(
+                    eq(transactions.userId, userId.value),
+                    eq(transactions.status, TransactionStatusEnum.COMPLETED),
+                    gte(transactions.createdAt, startOfDay),
+                    lte(transactions.createdAt, endOfDay),
+                    types && types.length > 0
+                      ? inArray(transactions.type, types)
+                      : undefined
+                  )
+                );
 
-            const rows = await query;
-            return rows[0] || { total: "0", currency: "NGN" };
-          });
+              const rows = await query;
+              return rows[0] || { total: "0", currency: DEFAULT_CURRENCY };
+            }
+          );
 
-          return MoneyVO.fromNumber(Number(result.total), result.currency);
+          return MoneyVO.fromNumber(
+            Number(result.total),
+            result.currency as CurrencyCode
+          );
         }).pipe(
           Effect.catchAll((error) =>
             Effect.fail(
@@ -320,30 +337,35 @@ export const DrizzleTransactionRepositoryLive = Layer.effect(
           const startDate = new Date(year, month - 1, 1);
           const endDate = new Date(year, month, 0, 23, 59, 59, 999);
 
-          const result = yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
-            const query = drizzle
-              .select({
-                total: sql<string>`COALESCE(SUM(${transactions.amount}), 0)`,
-                currency: transactions.currency,
-              })
-              .from(transactions)
-              .where(
-                and(
-                  eq(transactions.userId, userId.value),
-                  eq(transactions.status, TransactionStatusEnum.COMPLETED),
-                  gte(transactions.createdAt, startDate),
-                  lte(transactions.createdAt, endDate),
-                  types && types.length > 0
-                    ? inArray(transactions.type, types)
-                    : undefined
-                )
-              );
+          const result = yield* db.withDrizzle(
+            async (drizzle: NodePgDatabase) => {
+              const query = drizzle
+                .select({
+                  total: sql<string>`COALESCE(SUM(${transactions.amount}), 0)`,
+                  currency: transactions.currency,
+                })
+                .from(transactions)
+                .where(
+                  and(
+                    eq(transactions.userId, userId.value),
+                    eq(transactions.status, TransactionStatusEnum.COMPLETED),
+                    gte(transactions.createdAt, startDate),
+                    lte(transactions.createdAt, endDate),
+                    types && types.length > 0
+                      ? inArray(transactions.type, types)
+                      : undefined
+                  )
+                );
 
-            const rows = await query;
-            return rows[0] || { total: "0", currency: "NGN" };
-          });
+              const rows = await query;
+              return rows[0] || { total: "0", currency: DEFAULT_CURRENCY };
+            }
+          );
 
-          return MoneyVO.fromNumber(Number(result.total), result.currency);
+          return MoneyVO.fromNumber(
+            Number(result.total),
+            result.currency as CurrencyCode
+          );
         }).pipe(
           Effect.catchAll((error) =>
             Effect.fail(
@@ -361,17 +383,19 @@ export const DrizzleTransactionRepositoryLive = Layer.effect(
           const cutoffTime = new Date();
           cutoffTime.setMinutes(cutoffTime.getMinutes() - olderThanMinutes);
 
-          const result = yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
-            return await drizzle
-              .select()
-              .from(transactions)
-              .where(
-                and(
-                  eq(transactions.status, TransactionStatusEnum.PENDING),
-                  lte(transactions.createdAt, cutoffTime)
-                )
-              );
-          });
+          const result = yield* db.withDrizzle(
+            async (drizzle: NodePgDatabase) => {
+              return await drizzle
+                .select()
+                .from(transactions)
+                .where(
+                  and(
+                    eq(transactions.status, TransactionStatusEnum.PENDING),
+                    lte(transactions.createdAt, cutoffTime)
+                  )
+                );
+            }
+          );
 
           return result.map(mapToDomainEntity);
         }).pipe(
@@ -391,21 +415,23 @@ export const DrizzleTransactionRepositoryLive = Layer.effect(
         status: TransactionStatus
       ) =>
         Effect.gen(function* () {
-          const result = yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
-            const rows = await drizzle
-              .select({
-                count: sql<number>`COUNT(*)::int`,
-              })
-              .from(transactions)
-              .where(
-                and(
-                  eq(transactions.userId, userId.value),
-                  eq(transactions.status, status)
-                )
-              );
+          const result = yield* db.withDrizzle(
+            async (drizzle: NodePgDatabase) => {
+              const rows = await drizzle
+                .select({
+                  count: sql<number>`COUNT(*)::int`,
+                })
+                .from(transactions)
+                .where(
+                  and(
+                    eq(transactions.userId, userId.value),
+                    eq(transactions.status, status)
+                  )
+                );
 
-            return rows[0]?.count || 0;
-          });
+              return rows[0]?.count || 0;
+            }
+          );
 
           return result;
         }).pipe(
@@ -422,13 +448,15 @@ export const DrizzleTransactionRepositoryLive = Layer.effect(
 
       findTransactionsForProcessing: () =>
         Effect.gen(function* () {
-          const result = yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
-            return await drizzle
-              .select()
-              .from(transactions)
-              .where(eq(transactions.status, TransactionStatusEnum.PENDING))
-              .orderBy(transactions.createdAt);
-          });
+          const result = yield* db.withDrizzle(
+            async (drizzle: NodePgDatabase) => {
+              return await drizzle
+                .select()
+                .from(transactions)
+                .where(eq(transactions.status, TransactionStatusEnum.PENDING))
+                .orderBy(transactions.createdAt);
+            }
+          );
 
           return result.map(mapToDomainEntity);
         }).pipe(

@@ -10,6 +10,8 @@ import {
   time,
 } from "drizzle-orm/pg-core";
 
+import { DEFAULT_CURRENCY } from "@host/shared";
+
 import { user } from "./auth";
 
 /**
@@ -37,7 +39,9 @@ export const savingsPlans = pgTable("savings_plans", {
     .notNull(),
   contributionStreak: integer("contribution_streak").default(0).notNull(),
   totalContributions: integer("total_contributions").default(0).notNull(),
-  currency: varchar("currency", { length: 3 }).default("NGN").notNull(),
+  currency: varchar("currency", { length: 3 })
+    .default(DEFAULT_CURRENCY)
+    .notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -54,7 +58,9 @@ export const transactions = pgTable("transactions", {
     onDelete: "set null",
   }),
   amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
-  currency: varchar("currency", { length: 3 }).default("NGN").notNull(),
+  currency: varchar("currency", { length: 3 })
+    .default(DEFAULT_CURRENCY)
+    .notNull(),
   type: varchar("type", { length: 20 }).notNull(), // contribution, withdrawal, interest, penalty, refund
   status: varchar("status", { length: 20 }).default("pending").notNull(), // pending, completed, failed, cancelled
   reference: varchar("reference", { length: 100 }).notNull().unique(),
@@ -77,7 +83,9 @@ export const wallets = pgTable("wallets", {
   balance: decimal("balance", { precision: 15, scale: 2 })
     .default("0.00")
     .notNull(),
-  currency: varchar("currency", { length: 3 }).default("NGN").notNull(),
+  currency: varchar("currency", { length: 3 })
+    .default(DEFAULT_CURRENCY)
+    .notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

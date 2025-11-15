@@ -12,9 +12,9 @@ export const PlanStatusEnum = {
   CANCELLED: "cancelled",
 } as const;
 
-const DEFAULT_AUTO_SAVE_TIME = "09:00";
-const DEFAULT_AUTO_SAVE_ENABLED = false;
-const DEFAULT_INTEREST_RATE = 0.0;
+const DEFAULT_AUTO_SAVE_TIME = "09:00" as AutoSaveTime;
+const DEFAULT_AUTO_SAVE_ENABLED = false as AutoSaveEnabled;
+const DEFAULT_INTEREST_RATE = 0.0 as InterestRate;
 
 /**
  * Savings plan status type
@@ -103,6 +103,8 @@ export type CycleDuration = typeof CycleDurationSchema.Type;
 export type ContributionStreak = typeof ContributionStreakSchema.Type;
 export type TotalContributions = typeof TotalContributionsSchema.Type;
 
+export type AutoSaveEnabled = boolean;
+
 /**
  * SavingsPlan entity representing a user's savings plan with business rules
  */
@@ -115,7 +117,7 @@ export class SavingsPlan {
     public readonly cycleDuration: CycleDuration,
     public readonly targetAmount: Money | null,
     public readonly currentAmount: Money,
-    public readonly autoSaveEnabled: boolean,
+    public readonly autoSaveEnabled: AutoSaveEnabled,
     public readonly autoSaveTime: AutoSaveTime,
     public readonly status: PlanStatus,
     public readonly startDate: Date,

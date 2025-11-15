@@ -2,11 +2,12 @@ import type { TransactionRepository, WalletRepository } from "@host/domain";
 
 import { Transaction, UserId, Money } from "@host/domain";
 import { Effect, Context, Layer } from "effect";
-import { Schema } from "@effect/schema";
+import { Schema } from "effect";
 
 import {
   type PaymentGatewayError,
   type FinancialError,
+  CurrencyCodeSchema,
   ValidationError,
   DatabaseError,
 } from "@host/shared";
@@ -17,7 +18,7 @@ import {
 export const FundWalletInput = Schema.Struct({
   userId: Schema.UUID,
   amount: Schema.Number.pipe(Schema.positive()),
-  currency: Schema.Literal("NGN", "USD", "EUR"),
+  currency: CurrencyCodeSchema,
   paymentMethod: Schema.Literal("bank_transfer", "debit_card"),
   paymentReference: Schema.optional(Schema.String),
   metadata: Schema.optional(

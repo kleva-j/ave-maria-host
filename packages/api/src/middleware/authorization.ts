@@ -456,7 +456,7 @@ function checkUserPermission(
 /**
  * Get user role (simplified - in production, this would come from database)
  */
-function getUserRole(authContext: AuthContext): UserRole {
+function getUserRole(_authContext: AuthContext): UserRole {
   // In a real implementation, this would check user roles from database
   // For now, return "user" as default
   return "user";
