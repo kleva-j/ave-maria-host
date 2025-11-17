@@ -27,7 +27,6 @@
   },
   "dependencies": {
     "@effect/schema": "catalog:",
-    "@host/api": "workspace:*",
     "@host/application": "workspace:*",
     "@host/db": "workspace:*",
     "@host/domain": "workspace:*",

@@ -144,7 +144,7 @@ export const AuditServiceLive: Layer.Layer<AuditService, never, LoggerService> =
 
           // Log to console (in production, this would go to a dedicated audit log store)
           yield* _(
-            logger.audit(
+            logger.logAudit(
               `[${auditEvent.category.toUpperCase()}] ${auditEvent.action}`,
               auditEvent.userId,
               {

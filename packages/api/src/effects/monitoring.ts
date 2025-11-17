@@ -33,22 +33,21 @@
  */
 
 import type {
+  PerformanceMetrics,
+  HealthCheckResult,
+  SystemHealth,
+  HealthStatus,
+} from "@host/shared";
+
+import type {
   MetricValue as CanonicalMetricValue,
   MetricLabels,
   MetricType,
   Metric,
 } from "./enhanced-types";
 
-import {
-  Duration,
-  Schedule,
-  Context,
-  Effect,
-  Data,
-  Layer,
-  pipe,
-  Ref,
-} from "effect";
+import { Duration, Schedule, Context, Effect, Layer, pipe, Ref } from "effect";
+import { MonitoringError, HealthCheckError } from "@host/shared";
 
 import { createNumericValue } from "./enhanced-types";
 import { StructuredLogging } from "./logging";
@@ -58,63 +57,15 @@ import { StructuredLogging } from "./logging";
  */
 export type MetricValue = CanonicalMetricValue;
 
-/**
- * Health check status enumeration.
- */
-export type HealthStatus = "healthy" | "degraded" | "unhealthy";
+// Re-export monitoring types from shared package
+export type {
+  HealthStatus,
+  HealthCheckResult,
+  SystemHealth,
+  PerformanceMetrics,
+} from "@host/shared";
 
-/**
- * Health check result structure.
- */
-export interface HealthCheckResult {
-  readonly name: string;
-  readonly status: HealthStatus;
-  readonly message?: string;
-  readonly responseTime: number;
-  readonly timestamp: Date;
-  readonly metadata?: Record<string, unknown>;
-}
-
-/**
- * System health summary.
- */
-export interface SystemHealth {
-  readonly status: HealthStatus;
-  readonly checks: readonly HealthCheckResult[];
-  readonly totalChecks: number;
-  readonly healthyChecks: number;
-  readonly degradedChecks: number;
-  readonly unhealthyChecks: number;
-  readonly timestamp: Date;
-}
-
-/**
- * Performance metrics for operations.
- */
-export interface PerformanceMetrics {
-  readonly operation: string;
-  readonly executionCount: number;
-  readonly averageExecutionTime: number;
-  readonly minExecutionTime: number;
-  readonly maxExecutionTime: number;
-  readonly successRate: number;
-  readonly errorRate: number;
-  readonly lastExecution: Date;
-}
-
-/**
- * Tagged errors for monitoring operations.
- */
-export class MonitoringError extends Data.TaggedError("MonitoringError")<{
-  readonly message: string;
-  readonly cause?: unknown;
-}> {}
-
-export class HealthCheckError extends Data.TaggedError("HealthCheckError")<{
-  readonly checkName: string;
-  readonly message: string;
-  readonly cause?: unknown;
-}> {}
+export { MonitoringError, HealthCheckError } from "@host/shared";
 
 /**
  * Monitoring service interface that leverages Effect's built-in observability.

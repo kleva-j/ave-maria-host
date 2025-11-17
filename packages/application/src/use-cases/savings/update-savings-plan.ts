@@ -108,9 +108,7 @@ export const UpdateSavingsPlanUseCaseLive = Layer.effect(
 
           if (!plan) {
             return yield* Effect.fail(
-              new PlanNotFoundError({
-                planId: validatedInput.planId,
-              })
+              new PlanNotFoundError({ planId: validatedInput.planId })
             );
           }
 

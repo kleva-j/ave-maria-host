@@ -1,7 +1,9 @@
 import type { ErrorInfo, ReactNode } from "react";
 
+import { ConsoleLoggerLive, LoggerService } from "@host/api";
 import { Button } from "@/components/ui/button";
 import { Component } from "react";
+import { Effect } from "effect";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -39,15 +41,15 @@ export class GlobalErrorBoundary extends Component<
     this.setState({ error, errorInfo });
 
     // Log error using Effect-TS logger
-    // const logError = Effect.gen(function* () {
-    //   const logger = yield* LoggerService;
-    //   yield* logger.error("React Error Boundary caught error", error, {
-    //     componentStack: errorInfo.componentStack,
-    //     errorBoundary: "GlobalErrorBoundary",
-    //   });
-    // });
+    const logError = Effect.gen(function* () {
+      const logger = yield* LoggerService;
+      yield* logger.logError("React Error Boundary caught error", error, {
+        componentStack: errorInfo.componentStack,
+        errorBoundary: "GlobalErrorBoundary",
+      });
+    });
 
-    // Effect.runSync(Effect.provide(logError, ConsoleLoggerService));
+    Effect.runSync(Effect.provide(logError, ConsoleLoggerLive));
 
     // Call custom error handler if provided
     if (this.props.onError) {
@@ -69,7 +71,7 @@ export class GlobalErrorBoundary extends Component<
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-6">
             <div className="flex items-center mb-4">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <svg
                   className="h-8 w-8 text-red-400"
                   fill="none"
@@ -158,15 +160,15 @@ export class FeatureErrorBoundary extends Component<
     });
 
     // Log error using Effect-TS logger
-    // const logError = Effect.gen(function* () {
-    //   const logger = yield* LoggerService;
-    //   yield* logger.error("Feature Error Boundary caught error", error, {
-    //     componentStack: errorInfo.componentStack,
-    //     errorBoundary: "FeatureErrorBoundary",
-    //   });
-    // });
+    const logError = Effect.gen(function* () {
+      const logger = yield* LoggerService;
+      yield* logger.logError("Feature Error Boundary caught error", error, {
+        componentStack: errorInfo.componentStack,
+        errorBoundary: "FeatureErrorBoundary",
+      });
+    });
 
-    // Effect.runSync(Effect.provide(logError, ConsoleLoggerService));
+    Effect.runSync(Effect.provide(logError, ConsoleLoggerLive));
 
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
@@ -186,7 +188,7 @@ export class FeatureErrorBoundary extends Component<
       return (
         <div className="bg-red-50 border border-red-200 rounded-md p-4">
           <div className="flex">
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <svg
                 className="h-5 w-5 text-red-400"
                 fill="none"

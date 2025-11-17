@@ -41,22 +41,31 @@ export interface LoggerService {
   /**
    * Log a debug message
    */
-  readonly debug: (message: string, context?: Record<string, unknown>) => Effect.Effect<void>;
+  readonly logDebug: (
+    message: string,
+    context?: Record<string, unknown>
+  ) => Effect.Effect<void>;
 
   /**
    * Log an info message
    */
-  readonly info: (message: string, context?: Record<string, unknown>) => Effect.Effect<void>;
+  readonly logInfo: (
+    message: string,
+    context?: Record<string, unknown>
+  ) => Effect.Effect<void>;
 
   /**
    * Log a warning message
    */
-  readonly warn: (message: string, context?: Record<string, unknown>) => Effect.Effect<void>;
+  readonly logWarn: (
+    message: string,
+    context?: Record<string, unknown>
+  ) => Effect.Effect<void>;
 
   /**
    * Log an error message
    */
-  readonly error: (
+  readonly logError: (
     message: string,
     error?: unknown,
     context?: Record<string, unknown>
@@ -65,7 +74,7 @@ export interface LoggerService {
   /**
    * Log an audit event (for financial operations)
    */
-  readonly audit: (
+  readonly logAudit: (
     event: string,
     userId: string,
     details: Record<string, unknown>
@@ -85,27 +94,35 @@ export const LoggerService = Context.GenericTag<LoggerService>("LoggerService");
 export const ConsoleLoggerLive: Layer.Layer<LoggerService> = Layer.succeed(
   LoggerService,
   LoggerService.of({
-    debug: (message, context) =>
+    logDebug: (message: string, context?: Record<string, unknown>) =>
       Effect.sync(() => {
         console.debug(`[DEBUG] ${message}`, context);
       }),
 
-    info: (message, context) =>
+    logInfo: (message: string, context?: Record<string, unknown>) =>
       Effect.sync(() => {
         console.info(`[INFO] ${message}`, context);
       }),
 
-    warn: (message, context) =>
+    logWarn: (message: string, context?: Record<string, unknown>) =>
       Effect.sync(() => {
         console.warn(`[WARN] ${message}`, context);
       }),
 
-    error: (message, error, context) =>
+    logError: (
+      message: string,
+      error?: unknown,
+      context?: Record<string, unknown>
+    ) =>
       Effect.sync(() => {
         console.error(`[ERROR] ${message}`, { error, context });
       }),
 
-    audit: (event, userId, details) =>
+    logAudit: (
+      event: string,
+      userId: string,
+      details: Record<string, unknown>
+    ) =>
       Effect.sync(() => {
         console.log(`[AUDIT] ${event}`, {
           userId,
@@ -123,15 +140,12 @@ export const ConsoleLoggerLive: Layer.Layer<LoggerService> = Layer.succeed(
 /**
  * Log request start
  */
-export const logRequestStart = (
-  endpoint: string,
-  userId?: string
-) =>
+export const logRequestStart = (endpoint: string, userId?: string) =>
   Effect.gen(function* (_) {
     const logger = yield* _(LoggerService);
 
     yield* _(
-      logger.info(`Request started: ${endpoint}`, {
+      logger.logInfo(`Request started: ${endpoint}`, {
         endpoint,
         userId,
         timestamp: new Date().toISOString(),
@@ -151,7 +165,7 @@ export const logRequestComplete = (
     const logger = yield* _(LoggerService);
 
     yield* _(
-      logger.info(`Request completed: ${endpoint}`, {
+      logger.logInfo(`Request completed: ${endpoint}`, {
         endpoint,
         userId,
         duration,
@@ -172,7 +186,7 @@ export const logRequestError = (
     const logger = yield* _(LoggerService);
 
     yield* _(
-      logger.error(`Request failed: ${endpoint}`, error, {
+      logger.logError(`Request failed: ${endpoint}`, error, {
         endpoint,
         userId,
         timestamp: new Date().toISOString(),
@@ -191,7 +205,7 @@ export const logAuditEvent = (
   Effect.gen(function* (_) {
     const logger = yield* _(LoggerService);
 
-    yield* _(logger.audit(event, userId, details));
+    yield* _(logger.logAudit(event, userId, details));
   });
 
 /**

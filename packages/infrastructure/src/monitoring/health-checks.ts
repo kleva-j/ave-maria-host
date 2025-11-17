@@ -7,10 +7,10 @@
 
 import type Redis from "ioredis";
 
-import type { HealthCheckResult } from "@host/api";
+import type { HealthCheckResult } from "@host/shared";
 
 import { Effect, pipe, Duration } from "effect";
-import { HealthCheckError } from "@host/api";
+import { HealthCheckError } from "@host/shared";
 
 /**
  * Create a Redis health check.

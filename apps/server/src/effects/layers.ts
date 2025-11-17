@@ -72,11 +72,11 @@ const AuthServiceLive = Layer.succeed(
  * Combined type representing all application services available in the runtime
  */
 export type AppServices =
+  | HealthCheckService
+  | MonitoringService
   | DatabaseService
   | AuthService
-  | AppConfig
-  | MonitoringService
-  | HealthCheckService;
+  | AppConfig;
 
 /**
  * Configuration service that provides application configuration using Effect's Config system
@@ -89,10 +89,12 @@ const ConfigServiceLive = Layer.effect(AppConfigService, AppConfigEffect);
  *
  * The layer composition follows this dependency graph:
  * - ConfigServiceLive (no dependencies)
- * - LoggerLayers.fromConfig (depends on ConfigServiceLive)
  * - MonitoringLayer (no dependencies, uses Effect's built-in logging)
  * - DatabaseServiceLive (depends on ConfigServiceLive)
  * - AuthServiceLive (depends on DatabaseServiceLive and ConfigServiceLive)
+ *
+ * Note: For the complete AV-Daily application layer with all use cases and controllers,
+ * use MainLayer from @host/api/layers instead.
  *
  * @example
  * ```typescript

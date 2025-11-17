@@ -35,7 +35,7 @@ import { logAuditEvent, LoggerService } from "./logging";
 export type UserRole = "user" | "admin" | "support" | "compliance";
 
 /**
- * Permission types for operations
+ * Permission types for operations (access control list)
  */
 export type Permission =
   | "savings:create"
@@ -162,7 +162,7 @@ export const AuthorizationServiceLive: Layer.Layer<
           if (authContext.user.kycTier < requiredTier) {
             // Log authorization failure
             yield* _(
-              logger.warn("KYC tier check failed", {
+              logger.logWarn("KYC tier check failed", {
                 userId: authContext.user.id,
                 operation,
                 requiredTier,
@@ -185,7 +185,7 @@ export const AuthorizationServiceLive: Layer.Layer<
 
           // Log successful authorization
           yield* _(
-            logger.debug("KYC tier check passed", {
+            logger.logDebug("KYC tier check passed", {
               userId: authContext.user.id,
               operation,
               tier: authContext.user.kycTier,
@@ -204,7 +204,7 @@ export const AuthorizationServiceLive: Layer.Layer<
 
           if (!hasPermission) {
             yield* _(
-              logger.warn("Permission check failed", {
+              logger.logWarn("Permission check failed", {
                 userId: authContext.user.id,
                 permission,
               })
@@ -222,7 +222,7 @@ export const AuthorizationServiceLive: Layer.Layer<
           }
 
           yield* _(
-            logger.debug("Permission check passed", {
+            logger.logDebug("Permission check passed", {
               userId: authContext.user.id,
               permission,
             })
@@ -237,7 +237,7 @@ export const AuthorizationServiceLive: Layer.Layer<
 
           if (userRole !== role && userRole !== "admin") {
             yield* _(
-              logger.warn("Role check failed", {
+              logger.logWarn("Role check failed", {
                 userId: authContext.user.id,
                 requiredRole: role,
                 userRole,
@@ -256,7 +256,7 @@ export const AuthorizationServiceLive: Layer.Layer<
           }
 
           yield* _(
-            logger.debug("Role check passed", {
+            logger.logDebug("Role check passed", {
               userId: authContext.user.id,
               role,
             })
@@ -267,7 +267,7 @@ export const AuthorizationServiceLive: Layer.Layer<
         Effect.gen(function* (_) {
           if (!authContext.user.isActive) {
             yield* _(
-              logger.warn("Account status check failed - inactive", {
+              logger.logWarn("Account status check failed - inactive", {
                 userId: authContext.user.id,
               })
             );
@@ -285,7 +285,7 @@ export const AuthorizationServiceLive: Layer.Layer<
 
           if (authContext.user.isSuspended) {
             yield* _(
-              logger.warn("Account status check failed - suspended", {
+              logger.logWarn("Account status check failed - suspended", {
                 userId: authContext.user.id,
               })
             );
@@ -303,7 +303,7 @@ export const AuthorizationServiceLive: Layer.Layer<
           }
 
           yield* _(
-            logger.debug("Account status check passed", {
+            logger.logDebug("Account status check passed", {
               userId: authContext.user.id,
             })
           );
@@ -316,7 +316,7 @@ export const AuthorizationServiceLive: Layer.Layer<
 
           if (amount > limit) {
             yield* _(
-              logger.warn("Transaction limit check failed", {
+              logger.logWarn("Transaction limit check failed", {
                 userId: authContext.user.id,
                 amount,
                 limit,
@@ -337,7 +337,7 @@ export const AuthorizationServiceLive: Layer.Layer<
           }
 
           yield* _(
-            logger.debug("Transaction limit check passed", {
+            logger.logDebug("Transaction limit check passed", {
               userId: authContext.user.id,
               amount,
               limit,
@@ -351,7 +351,7 @@ export const AuthorizationServiceLive: Layer.Layer<
           // Check account status first
           if (!authContext.user.isActive) {
             yield* _(
-              logger.warn("Account status check failed - inactive", {
+              logger.logWarn("Account status check failed - inactive", {
                 userId: authContext.user.id,
               })
             );
@@ -369,7 +369,7 @@ export const AuthorizationServiceLive: Layer.Layer<
 
           if (authContext.user.isSuspended) {
             yield* _(
-              logger.warn("Account status check failed - suspended", {
+              logger.logWarn("Account status check failed - suspended", {
                 userId: authContext.user.id,
               })
             );
@@ -397,7 +397,7 @@ export const AuthorizationServiceLive: Layer.Layer<
           );
 
           yield* _(
-            logger.info("Operation authorized", {
+            logger.logInfo("Operation authorized", {
               userId: authContext.user.id,
               operation: operation.operation,
               resource: operation.resource,
