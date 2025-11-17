@@ -12,16 +12,13 @@
  * - **Audit Trail**: Maintain audit logs for financial operations
  */
 
+import type { LogLevel } from "../effects/core";
+
 import { Effect, Context, Layer } from "effect";
 
 // ============================================================================
 // Logger Service
 // ============================================================================
-
-/**
- * Log level enumeration
- */
-export type LogLevel = "debug" | "info" | "warn" | "error";
 
 /**
  * Log entry structure

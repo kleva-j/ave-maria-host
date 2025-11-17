@@ -22,14 +22,10 @@
  * ```
  */
 
-import type { AppConfig, LoggingConfig } from "@host/api";
+import type { AppConfig, LogFormat, LogLevel } from "@host/api";
 
 import { LOG_LEVELS, LOG_FORMATS } from "@host/api";
 import { Config, Effect, Redacted } from "effect";
-
-// Define basic types
-export type LogFormat = LoggingConfig["format"];
-export type LogLevel = LoggingConfig["level"];
 
 /**
  * Database configuration
