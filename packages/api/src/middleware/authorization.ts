@@ -35,27 +35,43 @@ import { logAuditEvent, LoggerService } from "./logging";
 export type UserRole = "user" | "admin" | "support" | "compliance";
 
 /**
+ * Permission resource actions
+ */
+type kycAction = "submit" | "approve" | "reject";
+type userAction = "read" | "update" | "suspend";
+type adminAction = "access";
+type analyticsAction = "read";
+type walletAction = "read" | "fund" | "withdraw";
+type groupAction = "create" | "join" | "manage";
+type savingsAction = "create" | "read" | "update" | "delete";
+
+type PermissionAction<T extends PermissionResource> =
+  | (T extends "kyc" ? kycAction : never)
+  | (T extends "user" ? userAction : never)
+  | (T extends "admin" ? adminAction : never)
+  | (T extends "analytics" ? analyticsAction : never)
+  | (T extends "wallet" ? walletAction : never)
+  | (T extends "group" ? groupAction : never)
+  | (T extends "savings" ? savingsAction : never);
+
+/**
+ * Permission resources
+ */
+type PermissionResource =
+  | "analytics"
+  | "savings"
+  | "wallet"
+  | "admin"
+  | "group"
+  | "user"
+  | "kyc";
+
+/**
  * Permission types for operations (access control list)
  */
-export type Permission =
-  | "savings:create"
-  | "savings:read"
-  | "savings:update"
-  | "savings:delete"
-  | "wallet:fund"
-  | "wallet:withdraw"
-  | "wallet:read"
-  | "group:create"
-  | "group:join"
-  | "group:manage"
-  | "kyc:submit"
-  | "kyc:approve"
-  | "kyc:reject"
-  | "user:read"
-  | "user:update"
-  | "user:suspend"
-  | "analytics:read"
-  | "admin:access";
+export type Permission = {
+  [K in PermissionResource]: `${K}:${PermissionAction<K>}`;
+}[PermissionResource];
 
 /**
  * Operation context for authorization checks
@@ -434,12 +450,12 @@ function checkUserPermission(
     "group:join": 2,
     "group:manage": 2,
     "kyc:submit": 0,
-    "kyc:approve": 0, // Admin only
-    "kyc:reject": 0, // Admin only
     "user:read": 0,
     "user:update": 0,
-    "user:suspend": 0, // Admin only
     "analytics:read": 1,
+    "kyc:approve": 0, // Admin only
+    "kyc:reject": 0, // Admin only
+    "user:suspend": 0, // Admin only
     "admin:access": 0, // Admin only
   };
 
