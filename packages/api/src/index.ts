@@ -12,3 +12,6 @@ export * from "./rpc";
 export * from "./controllers";
 export * from "./middleware";
 export * from "./routers";
+
+// Export layer compositions for dependency injection under a namespace to avoid conflicts
+export * as Layers from "./layers";

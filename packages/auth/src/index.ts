@@ -77,4 +77,4 @@ export const auth = betterAuth({
 });
 
 // Export Effect-based authentication services
-export * from "./effects/index.js";
+export * from "./effects";

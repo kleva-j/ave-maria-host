@@ -159,7 +159,9 @@ export function getErrorMessage(error: unknown): string {
 /**
  * Get error details (sanitized for security)
  */
-export function getErrorDetails(error: unknown): Record<string, unknown> | undefined {
+export function getErrorDetails(
+  error: unknown
+): Record<string, unknown> | undefined {
   if (typeof error === "object" && error !== null && "_tag" in error) {
     const details: Record<string, unknown> = {};
     const errorObj = error as Record<string, unknown>;
@@ -225,8 +227,5 @@ export function logError(
   }
 ): void {
   const errorResponse = formatErrorResponse(error);
-  console.error("API Error:", {
-    ...errorResponse,
-    context,
-  });
+  console.error("API Error:", { ...errorResponse, context });
 }
