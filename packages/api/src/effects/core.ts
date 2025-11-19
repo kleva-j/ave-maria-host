@@ -1,4 +1,4 @@
-import { Context, Data } from "effect";
+import { Data } from "effect";
 
 /**
  * Database configuration interface defining connection parameters and limits.
@@ -54,6 +54,7 @@ export interface AuthConfig {
  *     origins: ["http://localhost:3000", "https://myapp.com"],
  *     credentials: true
  *   }
+ *   environment: "developement" | "production" | "test",
  * };
  * ```
  */
@@ -69,6 +70,10 @@ export interface ServerConfig {
     /** Whether to allow credentials in CORS requests */
     readonly credentials: boolean;
   };
+  /** Node Environment Configuration */
+  readonly environment: "production" | "development" | "test";
+  /** Version of the application */
+  readonly version: string;
 }
 
 /**
@@ -107,29 +112,27 @@ export const LOG_FORMATS = {
 export type LogFormat = LoggingConfig["format"];
 export type LogLevel = LoggingConfig["level"];
 
+export interface RedisConfig {
+  /** Redis Url */
+  readonly url: string;
+}
+
 /**
- * Complete application configuration combining all subsystem configurations.
- * This is the root configuration interface used throughout the application.
+ * Payment configuration interface for payment processing settings.
  *
  * @example
  * ```typescript
- * const appConfig: AppConfig = {
- *   database: { url: "postgresql://...", maxConnections: 10, connectionTimeout: 5000 },
- *   auth: { jwtSecret: "secret", sessionTimeout: 3600, refreshTokenExpiry: 604800 },
- *   server: { port: 3000, host: "0.0.0.0", cors: { origins: ["*"], credentials: false } },
- *   logging: { level: "info", format: "json", enableCorrelationId: true }
+ * const paymentConfig: PaymentConfig = {
+ *   paystackSecretKey: "your-paystack-secret-key",
+ *   flutterwaveSecretKey: "your-flutterwave-secret-key"
  * };
  * ```
  */
-export interface AppConfig {
-  /** Database connection and pool configuration */
-  readonly database: DatabaseConfig;
-  /** Authentication and JWT configuration */
-  readonly auth: AuthConfig;
-  /** HTTP server and CORS configuration */
-  readonly server: ServerConfig;
-  /** Application logging configuration */
-  readonly logging: LoggingConfig;
+export interface PaymentConfig {
+  /** Paystack Secret Key */
+  readonly paystackSecretKey: string;
+  /** Flutterwave Secret Key */
+  readonly flutterwaveSecretKey: string;
 }
 
 /**
@@ -157,28 +160,6 @@ export class ConfigError extends Data.TaggedError("ConfigError")<{
   /** Optional field name that caused the configuration error */
   readonly field?: string;
 }> {}
-
-/**
- * Effect.ts service context tag for application configuration dependency injection.
- * Use this tag to access application configuration in Effect computations.
- *
- * @example
- * ```typescript
- * // Access configuration in an Effect
- * const useConfig = Effect.gen(function* (_) {
- *   const config = yield* _(AppConfigService);
- *   console.log(`Server running on port ${config.server.port}`);
- *   return config.database.url;
- * });
- *
- * // Provide configuration to an Effect
- * const program = Effect.provide(
- *   useConfig,
- *   Layer.succeed(AppConfigService, myAppConfig)
- * );
- * ```
- */
-export const AppConfigService = Context.GenericTag<AppConfig>("AppConfig");
 
 // Auth error types
 export const AuthErrorTypes = {

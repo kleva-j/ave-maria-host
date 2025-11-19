@@ -5,6 +5,10 @@
  * integration in the server application. It handles runtime creation, configuration,
  * and lifecycle management.
  *
+ * ## Migration Note:
+ * This module now uses the centralized layer composition from @host/api.
+ * The layers.ts file re-exports from the API package for convenience.
+ *
  * ## Key Features:
  * - **Runtime Initialization**: Creates and configures Effect runtime for the server
  * - **Environment Detection**: Automatically configures runtime based on environment
@@ -23,7 +27,7 @@
  * ```
  */
 
-import type { AppServices, AppRuntime } from "./layers";
+import type { AppRuntime, AppConfig } from "./layers";
 
 import { type Effect, Fiber } from "effect";
 
@@ -364,14 +368,14 @@ const setupGracefulShutdownHandlers = (): void => {
  * // Run an Effect program
  * const result = await runWithAppRuntime(
  *   Effect.gen(function* (_) {
- *     const db = yield* _(DatabaseService);
- *     return yield* _(db.query("SELECT 1"));
+ *     const config = yield* _(AppConfig);
+ *     return config;
  *   })
  * );
  * ```
  */
 export const runWithAppRuntime = async <A, E>(
-  effect: Effect.Effect<A, E, AppServices>
+  effect: Effect.Effect<A, E, AppConfig>
 ): Promise<A> => {
   const runtime = getAppRuntime();
   return runtime.runPromise(effect);
@@ -380,4 +384,4 @@ export const runWithAppRuntime = async <A, E>(
 /**
  * Type helper for effects that can be run with the app runtime
  */
-export type RunnableEffect<A, E = never> = Effect.Effect<A, E, AppServices>;
+export type RunnableEffect<A, E = never> = Effect.Effect<A, E, AppConfig>;
