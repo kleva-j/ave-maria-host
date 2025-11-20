@@ -4,14 +4,14 @@
 export {
   DrizzleSavingsRepository,
   DrizzleSavingsRepositoryLive,
-} from "./drizzle-savings-repository.js";
+} from "./drizzle-savings-repository";
 
 export {
   DrizzleTransactionRepository,
   DrizzleTransactionRepositoryLive,
-} from "./drizzle-transaction-repository.js";
+} from "./drizzle-transaction-repository";
 
 export {
   DrizzleWalletRepository,
   DrizzleWalletRepositoryLive,
-} from "./drizzle-wallet-repository.js";
+} from "./drizzle-wallet-repository";

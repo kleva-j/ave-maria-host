@@ -2,4 +2,4 @@
  * Cache infrastructure exports.
  */
 
-export * from "./cache-service.js";
+export * from "./cache-service";

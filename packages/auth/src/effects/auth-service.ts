@@ -14,7 +14,7 @@ import type {
   UnauthorizedError,
   InvalidOtpError,
   AuthError,
-} from "./auth-errors.js";
+} from "./auth-errors";
 
 import type {
   BiometricRegistration,
@@ -27,7 +27,7 @@ import type {
   AuthContext,
   Session,
   User,
-} from "./auth-types.js";
+} from "./auth-types";
 
 import { Context, type Effect } from "effect";
 

@@ -2,13 +2,13 @@
 // Orchestrate domain objects to fulfill specific application requirements
 
 // Savings Plan Management Use Cases
-export * from "./savings/index.js";
+export * from "./savings";
 
 // Contribution Processing Use Cases
-export * from "./contributions/index.js";
+export * from "./contributions";
 
 // Wallet Management Use Cases
-export * from "./wallet/index.js";
+export * from "./wallet";
 
 // Analytics and Reporting Use Cases
-export * from "./analytics/index.js";
+export * from "./analytics";

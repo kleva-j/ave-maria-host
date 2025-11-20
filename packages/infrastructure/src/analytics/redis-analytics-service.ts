@@ -10,8 +10,8 @@ import type { Redis } from "ioredis";
 
 import { Context, Effect, Layer, pipe, Data, Duration } from "effect";
 
-import { RedisClient as RedisClientTag } from "../redis/redis-client.js";
-import type { RedisClient } from "../redis/redis-client.js";
+import { RedisClient as RedisClientTag } from "../redis/redis-client";
+import type { RedisClient } from "../redis/redis-client";
 
 /**
  * Analytics metric types for financial operations.

@@ -8,11 +8,11 @@
 
 import type { Redis } from "ioredis";
 
-import type { RedisClient } from "../redis/redis-client.js";
+import type { RedisClient } from "../redis/redis-client";
 
 import { Context, Effect, Layer, pipe, Data, Duration } from "effect";
 
-import { RedisClient as RedisClientTag } from "../redis/redis-client.js";
+import { RedisClient as RedisClientTag } from "../redis/redis-client";
 
 /**
  * Cache entry with metadata.

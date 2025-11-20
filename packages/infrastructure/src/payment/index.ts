@@ -4,9 +4,9 @@
 export {
   PaystackPaymentService,
   PaystackPaymentServiceLive,
-} from "./paystack-payment-service.js";
+} from "./paystack-payment-service";
 
 export {
   FlutterwavePaymentService,
   FlutterwavePaymentServiceLive,
-} from "./flutterwave-payment-service.js";
+} from "./flutterwave-payment-service";

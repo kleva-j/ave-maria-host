@@ -4,7 +4,7 @@ import { UserId, Money, TransactionId, Transaction } from "@host/domain";
 import { Effect, Context, Layer } from "effect";
 import { Schema } from "effect";
 
-import { PaymentGatewayPort } from "./fund-wallet.js";
+import { PaymentGatewayPort } from "./fund-wallet";
 
 import {
   type FinancialError,

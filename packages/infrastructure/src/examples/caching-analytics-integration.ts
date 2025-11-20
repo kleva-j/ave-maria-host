@@ -10,14 +10,14 @@ import type { MetricLabels } from "@host/api/effects/enhanced-types";
 import { Effect, Layer, pipe, Duration, Schedule } from "effect";
 import { HealthCheckError } from "@host/shared";
 
-import { createRedisHealthCheck } from "../monitoring/health-checks.js";
-import { CacheService } from "../cache/cache-service.js";
+import { createRedisHealthCheck } from "../monitoring/health-checks";
+import { CacheService } from "../cache/cache-service";
 import { RedisClient } from "..";
 
 import {
   type AnalyticsMetric,
   RedisAnalyticsService,
-} from "../analytics/redis-analytics-service.js";
+} from "../analytics/redis-analytics-service";
 
 import {
   type HealthCheckConfig,

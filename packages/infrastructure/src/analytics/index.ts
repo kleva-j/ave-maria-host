@@ -2,4 +2,4 @@
  * Analytics infrastructure exports.
  */
 
-export * from "./redis-analytics-service.js";
+export * from "./redis-analytics-service";

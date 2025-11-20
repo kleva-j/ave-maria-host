@@ -39,7 +39,7 @@ import {
 } from "@host/application";
 
 // Import infrastructure layer
-import { InfrastructureLayer } from "./infrastructure-layer.js";
+import { InfrastructureLayer } from "./infrastructure-layer";
 
 /**
  * Savings Use Cases Layer - Combines all savings plan management use cases

@@ -33,7 +33,7 @@ export {
   PaymentGatewayLayer,
   NotificationLayer,
   CachingLayer,
-} from "./infrastructure-layer.js";
+} from "./infrastructure-layer";
 
 // Application Layer exports
 export {
@@ -49,7 +49,7 @@ export {
   AllUseCasesLayer,
   LoggingLayer,
   MetricsLayer,
-} from "./application-layer.js";
+} from "./application-layer";
 
 // API Layer exports
 export {
@@ -63,7 +63,7 @@ export {
   TestApiLayer,
   DevApiLayer,
   ApiLayer,
-} from "./api-layer.js";
+} from "./api-layer";
 
 // Config Layer exports
 export {
@@ -71,7 +71,7 @@ export {
   TestAppConfigEffect,
   DevAppConfigEffect,
   AppConfigEffect,
-} from "./config-layer.js";
+} from "./config-layer";
 
 // Main Layer exports
 export {
@@ -88,4 +88,4 @@ export {
   AppConfig,
   shutdown,
   startup,
-} from "./main-layer.js";
+} from "./main-layer";

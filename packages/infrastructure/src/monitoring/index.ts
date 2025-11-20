@@ -2,4 +2,4 @@
  * Monitoring infrastructure exports.
  */
 
-export * from "./health-checks.js";
+export * from "./health-checks";

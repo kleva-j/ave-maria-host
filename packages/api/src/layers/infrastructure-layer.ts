@@ -35,7 +35,7 @@ import {
 } from "@host/infrastructure";
 
 // Import monitoring services from API package
-import { MonitoringLayer } from "../effects/monitoring.js";
+import { MonitoringLayer } from "../effects/monitoring";
 
 /**
  * Database Layer - Combines all database repository implementations

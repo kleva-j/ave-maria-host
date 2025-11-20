@@ -271,9 +271,9 @@ export const PaystackPaymentService = Context.GenericTag<PaymentService>(
 export const PaystackPaymentServiceLive = Layer.effect(
   PaystackPaymentService,
   Effect.gen(function* () {
+    const webhookSecret = yield* Config.redacted("PAYSTACK_WEBHOOK_SECRET");
     const secretKey = yield* Config.redacted("PAYSTACK_SECRET_KEY");
     const publicKey = yield* Config.string("PAYSTACK_PUBLIC_KEY");
-    const webhookSecret = yield* Config.redacted("PAYSTACK_WEBHOOK_SECRET");
     const httpClient = yield* HttpClient.HttpClient;
 
     const config: PaystackConfig = {
