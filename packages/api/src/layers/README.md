@@ -1,6 +1,6 @@
 # AV-Daily Layer Composition
 
-This directory contains the complete layer composition for the AV-Daily application using Effect-TS dependency injection.
+This directory contains the complete layer composition for the AV-Daily application using Effect-TS dependency injection, featuring a robust configuration system and fine-grained authorization.
 
 ## Overview
 
@@ -14,10 +14,10 @@ The layer composition follows clean architecture principles with clear separatio
                     │
         ┌───────────┴───────────┐
         │                       │
-┌───────▼────────┐    ┌────────▼────────┐
-│   API Layer    │    │  Config Layer   │
-│  (Controllers) │    │ (Environment)   │
-└───────┬────────┘    └─────────────────┘
+┌───────▼────────┐     ┌────────▼────────┐
+│   API Layer    │     │  Config Layer   │
+│  (Controllers) │     │ (Environment)   │
+└───────┬────────┘     └─────────────────┘
         │
 ┌───────▼────────────┐
 │ Application Layer  │
@@ -32,7 +32,74 @@ The layer composition follows clean architecture principles with clear separatio
 
 ## Layer Hierarchy
 
-### 1. Infrastructure Layer (`infrastructure-layer.ts`)
+### 1. Configuration Layer (`config-layer.ts`)
+
+The configuration layer provides type-safe environment configuration with validation and defaults:
+
+- **Environment Variables**: Secure handling of sensitive data using `Config.redacted`
+- **Type Safety**: Full TypeScript support with runtime validation
+- **Defaults**: Sensible defaults with environment overrides
+- **Structured**: Organized configuration sections for different concerns
+
+**Key Components**:
+- Database configuration
+- Authentication settings (JWT, sessions)
+- Server settings (ports, CORS, environment)
+- Logging configuration
+- Payment gateway configurations (Paystack, Flutterwave)
+
+**Example Usage**:
+```typescript
+import { ConfigLayer } from "@host/api/layers";
+
+const program = Effect.gen(function* (_) {
+  // Access configuration
+  const config = yield* _(ConfigLayer);
+  console.log(`Server running on port ${config.server.port}`);
+});
+
+// Provide the configuration layer
+await Effect.runPromise(program.pipe(
+  Effect.provide(ConfigLayer)
+));
+```
+
+### 2. Authorization Layer (`authorization.ts`)
+
+A comprehensive role-based access control (RBAC) system with KYC tier enforcement:
+
+- **Role-Based Access Control**: Fine-grained permission system
+- **KYC Tier Enforcement**: Ensure users meet minimum verification requirements
+- **Operation Guards**: Protect sensitive operations
+- **Audit Logging**: Comprehensive security logging
+- **Transaction Limits**: Enforce limits based on user tier
+
+**Key Features**:
+- Permission-based access control
+- KYC tier requirements
+- Account status verification
+- Transaction limit enforcement
+- Audit trail generation
+
+**Example Usage**:
+```typescript
+import { requirePermission, requireKycTier } from "@host/api/middleware/authorization";
+
+// Protect a route with permission checks
+const protectedRoute = (authContext: AuthContext) =>
+  Effect.gen(function* (_) {
+    // Check permission
+    yield* _(requirePermission({ resource: 'wallet', action: 'withdraw' })(authContext));
+    
+    // Check KYC tier
+    yield* _(requireKycTier(2, 'wallet.withdraw')(authContext));
+    
+    // Proceed with operation
+    return yield* _(processWithdrawal(authContext.userId, amount));
+  });
+```
+
+### 3. Infrastructure Layer (`infrastructure-layer.ts`)
 
 The infrastructure layer provides concrete implementations of external services:
 
@@ -168,6 +235,30 @@ const runtime = await initializeApplication();
 // Application is ready to handle requests
 ```
 
+## Core Services
+
+### Error Handling
+
+The system includes a robust error handling system with typed errors:
+
+- `ConfigError`: For configuration-related issues
+- `AuthError`: For authentication and authorization failures
+- `ValidationError`: For input validation failures
+- `DatabaseError`: For database operation failures
+
+### Logging
+
+Structured logging with correlation IDs for tracing requests across services:
+
+```typescript
+import { LoggerService } from "@host/api/middleware/logging";
+
+const program = Effect.gen(function* (_) {
+  const logger = yield* _(LoggerService);
+  yield* _(logger.info("Processing request", { userId: "123" }));
+});
+```
+
 ## Environment-Specific Layers
 
 Each layer has environment-specific variants:
@@ -207,10 +298,10 @@ import { TestMainLayer } from "@host/api/layers";
 ### Basic Setup
 
 ```typescript
-import { createAppRuntime } from "@host/api/layers";
+import { Layers } from "@host/api";
 
 // Create runtime for current environment
-const runtime = await createAppRuntime();
+const runtime = await Layers.createAppRuntime();
 
 // Use runtime to execute effects
 const result = await runtime.runPromise(myEffect);
@@ -219,10 +310,10 @@ const result = await runtime.runPromise(myEffect);
 ### Full Application Initialization
 
 ```typescript
-import { initializeApplication } from "@host/api/layers";
+import { Layers } from "@host/api";
 
 // Initialize with all startup procedures
-const runtime = await initializeApplication();
+const runtime = await Layers.initializeApplication();
 
 // Graceful shutdown handlers are automatically registered
 // Application is ready to handle requests
