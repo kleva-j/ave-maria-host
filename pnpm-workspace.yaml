@@ -4,7 +4,7 @@ packages:
 
 catalog:
   '@ai-sdk/google': ^2.0.13
-  '@effect/platform': ^0.81.1
+  '@effect/platform': ^0.92.1
   '@effect/platform-bun': ^0.81.1
   '@effect/rpc': ^0.71.1
   '@effect/schema': ^0.75.5
