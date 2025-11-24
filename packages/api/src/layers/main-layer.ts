@@ -33,30 +33,25 @@ import {
   ProdInfrastructureLayer,
   DevInfrastructureLayer,
   InfrastructureLayer,
-} from "./infrastructure-layer.js";
+} from "./infrastructure-layer";
 
 import {
   TestApplicationLayer,
   ProdApplicationLayer,
   DevApplicationLayer,
   ApplicationLayer,
-} from "./application-layer.js";
+} from "./application-layer";
 
-import {
-  TestApiLayer,
-  ProdApiLayer,
-  DevApiLayer,
-  ApiLayer,
-} from "./api-layer.js";
+import { TestApiLayer, ProdApiLayer, DevApiLayer, ApiLayer } from "./api-layer";
 
 // Import configuration and monitoring
-import { MonitoringLayer } from "../effects/monitoring.js";
+import { MonitoringLayer } from "../effects/monitoring";
 import {
   ProdAppConfigEffect,
   TestAppConfigEffect,
   DevAppConfigEffect,
   AppConfigEffect,
-} from "./config-layer.js";
+} from "./config-layer";
 
 /**
  * Application Configuration Service
