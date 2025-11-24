@@ -34,5 +34,8 @@
     "tsdown": "^0.15.5",
     "turbo": "^2.5.4"
   },
-  "packageManager": "pnpm@10.20.0"
+  "packageManager": "pnpm@10.20.0",
+  "engines": {
+    "node": "v20.19.5"
+  }
 }
