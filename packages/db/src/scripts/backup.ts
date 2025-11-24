@@ -1,14 +1,17 @@
-import { NodeContext, NodeRuntime, NodeTerminal } from "@effect/platform-node";
-import { Config, Effect, Layer, Redacted } from "effect";
-import { fileURLToPath } from "node:url";
-import { join } from "node:path";
+#!/usr/bin/env bun
+
 import {
-  PlatformConfigProvider,
-  FileSystem,
-  Terminal,
-  Command,
-  Path,
-} from "@effect/platform";
+  type DatabaseConfig,
+  decodePostgresUrl,
+} from "../config/postgres-url-schema";
+
+import { PlatformConfigProvider, FileSystem, Command } from "@effect/platform";
+import { Config, Effect, Layer, Redacted, Console } from "effect";
+import { NodeContext, NodeRuntime } from "@effect/platform-node";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { generateTimestamp } from "../shared/utils";
 
 /**
  * Database Backup Script
@@ -34,37 +37,9 @@ interface BackupConfig {
   timestamp: string;
 }
 
-interface DatabaseConfig {
-  host: string;
-  port: string;
-  database: string;
-  username: string;
-  password: string;
-}
-
-// ============================================================================
-// Configuration Parsing
-// ============================================================================
-
-const parseDatabaseUrl = (url: string): DatabaseConfig => {
-  const urlObj = new URL(url);
-  return {
-    host: urlObj.hostname,
-    port: urlObj.port || "5432",
-    database: urlObj.pathname.slice(1),
-    username: urlObj.username,
-    password: urlObj.password,
-  };
-};
-
-const generateTimestamp = (): string => {
-  return new Date()
-    .toISOString()
-    .replace(/[:.]/g, "-")
-    .split("T")
-    .join("_")
-    .split(".")[0] as string;
-};
+export const PROJECT_ROOT = Effect.sync(() =>
+  join(dirname(fileURLToPath(import.meta.url)), "../../")
+);
 
 // ============================================================================
 // Backup Operations
@@ -73,59 +48,53 @@ const generateTimestamp = (): string => {
 const ensureBackupDirectory = (backupDir: string) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
-    const terminal = yield* Terminal.Terminal;
 
-    yield* terminal.display(
-      `📁 Ensuring backup directory exists: ${backupDir}\n`
-    );
+    yield* Console.log(`📁 Ensuring backup directory exists: ${backupDir}\n`);
 
-    const exists = yield* fs.exists(backupDir);
-
-    if (!exists) {
-      yield* fs.makeDirectory(backupDir, { recursive: true });
-      yield* terminal.display("✓ Created backup directory\n");
-    } else {
-      yield* terminal.display("✓ Backup directory exists\n");
-    }
+    yield* fs
+      .exists(backupDir)
+      .pipe(
+        Effect.flatMap((exists) =>
+          exists
+            ? Console.log("✓ Backup directory exists\n")
+            : fs
+                .makeDirectory(backupDir, { recursive: true })
+                .pipe(
+                  Effect.zipRight(Console.log("✓ Created backup directory\n"))
+                )
+        )
+      );
   });
 
 const createBackupFile = (config: BackupConfig, dbConfig: DatabaseConfig) =>
   Effect.gen(function* () {
-    const path = yield* Path.Path;
-    const terminal = yield* Terminal.Terminal;
-
     const backupFileName = `avdaily_backup_${config.timestamp}.sql`;
-    const backupFile = path.join(config.backupDir, backupFileName);
+    const backupFilePath = join(config.backupDir, backupFileName);
 
-    yield* terminal.display(`\n🔄 Creating backup: ${backupFileName}\n`);
+    yield* Console.log(`\n🔄 Creating backup: ${backupFileName}\n`);
 
     const args: string[] = [
-      "-h",
+      "-h", // Host
       dbConfig.host,
-      "-p",
+      "-p", // Port
       dbConfig.port,
-      "-U",
+      "-U", // Username
       dbConfig.username,
-      "-d",
+      "-d", // Database
       dbConfig.database,
-      `--file=${backupFile}`,
-      "--format=plain",
-      "--no-owner",
-      "--no-acl",
-      "--clean",
-      "--if-exists",
+      `--file=${backupFilePath}`,
+      "--format=plain", // Format
+      "--no-owner", // No owner
+      "--no-acl", // No ACL
+      "--clean", // Clean
+      "--if-exists", // If exists
     ];
 
-    // Build pg_dump command
-    const pgDumpCommand = Command.make("pg_dump", args.join(" "));
+    yield* Console.log(`Executing "pg_dump" command...\n`);
 
-    // Set PGPASSWORD environment variable
-    const commandWithEnv = Command.env(pgDumpCommand, {
-      PGPASSWORD: dbConfig.password,
-    });
-
-    // Execute pg_dump
-    yield* Command.exitCode(commandWithEnv).pipe(
+    yield* Command.make("pg_dump", ...args).pipe(
+      Command.env({ PGPASSWORD: dbConfig.password }),
+      Command.exitCode,
       Effect.flatMap((exitCode) =>
         exitCode === 0
           ? Effect.void
@@ -134,20 +103,16 @@ const createBackupFile = (config: BackupConfig, dbConfig: DatabaseConfig) =>
       Effect.mapError((error) => new Error(`Backup creation failed: ${error}`))
     );
 
-    yield* terminal.display("✓ Backup created successfully\n");
+    yield* Console.log("✓ Backup created successfully\n");
 
-    return backupFile;
+    return backupFilePath;
   });
 
-const compressBackup = (backupFile: string) =>
+const compressBackup = (backupFilePath: string) =>
   Effect.gen(function* () {
-    const terminal = yield* Terminal.Terminal;
+    yield* Console.log("\n📦 Compressing backup...\n");
 
-    yield* terminal.display("\n📦 Compressing backup...\n");
-
-    const gzipCommand = Command.make("gzip", backupFile);
-
-    yield* Command.exitCode(gzipCommand).pipe(
+    yield* Command.exitCode(Command.make("gzip", backupFilePath)).pipe(
       Effect.flatMap((exitCode) =>
         exitCode === 0
           ? Effect.void
@@ -156,13 +121,14 @@ const compressBackup = (backupFile: string) =>
       Effect.mapError((error) => new Error(`Compression failed: ${error}`))
     );
 
-    const compressedFile = `${backupFile}.gz`;
-    yield* terminal.display(`✓ Backup compressed: ${compressedFile}\n`);
+    const compressedFile = `${backupFilePath}.gz`;
+
+    yield* Console.log(`✓ Backup compressed: ${compressedFile}\n`);
 
     return compressedFile;
   });
 
-const getFileSize = (filePath: string) =>
+const getFileSizeMB = (filePath: string) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
 
@@ -180,87 +146,62 @@ const getFileSize = (filePath: string) =>
 // Main Backup Program
 // ============================================================================
 
-const backupDatabase = Effect.gen(function* () {
-  const terminal = yield* Terminal.Terminal;
-  const path = yield* Path.Path;
+const program = Effect.gen(function* () {
+  yield* Console.log("🗄️  Starting database backup...\n");
+  yield* Console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 
-  yield* terminal.display("🗄️  Starting database backup...\n");
-  yield* terminal.display("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-
-  // Load configuration
-  const databaseUrl = yield* Config.redacted("DATABASE_URL");
-  const backupDirConfig = yield* Config.string("BACKUP_DIR").pipe(
-    Config.withDefault("./backups")
-  );
-
-  const timestamp = generateTimestamp();
-
-  // Resolve backup directory path relative to project root
-  const projectRoot = path.join(
-    path.dirname(yield* path.fromFileUrl(new URL(import.meta.url))),
-    "../../"
-  );
-  const backupDir = path.join(projectRoot, backupDirConfig);
+  const envConfig = yield* Config.all({
+    DATABASE_URL: Config.redacted("DATABASE_URL"),
+    BACKUP_DIR: Config.string("BACKUP_DIR").pipe(
+      Config.withDefault("./backups")
+    ),
+  });
 
   const config: BackupConfig = {
-    databaseUrl: Redacted.value(databaseUrl),
-    backupDir,
-    timestamp,
+    databaseUrl: Redacted.value(envConfig.DATABASE_URL),
+    backupDir: join(yield* PROJECT_ROOT, envConfig.BACKUP_DIR),
+    timestamp: generateTimestamp(),
   };
 
-  const dbConfig = parseDatabaseUrl(config.databaseUrl);
+  const dbConfig = decodePostgresUrl(config.databaseUrl);
 
-  // Ensure backup directory exists
-  yield* ensureBackupDirectory(config.backupDir);
-
-  // Create backup
-  const backupFile = yield* createBackupFile(config, dbConfig);
-
-  // Compress backup
-  const compressedFile = yield* compressBackup(backupFile);
-
-  // Get file size
-  const fileSize = yield* getFileSize(compressedFile);
+  yield* ensureBackupDirectory(config.backupDir); // Ensure backup directory exists
+  const backupFile = yield* createBackupFile(config, dbConfig); // Create backup
+  const compressedFile = yield* compressBackup(backupFile); // Compress backup
+  const fileSize = yield* getFileSizeMB(compressedFile); // Get file size
 
   // Display summary
-  yield* terminal.display("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-  yield* terminal.display("✅ Backup completed successfully!\n");
-  yield* terminal.display(`📁 File: ${compressedFile}\n`);
-  yield* terminal.display(`📊 Size: ${fileSize}\n`);
-  yield* terminal.display("\n");
-  yield* terminal.display("To restore this backup, run:\n");
-  yield* terminal.display(
-    `  bun run src/scripts/restore.ts ${compressedFile}\n`
-  );
-});
-
-// ============================================================================
-// Error Handling & Script Entry Point
-// ============================================================================
-
-const program = backupDatabase.pipe(
+  yield* Console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+  yield* Console.log("✅ Backup completed successfully!\n");
+  yield* Console.log(`📁 File: ${compressedFile}\n`);
+  yield* Console.log(`📊 Size: ${fileSize}\n`);
+  yield* Console.log("\n");
+  yield* Console.log("To restore this backup, run:\n");
+  yield* Console.log(`  bun run src/scripts/restore.ts ${compressedFile}\n`);
+}).pipe(
   Effect.catchAll((error) =>
     Effect.gen(function* () {
-      const terminal = yield* Terminal.Terminal;
-      yield* terminal.display("\n❌ Backup failed!\n");
-      yield* terminal.display(`Error: ${error}\n`);
+      yield* Console.log("\n❌ Backup failed!\n");
+      yield* Console.log(`Error: ${error}\n`);
       return yield* Effect.fail(error);
     })
   )
 );
 
-const CombinedLayer = Layer.mergeAll(
-  NodeContext.layer,
-  NodeTerminal.layer,
-  PlatformConfigProvider.layerDotEnv(
-    join(
-      fileURLToPath(new URL(".", import.meta.url)),
-      "../../../apps/server/.env"
-    )
+const ConfigLayer = PlatformConfigProvider.layerDotEnv(
+  join(
+    fileURLToPath(new URL(".", import.meta.url)),
+    "../../../apps/server/.env"
   )
 );
 
 NodeRuntime.runMain(
-  program.pipe(Effect.provide(CombinedLayer))
-  // program.pipe(Effect.provide([NodeContext.layer, NodeTerminal.layer]))
+  program.pipe(
+    Effect.provide(
+      Layer.mergeAll(NodeContext.layer, ConfigLayer).pipe(
+        Layer.provide(NodeContext.layer)
+      )
+    )
+  )
 );
+// program.pipe(Effect.provide([NodeContext.layer, NodeTerminal.layer]))

@@ -1,4 +1,4 @@
-import { NodeContext, NodeRuntime, NodeTerminal } from "@effect/platform-node";
+import { NodeContext, NodeRuntime } from "@effect/platform-node";
 import { Terminal } from "@effect/platform";
 import { SqlClient } from "@effect/sql";
 import { Effect } from "effect";
@@ -162,7 +162,7 @@ const seedUsers = Effect.gen(function* () {
         phone_number = EXCLUDED.phone_number,
         kyc_tier = EXCLUDED.kyc_tier,
         kyc_status = EXCLUDED.kyc_status
-      RETURNING id
+      RETURNING *
     `;
 
     if (result.length > 0) {
@@ -427,8 +427,9 @@ const confirm = (message: string) =>
   Effect.gen(function* () {
     const terminal = yield* Terminal.Terminal;
     yield* terminal.display(`\n${message} (y/n): `);
-    const response = yield* terminal.readLine;
-    return response.trim().toLowerCase() === "y";
+    const input = yield* terminal.readLine;
+    yield* terminal.display(`\ninput: ${input}\n`);
+    return input.trim().toLowerCase() === "y";
   });
 
 type SeedStep<T = void> = {
@@ -446,7 +447,7 @@ const executeSeedStep = <T>(step: SeedStep<T>) =>
       return yield* Effect.asSome(step.effect);
     }
     yield* terminal.display(`⏭️  ${step.skipMessage}\n`);
-    return Effect.succeedNone;
+    return yield* Effect.succeedNone;
   });
 
 // ============================================================================
@@ -491,20 +492,22 @@ const seedDatabase = Effect.gen(function* () {
     skipMessage: "Skipped seeding users",
   });
 
-  const users = yield* Effect.match(maybeUsers, {
-    onFailure: () => {
-      return Effect.gen(function* () {
-        yield* terminal.display(
-          "⚠️  Warning: Skipping users will prevent subsequent operations\n"
-        );
-        return [] as User[];
-      });
-    },
-    onSuccess: (users) => Effect.succeed(users),
-  });
+  const newUsers = Effect.runSync(
+    yield* Effect.match(maybeUsers, {
+      onFailure: () => {
+        return Effect.gen(function* () {
+          yield* terminal.display(
+            "⚠️  Warning: Skipping users will prevent subsequent operations\n"
+          );
+          return [] as User[];
+        });
+      },
+      onSuccess: (users) => Effect.succeed(users),
+    })
+  );
 
   // Only proceed with user-dependent operations if users were created
-  if (users.length === 0) {
+  if (newUsers.length === 0) {
     yield* terminal.display("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
     yield* terminal.display("⚠️  Seeding stopped: No users created\n");
     return;
@@ -514,7 +517,7 @@ const seedDatabase = Effect.gen(function* () {
   yield* executeSeedStep({
     emoji: "👤",
     message: "Assign roles to users?",
-    effect: seedUserRoles(users),
+    effect: seedUserRoles(newUsers),
     skipMessage: "Skipped assigning user roles",
   });
 
@@ -522,7 +525,7 @@ const seedDatabase = Effect.gen(function* () {
   yield* executeSeedStep({
     emoji: "💰",
     message: "Seed user wallets?",
-    effect: seedWallets(users),
+    effect: seedWallets(newUsers),
     skipMessage: "Skipped seeding wallets",
   });
 
@@ -530,21 +533,23 @@ const seedDatabase = Effect.gen(function* () {
   const maybePlans = yield* executeSeedStep({
     emoji: "📊",
     message: "Seed savings plans?",
-    effect: seedSavingsPlans(users),
+    effect: seedSavingsPlans(newUsers),
     skipMessage: "Skipped seeding savings plans",
   });
 
-  const plans = yield* Effect.match(maybePlans, {
-    onFailure: () => Effect.succeed([] as Plan[]),
-    onSuccess: (plans) => Effect.succeed(plans),
-  });
+  const plans = Effect.runSync(
+    yield* Effect.match(maybePlans, {
+      onFailure: () => Effect.succeed([]),
+      onSuccess: (plans) => Effect.succeed(plans),
+    })
+  );
 
   // Seed transactions (requires plans)
   if (plans.length > 0) {
     yield* executeSeedStep({
       emoji: "💳",
       message: "Seed transactions?",
-      effect: seedTransactions(users, plans),
+      effect: seedTransactions(newUsers, plans),
       skipMessage: "Skipped seeding transactions",
     });
   }
@@ -553,21 +558,23 @@ const seedDatabase = Effect.gen(function* () {
   const maybeGroups = yield* executeSeedStep({
     emoji: "👨‍👩‍👧‍👦",
     message: "Seed Ajo groups?",
-    effect: seedAjoGroups(users),
+    effect: seedAjoGroups(newUsers),
     skipMessage: "Skipped seeding Ajo groups",
   });
 
-  const groups = yield* Effect.match(maybeGroups, {
-    onFailure: () => Effect.succeed([] as Group[]),
-    onSuccess: (groups) => Effect.succeed(groups),
-  });
+  const groups = Effect.runSync(
+    yield* Effect.match(maybeGroups, {
+      onFailure: () => Effect.succeed([]),
+      onSuccess: (groups) => Effect.succeed(groups),
+    })
+  );
 
   // Seed group members (requires groups)
   if (groups.length > 0) {
     yield* executeSeedStep({
       emoji: "👥",
       message: "Seed group members?",
-      effect: seedGroupMembers(users, groups),
+      effect: seedGroupMembers(newUsers, groups),
       skipMessage: "Skipped seeding group members",
     });
   }
@@ -576,7 +583,7 @@ const seedDatabase = Effect.gen(function* () {
   yield* executeSeedStep({
     emoji: "🔔",
     message: "Seed notification preferences?",
-    effect: seedNotificationPreferences(users),
+    effect: seedNotificationPreferences(newUsers),
     skipMessage: "Skipped seeding notification preferences",
   });
 
@@ -584,7 +591,7 @@ const seedDatabase = Effect.gen(function* () {
   yield* executeSeedStep({
     emoji: "📈",
     message: "Seed user analytics?",
-    effect: seedUserAnalytics(users),
+    effect: seedUserAnalytics(newUsers),
     skipMessage: "Skipped seeding user analytics",
   });
 
@@ -605,7 +612,5 @@ const seedDatabase = Effect.gen(function* () {
 // ============================================================================
 
 NodeRuntime.runMain(
-  seedDatabase.pipe(
-    Effect.provide([NodeContext.layer, NodeTerminal.layer, PgLive])
-  )
+  seedDatabase.pipe(Effect.provide([NodeContext.layer, PgLive]))
 );
