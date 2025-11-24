@@ -44,30 +44,29 @@ const checkResetAllowProduction = () =>
     }
   });
 
-NodeRuntime.runMain(
-  Effect.gen(function* () {
-    yield* checkResetConfirmation();
-    yield* checkResetAllowProduction();
+const program = Effect.gen(function* () {
+  yield* checkResetConfirmation();
+  yield* checkResetAllowProduction();
 
-    const client = yield* SqlClient.SqlClient;
+  const client = yield* SqlClient.SqlClient;
 
-    const schemaList = ["public", "drizzle"];
+  const schemaList = ["public", "drizzle"];
 
-    yield* Effect.logWarning(
-      "⚠️  WARNING: This will DROP ALL TABLES and TYPES from the database!"
-    );
-    yield* Effect.logWarning(`📊 Target schemas: ${schemaList.join(", ")}`);
-    yield* Effect.logWarning(
-      "✅ Safety checks passed - proceeding with database reset..."
-    );
+  yield* Effect.logWarning(
+    "⚠️  WARNING: This will DROP ALL TABLES and TYPES from the database!"
+  );
+  yield* Effect.logWarning(`📊 Target schemas: ${schemaList.join(", ")}`);
+  yield* Effect.logWarning(
+    "✅ Safety checks passed - proceeding with database reset..."
+  );
 
-    const getTypes = SqlSchema.findAll({
-      Request: Schema.Void,
-      Result: Schema.Struct({
-        typname: Schema.String,
-        schemaname: Schema.String,
-      }),
-      execute: () => client`
+  const getTypes = SqlSchema.findAll({
+    Request: Schema.Void,
+    Result: Schema.Struct({
+      typname: Schema.String,
+      schemaname: Schema.String,
+    }),
+    execute: () => client`
       SELECT
         t.typname,
         n.nspname AS schemaname
@@ -78,15 +77,15 @@ NodeRuntime.runMain(
         t.typtype = 'e'
         AND n.nspname IN ${client.in(schemaList)}
     `,
-    });
+  });
 
-    const getTables = SqlSchema.findAll({
-      Request: Schema.Void,
-      Result: Schema.Struct({
-        tableName: Schema.String,
-        schemaName: Schema.String,
-      }),
-      execute: () => client`
+  const getTables = SqlSchema.findAll({
+    Request: Schema.Void,
+    Result: Schema.Struct({
+      tableName: Schema.String,
+      schemaName: Schema.String,
+    }),
+    execute: () => client`
       SELECT
         table_name,
         table_schema AS schema_name
@@ -96,38 +95,39 @@ NodeRuntime.runMain(
         table_schema IN ${client.in(schemaList)}
         AND table_type = 'BASE TABLE'
     `,
-    });
+  });
 
-    const types = yield* getTypes();
-    const tables = yield* getTables();
+  const types = yield* getTypes();
+  const tables = yield* getTables();
 
-    yield* client.withTransaction(
-      Effect.gen(function* () {
-        yield* Effect.log("Starting database reset");
+  yield* client.withTransaction(
+    Effect.gen(function* () {
+      yield* Effect.log("Starting database reset");
 
-        if (types.length > 0) {
-          yield* Effect.log("Dropping types");
+      if (types.length > 0) {
+        yield* Effect.log("Dropping types");
 
-          for (const type of types) {
-            yield* client`DROP TYPE IF EXISTS ${client(type.schemaname)}.${client(type.typname)} CASCADE;`;
-          }
-          yield* Effect.log("Dropped types");
-        } else yield* Effect.log("No types to drop");
+        for (const type of types) {
+          yield* client`DROP TYPE IF EXISTS ${client(type.schemaname)}.${client(type.typname)} CASCADE;`;
+        }
+        yield* Effect.log("Dropped types");
+      } else yield* Effect.log("No types to drop");
 
-        if (tables.length > 0) {
-          yield* Effect.log(
-            `Tables to drop: ${tables.map((table) => `${table.schemaName}.${table.tableName}`).join(",\n          ")}`
-          );
-          yield* Effect.log("Dropping tables");
+      if (tables.length > 0) {
+        yield* Effect.log(
+          `Tables to drop: ${tables.map((table) => `${table.schemaName}.${table.tableName}`).join(",\n          ")}`
+        );
+        yield* Effect.log("Dropping tables");
 
-          for (const table of tables) {
-            yield* client`DROP TABLE IF EXISTS ${client(table.schemaName)}.${client(table.tableName)} CASCADE`;
-          }
-          yield* Effect.log("Dropped tables");
-        } else yield* Effect.log("No tables to drop");
+        for (const table of tables) {
+          yield* client`DROP TABLE IF EXISTS ${client(table.schemaName)}.${client(table.tableName)} CASCADE`;
+        }
+        yield* Effect.log("Dropped tables");
+      } else yield* Effect.log("No tables to drop");
 
-        yield* Effect.log("Finished database reset");
-      })
-    );
-  }).pipe(Effect.provide(PgLive))
-);
+      yield* Effect.log("Finished database reset");
+    })
+  );
+}).pipe(Effect.provide(PgLive));
+
+NodeRuntime.runMain(program);
