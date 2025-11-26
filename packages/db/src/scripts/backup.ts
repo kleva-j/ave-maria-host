@@ -74,14 +74,10 @@ const createBackupFile = (config: BackupConfig, dbConfig: DatabaseConfig) =>
     yield* Console.log(`\n🔄 Creating backup: ${backupFileName}\n`);
 
     const args: string[] = [
-      "-h", // Host
-      dbConfig.host,
-      "-p", // Port
-      dbConfig.port,
-      "-U", // Username
-      dbConfig.username,
-      "-d", // Database
-      dbConfig.database,
+      `-h ${dbConfig.host}`, // Host
+      `-p ${dbConfig.port}`, // Port
+      `-U ${dbConfig.username}`, // Username
+      `-d ${dbConfig.database}`, // Database
       `--file=${backupFilePath}`,
       "--format=plain", // Format
       "--no-owner", // No owner
@@ -90,9 +86,9 @@ const createBackupFile = (config: BackupConfig, dbConfig: DatabaseConfig) =>
       "--if-exists", // If exists
     ];
 
-    yield* Console.log(`Executing "pg_dump" command...\n`);
+    yield* Console.log(`Executing pg_dump with args: ${args.join(" ")}\n`);
 
-    yield* Command.make("pg_dump", ...args).pipe(
+    yield* Command.make("pg_dump", args.join(" ")).pipe(
       Command.env({ PGPASSWORD: dbConfig.password }),
       Command.exitCode,
       Effect.flatMap((exitCode) =>
@@ -191,7 +187,7 @@ const program = Effect.gen(function* () {
 const ConfigLayer = PlatformConfigProvider.layerDotEnv(
   join(
     fileURLToPath(new URL(".", import.meta.url)),
-    "../../../apps/server/.env"
+    "../../../../apps/server/.env"
   )
 );
 
