@@ -258,7 +258,6 @@ export const SavingsHandlersLive: Layer.Layer<
   | CreateSavingsPlanUseCase
   | UpdateSavingsPlanUseCase
   | GetSavingsPlanUseCase
-  | AuthMiddleware
 > = SavingsRpcs.toLayer({
   /**
    * Create a new savings plan
