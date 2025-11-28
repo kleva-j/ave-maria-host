@@ -50,6 +50,10 @@ import {
   AuthMiddleware,
   AuthRpcs,
 } from "./auth-rpc";
+import {
+  EmailVerificationHandlersLive,
+  EmailVerificationRpcs,
+} from "./email-verification-rpc";
 
 export type AppUseCaseGroup =
   | GenerateProgressReportUseCase
@@ -67,6 +71,7 @@ export type AppUseCaseGroup =
  * Combined RPC groups for the entire application
  */
 export const AppRpcs = TodoRpcs.merge(AuthRpcs)
+  .merge(EmailVerificationRpcs)
   .merge(AnalyticsRpcs)
   .merge(SavingsRpcs)
   .merge(WalletRpcs);
@@ -162,7 +167,7 @@ export const AuthMiddlewareLive: Layer.Layer<
 /**
  * Web handler for RPC communication
  * Creates a complete RPC web handler with all services integrated
- * 
+ *
  * TODO: Full implementation requires proper use case layer setup and dependency injection
  */
 export const createRpcWebHandler = (
@@ -184,6 +189,7 @@ export const createRpcWebHandler = (
             "SavingsHandlersLive",
             "WalletHandlersLive",
             "AnalyticsHandlersLive",
+            "EmailVerificationHandlersLive",
           ],
         }),
         {
@@ -213,11 +219,14 @@ type RpcServerDeps =
 
 export const RpcServerLive: Layer.Layer<never, never, RpcServerDeps> =
   RpcServer.layer(AppRpcs).pipe(
+    // Handlers
     Layer.provide(TodoHandlersLive),
     Layer.provide(AuthHandlersLive),
     Layer.provide(SavingsHandlersLive),
     Layer.provide(WalletHandlersLive),
     Layer.provide(AnalyticsHandlersLive),
+    Layer.provide(EmailVerificationHandlersLive),
+    // Middleware
     Layer.provide(AuthMiddlewareLive)
   );
 

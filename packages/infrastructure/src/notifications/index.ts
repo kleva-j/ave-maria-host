@@ -5,3 +5,4 @@
 // with actual integration code for Twilio, Firebase, and email services
 
 export * from "./stub-notification-service";
+export * from "./email-service";

@@ -4,3 +4,4 @@
 export * from "./schemas";
 export * from "./errors";
 export * from "./types";
+export * from "./lib";

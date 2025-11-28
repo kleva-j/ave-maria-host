@@ -1,7 +1,10 @@
 import type {
+  EmailVerificationRateLimitError,
+  EmailAlreadyVerifiedError,
   InvalidRefreshTokenError,
   InsufficientKycTierError,
   InvalidCredentialsError,
+  EmailVerificationError,
   PhoneVerificationError,
   SessionValidationError,
   AccountSuspendedError,
@@ -156,6 +159,33 @@ export interface AuthService {
     phoneNumber: string,
     otp: string
   ) => Effect.Effect<void, InvalidOtpError | PhoneVerificationError>;
+
+  /**
+   * Request email verification
+   */
+  readonly requestEmailVerification: (
+    email: string
+  ) => Effect.Effect<
+    { expiresAt: Date },
+    EmailVerificationError | EmailAlreadyVerifiedError
+  >;
+
+  /**
+   * Verify email with token
+   */
+  readonly verifyEmail: (
+    token: string
+  ) => Effect.Effect<void, InvalidTokenError | EmailVerificationError>;
+
+  /**
+   * Resend email verification
+   */
+  readonly resendVerificationEmail: (
+    email: string
+  ) => Effect.Effect<
+    void,
+    EmailVerificationError | EmailVerificationRateLimitError
+  >;
 
   /**
    * Submit KYC Tier 1 verification

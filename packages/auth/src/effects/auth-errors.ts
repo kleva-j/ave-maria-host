@@ -146,3 +146,31 @@ export class AccountSuspendedError extends Data.TaggedError("AccountSuspendedErr
   readonly suspendedAt: Date;
   readonly reason?: string;
 }> {}
+
+/**
+ * Error thrown when email verification fails
+ */
+export class EmailVerificationError extends Data.TaggedError("EmailVerificationError")<{
+  readonly message: string;
+  readonly email?: string;
+  readonly reason?: string;
+  readonly cause?: unknown;
+}> {}
+
+/**
+ * Error thrown when email is already verified
+ */
+export class EmailAlreadyVerifiedError extends Data.TaggedError("EmailAlreadyVerifiedError")<{
+  readonly message: string;
+  readonly email: string;
+}> {}
+
+/**
+ * Error thrown when email verification rate limit is exceeded
+ */
+export class EmailVerificationRateLimitError extends Data.TaggedError("EmailVerificationRateLimitError")<{
+  readonly message: string;
+  readonly email: string;
+  readonly retryAfter: Date;
+}> {}
+

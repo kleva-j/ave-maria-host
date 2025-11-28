@@ -32,6 +32,7 @@
     "@host/domain": "workspace:*",
     "@host/shared": "workspace:*",
     "drizzle-orm": "catalog:",
-    "effect": "catalog:"
+    "effect": "catalog:",
+    "resend": "^6.5.2"
   }
 }

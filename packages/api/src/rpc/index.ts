@@ -33,6 +33,7 @@ export {
 } from "@effect/rpc";
 
 // Export our RPC groups
+export * from "./email-verification-rpc";
 export * from "./analytics-rpc";
 export * from "./savings-rpc";
 export * from "./wallet-rpc";
