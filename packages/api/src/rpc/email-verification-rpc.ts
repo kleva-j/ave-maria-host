@@ -5,9 +5,17 @@
  * It provides secure, type-safe email verification operations.
  */
 
-import { Schema, Effect, Layer } from "effect";
+import type { Layer } from "effect";
+
+import { RedisRateLimiterService } from "@host/infrastructure";
 import { Rpc, RpcGroup } from "@effect/rpc";
 import { AuthService } from "@host/auth";
+import { Schema, Effect } from "effect";
+
+import {
+  createEmailVerificationRateLimitKey,
+  EMAIL_VERIFICATION_LIMITS,
+} from "../middleware/rate-limiting";
 
 /**
  * Email verification request response
@@ -71,9 +79,9 @@ export class InvalidTokenError extends Schema.TaggedError<InvalidTokenError>()(
  * Union of all email verification errors
  */
 export const EmailVerificationRpcError = Schema.Union(
-  EmailVerificationError,
-  EmailAlreadyVerifiedError,
   EmailVerificationRateLimitError,
+  EmailAlreadyVerifiedError,
+  EmailVerificationError,
   InvalidTokenError
 );
 
@@ -128,7 +136,11 @@ export class EmailVerificationRpcs extends RpcGroup.make(
   Rpc.make("RequestVerification", {
     payload: RequestEmailVerificationPayload,
     success: EmailVerificationResponse,
-    error: Schema.Union(EmailVerificationError, EmailAlreadyVerifiedError),
+    error: Schema.Union(
+      EmailVerificationError,
+      EmailAlreadyVerifiedError,
+      EmailVerificationRateLimitError
+    ),
   }),
 
   /**
@@ -183,7 +195,7 @@ export const EmailVerificationHandlersLive: Layer.Layer<
   | Rpc.Handler<"ResendVerification">
   | Rpc.Handler<"VerifyEmail">,
   never,
-  AuthService
+  AuthService | RedisRateLimiterService
 > = EmailVerificationRpcs.toLayer({
   /**
    * Request email verification handler
@@ -191,6 +203,33 @@ export const EmailVerificationHandlersLive: Layer.Layer<
   RequestVerification: ({ email }) =>
     Effect.gen(function* () {
       const authService = yield* AuthService;
+      const rateLimiter = yield* RedisRateLimiterService;
+
+      // Check rate limit before sending email
+      const rateLimitKey = createEmailVerificationRateLimitKey(email);
+      yield* rateLimiter
+        .checkLimit(
+          rateLimitKey,
+          EMAIL_VERIFICATION_LIMITS.requestsPerHour,
+          EMAIL_VERIFICATION_LIMITS.windowMs
+        )
+        .pipe(
+          Effect.mapError((error) => {
+            if (error._tag === "RateLimitExceededError") {
+              return new EmailVerificationRateLimitError({
+                message: `Rate limit exceeded. You can request ${EMAIL_VERIFICATION_LIMITS.requestsPerHour} verification emails per hour.`,
+                email,
+                retryAfter: error.retryAfter,
+              });
+            }
+            // For other errors, log but don't block the request
+            console.error("Rate limiter error:", error);
+            return new EmailVerificationError({
+              message: "Rate limiter error",
+              email,
+            });
+          })
+        );
 
       // Request email verification
       const result = yield* authService.requestEmailVerification(email).pipe(
@@ -250,6 +289,33 @@ export const EmailVerificationHandlersLive: Layer.Layer<
   ResendVerification: ({ email }) =>
     Effect.gen(function* () {
       const authService = yield* AuthService;
+      const rateLimiter = yield* RedisRateLimiterService;
+
+      // Check rate limit before resending email
+      const rateLimitKey = createEmailVerificationRateLimitKey(email);
+      yield* rateLimiter
+        .checkLimit(
+          rateLimitKey,
+          EMAIL_VERIFICATION_LIMITS.requestsPerHour,
+          EMAIL_VERIFICATION_LIMITS.windowMs
+        )
+        .pipe(
+          Effect.mapError((error) => {
+            if (error._tag === "RateLimitExceededError") {
+              return new EmailVerificationRateLimitError({
+                message: `Rate limit exceeded. You can request ${EMAIL_VERIFICATION_LIMITS.requestsPerHour} verification emails per hour.`,
+                email,
+                retryAfter: error.retryAfter,
+              });
+            }
+            // For other errors, log but don't block the request
+            console.error("Rate limiter error:", error);
+            return new EmailVerificationError({
+              message: "Rate limiter error",
+              email,
+            });
+          })
+        );
 
       // Resend verification email
       yield* authService.resendVerificationEmail(email).pipe(

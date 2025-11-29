@@ -13,6 +13,7 @@
  */
 
 // Import services
+import type { RedisRateLimiterService } from "@host/infrastructure";
 import type { HttpServer } from "@effect/platform";
 import type { DatabaseService } from "@host/db";
 import type { Hono } from "hono";
@@ -172,7 +173,8 @@ export const AuthMiddlewareLive: Layer.Layer<
  */
 export const createRpcWebHandler = (
   _authServiceLayer: Layer.Layer<AuthService>,
-  _databaseServiceLayer: Layer.Layer<DatabaseService>
+  _databaseServiceLayer: Layer.Layer<DatabaseService>,
+  _redisRateLimiterServiceLayer: Layer.Layer<RedisRateLimiterService>
 ) => {
   return Effect.succeed((_request: Request) => {
     // For now, return a simple response indicating RPC is available
@@ -214,6 +216,7 @@ export const createRpcWebHandler = (
 type RpcServerDeps =
   | AuthService
   | DatabaseService
+  | RedisRateLimiterService
   | RpcServer.Protocol
   | AppUseCaseGroup;
 
@@ -245,7 +248,11 @@ export const RpcHttpProtocolLive: Layer.Layer<RpcServer.Protocol> =
 export const RpcLayerLive: Layer.Layer<
   never,
   never,
-  AuthService | DatabaseService | HttpServer.HttpServer | AppUseCaseGroup
+  | AuthService
+  | DatabaseService
+  | RedisRateLimiterService
+  | HttpServer.HttpServer
+  | AppUseCaseGroup
 > = HttpRouter.Default.serve().pipe(
   Layer.provide(RpcServerLive),
   Layer.provide(RpcHttpProtocolLive)
@@ -275,11 +282,13 @@ export const RpcLayerLive: Layer.Layer<
  */
 export const createCompleteRpcLayer = (
   authServiceLayer: Layer.Layer<AuthService>,
-  databaseServiceLayer: Layer.Layer<DatabaseService>
+  databaseServiceLayer: Layer.Layer<DatabaseService>,
+  redisRateLimiterServiceLayer: Layer.Layer<RedisRateLimiterService>
 ): Layer.Layer<never, never, HttpServer.HttpServer | AppUseCaseGroup> =>
   RpcLayerLive.pipe(
     Layer.provide(authServiceLayer),
-    Layer.provide(databaseServiceLayer)
+    Layer.provide(databaseServiceLayer),
+    Layer.provide(redisRateLimiterServiceLayer)
   );
 
 /**
@@ -303,7 +312,8 @@ export const createCompleteRpcLayer = (
 export const integrateWithHono = (
   app: Hono,
   authServiceLayer: Layer.Layer<AuthService>,
-  databaseServiceLayer: Layer.Layer<DatabaseService>
+  databaseServiceLayer: Layer.Layer<DatabaseService>,
+  redisRateLimiterServiceLayer: Layer.Layer<RedisRateLimiterService>
 ) => {
   // Create the web handler once and reuse it
   let webHandlerPromise: Promise<
@@ -316,7 +326,11 @@ export const integrateWithHono = (
       // Create the web handler if it doesn't exist
       if (!webHandlerPromise) {
         webHandlerPromise = Effect.runPromise(
-          createRpcWebHandler(authServiceLayer, databaseServiceLayer)
+          createRpcWebHandler(
+            authServiceLayer,
+            databaseServiceLayer,
+            redisRateLimiterServiceLayer
+          )
         );
       }
 

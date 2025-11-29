@@ -10,11 +10,62 @@ RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 EMAIL_FROM=noreply@av-daily.com
 EMAIL_FROM_NAME=AV-Daily
 
+# Redis Configuration (Upstash recommended)
+REDIS_URL=rediss://default:xxxxx@xxxxx.upstash.io:6379
+
 # Application URL (for verification links)
 APP_URL=https://av-daily.com
 
 # Node Environment
 NODE_ENV=development  # or 'production'
+```
+
+## Redis Setup (Upstash Recommended)
+
+### Why Upstash?
+- ✅ **Serverless** - Pay only for what you use, scales to zero
+- ✅ **Free Tier** - 10,000 commands/day (perfect for development)
+- ✅ **Global** - Low latency worldwide with multi-region replication
+- ✅ **Compatible** - Works with existing `ioredis` client
+- ✅ **No Management** - No servers to maintain
+
+### Getting Started with Upstash
+
+1. **Sign up** at [https://upstash.com](https://upstash.com)
+2. **Create a Redis database**:
+   - Click "Create Database"
+   - Choose a region (closest to your users)
+   - Select "Global" for multi-region (optional)
+3. **Get connection string**:
+   - Copy the `UPSTASH_REDIS_REST_URL` or connection string
+   - Use the format: `rediss://default:PASSWORD@ENDPOINT:6379`
+4. **Add to `.env`**:
+   ```bash
+   REDIS_URL=rediss://default:your-password@your-endpoint.upstash.io:6379
+   ```
+
+### Alternative: Traditional Redis
+
+If you prefer self-hosted Redis:
+
+```bash
+# Local Development
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+# Production
+REDIS_HOST=your-redis-host
+REDIS_PORT=6379
+REDIS_PASSWORD=your-redis-password
+```
+
+**Start local Redis:**
+```bash
+# Using Docker
+docker run -d -p 6379:6379 redis
+
+# Or install locally
+redis-server
 ```
 
 ## Getting Your Resend API Key
@@ -67,14 +118,15 @@ The email sent to users includes:
 
 ## Rate Limiting
 
-**TODO**: Implement Redis-based rate limiting
-- Current: No rate limiting enforced
-- Target: 3 verification emails per hour per email address
-- Priority: High (before production launch)
+**Implemented**: Redis-based rate limiting with sliding window algorithm
+- **Limit**: 3 verification emails per hour per email address
+- **Storage**: Upstash Redis (serverless, auto-scaling)
+- **Cost**: Free tier covers ~333 verifications/day
 
 ## Security Notes
 
 1. **Never commit API keys** - Keep `.env` in `.gitignore`
 2. **Use environment-specific keys** - Different keys for dev/staging/prod
-3. **Monitor email sending** - Watch for abuse/spam
-4. **Implement rate limiting** - Prevent email bombing attacks
+3. **Monitor email sending** - Watch for abuse/spam via Resend dashboard
+4. **Upstash Security** - TLS encryption enabled by default
+5. **Rate limiting** - Prevents email bombing attacks

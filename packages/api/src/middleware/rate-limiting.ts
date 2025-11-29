@@ -137,6 +137,26 @@ export const InMemoryRateLimiterLive: Layer.Layer<RateLimiterService> =
   );
 
 // ============================================================================
+// Email Verification Rate Limiting
+// ============================================================================
+
+/**
+ * Email verification specific rate limits
+ * Prevents email bombing attacks
+ */
+export const EMAIL_VERIFICATION_LIMITS = {
+  requestsPerHour: 3,
+  windowMs: 60 * 60 * 1000, // 1 hour
+} as const;
+
+/**
+ * Helper to create rate limit key for email verification
+ */
+export function createEmailVerificationRateLimitKey(email: string): string {
+  return `email:verification:${email.toLowerCase()}`;
+}
+
+// ============================================================================
 // Rate Limiting Middleware
 // ============================================================================
 
