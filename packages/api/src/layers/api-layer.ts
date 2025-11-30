@@ -27,7 +27,6 @@ import {
 
 // Import middleware
 import {
-  InMemoryRateLimiterLive,
   ConsoleLoggerLive,
   AuditServiceLive,
 } from "../middleware";
@@ -60,15 +59,14 @@ export const ControllersLayer = Layer.mergeAll(
  *
  * This layer provides:
  * - AuthMiddleware: JWT authentication and authorization
- * - RateLimitingMiddleware: Request rate limiting
  * - LoggingMiddleware: Request/response logging
  * - ErrorHandlingMiddleware: Centralized error handling
  * - AuditLoggingMiddleware: Security audit logging
  *
- * Middleware is applied in order: auth → rate limiting → logging → error handling
+ * Note: Rate limiting is handled by RedisRateLimiterService from the infrastructure package.
+ * Middleware is applied in order: auth → logging → error handling
  */
 export const MiddlewareLayer = Layer.mergeAll(
-  InMemoryRateLimiterLive,
   ConsoleLoggerLive,
   AuditServiceLive
 );
