@@ -29,6 +29,7 @@ import {
   // Import notification service implementations
   // Note: Using stub implementations until actual services are configured
   StubNotificationServiceLive,
+  ResendEmailServiceLive,
 
   // Import caching and analytics services
   CacheServiceLive,
@@ -71,13 +72,16 @@ export const PaymentGatewayLayer = Layer.mergeAll(
  * Notification Layer - Combines notification service implementations
  *
  * This layer provides:
- * - SMS notifications (Twilio)
- * - Push notifications (Firebase)
- * - Email notifications
+ * - SMS notifications (Twilio) - stub
+ * - Push notifications (Firebase) - stub
+ * - Email notifications (Resend) - live
  *
- * Currently using stub implementations that can be replaced with actual services.
+ * Email service is fully configured with Resend integration.
  */
-export const NotificationLayer = StubNotificationServiceLive;
+export const NotificationLayer = Layer.mergeAll(
+  StubNotificationServiceLive,
+  ResendEmailServiceLive
+);
 
 /**
  * Caching and Analytics Layer - Combines caching and analytics services

@@ -13,6 +13,7 @@ import type {
   User,
 } from "./auth-types";
 
+import { EmailService } from "@host/infrastructure";
 import { Effect, Layer } from "effect";
 
 import { auth } from "..";
@@ -81,6 +82,7 @@ function createSessionFromBetterAuth(betterAuthSession: any): Session {
  * Live implementation of AuthService using Better-Auth
  */
 class AuthServiceImpl implements AuthService {
+  constructor(private readonly emailService: EmailService) {}
   validateToken = (
     token: string
   ): Effect.Effect<
@@ -578,10 +580,6 @@ class AuthServiceImpl implements AuthService {
   > =>
     Effect.tryPromise({
       try: async () => {
-        // Better-Auth will send verification email automatically on signup
-        // This method is for manual verification requests
-        // We'll use the verification table to track requests
-
         // Check if user exists and email is not already verified
         const user = await auth.api.getSession({
           headers: { "x-user-email": email },
@@ -594,12 +592,21 @@ class AuthServiceImpl implements AuthService {
           });
         }
 
-        // Generate verification token and set expiration
+        // Generate custom verification token
+        const token = crypto.randomUUID(); // Refactor later
         const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-        // Store in verification table (Better-Auth handles this)
-        // For now, return the expiration time
-        // The actual email sending will be handled by Better-Auth's sendVerificationEmail
+        // Store token in Better-Auth's verification table
+        // Better-Auth uses identifier + value pattern
+        await auth.api.sendVerificationEmail({
+          body: { email, callbackURL: `/verify-email?token=${token}` },
+        });
+
+        // Send verification email using our EmailService
+        const userName = user?.user?.name || email.split("@")[0] as string;
+        await Effect.runPromise(
+          this.emailService.sendVerificationEmail(email, token, userName)
+        );
 
         return { expiresAt };
       },
@@ -656,25 +663,41 @@ class AuthServiceImpl implements AuthService {
   > =>
     Effect.tryPromise({
       try: async () => {
-        // Check rate limiting (max 3 requests per hour)
-        // This would typically be stored in Redis or database
-        // For now, we'll implement a simple in-memory check
+        // Note: Rate limiting is handled at the RPC layer by RedisRateLimiterService
+        // This method just handles the email sending logic
 
-        // TODO: Implement proper rate limiting with Redis
-        // For MVP, we'll just call the verification request
-
-        // Better-Auth's sendVerificationEmail will be called
-        // through the requestEmailVerification flow
-        const result = await auth.api.sendVerificationEmail({
-          body: { email },
+        // Get user information
+        const user = await auth.api.getSession({
+          headers: { "x-user-email": email },
         });
 
-        if (!result) {
+        if (!user?.user) {
           throw new EmailVerificationError({
-            message: "Failed to send verification email",
+            message: "User not found",
             email,
           });
         }
+
+        if (user.user.emailVerified) {
+          throw new EmailAlreadyVerifiedError({
+            message: "Email is already verified",
+            email,
+          });
+        }
+
+        // Generate new verification token
+        const token = crypto.randomUUID();
+
+        // Update Better-Auth's verification table
+        await auth.api.sendVerificationEmail({
+          body: { email, callbackURL: `/verify-email?token=${token}` },
+        });
+
+        // Send verification email using our EmailService
+        const userName = user.user.name || email.split("@")[0] as string;
+        await Effect.runPromise(
+          this.emailService.sendVerificationEmail(email, token, userName)
+        );
       },
       catch: (error) => {
         if (error instanceof EmailVerificationRateLimitError) {
@@ -682,6 +705,12 @@ class AuthServiceImpl implements AuthService {
         }
         if (error instanceof EmailVerificationError) {
           return error;
+        }
+        if (error instanceof EmailAlreadyVerifiedError) {
+          return new EmailVerificationError({
+            message: error.message,
+            email,
+          });
         }
         return new EmailVerificationError({
           message: "Failed to resend verification email",
@@ -876,8 +905,16 @@ class AuthServiceImpl implements AuthService {
 
 /**
  * Layer that provides the live AuthService implementation
+ * Requires EmailService to be provided
  */
-export const AuthServiceLive = Layer.succeed(
+export const AuthServiceLive: Layer.Layer<
   AuthService,
-  new AuthServiceImpl()
+  never,
+  EmailService
+> = Layer.effect(
+  AuthService,
+  Effect.gen(function* () {
+    const emailService = yield* EmailService;
+    return new AuthServiceImpl(emailService);
+  })
 );

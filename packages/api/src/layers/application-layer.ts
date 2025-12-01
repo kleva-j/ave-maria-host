@@ -38,6 +38,9 @@ import {
   CalculateRewardsUseCaseLive,
 } from "@host/application";
 
+// Import auth service
+import { AuthServiceLive } from "@host/auth";
+
 // Import infrastructure layer
 import { InfrastructureLayer } from "./infrastructure-layer";
 
@@ -115,7 +118,8 @@ export const AllUseCasesLayer = Layer.mergeAll(
   SavingsUseCasesLayer,
   ContributionUseCasesLayer,
   WalletUseCasesLayer,
-  AnalyticsUseCasesLayer
+  AnalyticsUseCasesLayer,
+  AuthServiceLive
 );
 
 /**
