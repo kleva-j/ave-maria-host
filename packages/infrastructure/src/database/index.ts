@@ -15,3 +15,9 @@ export {
   DrizzleWalletRepository,
   DrizzleWalletRepositoryLive,
 } from "./drizzle-wallet-repository";
+
+export {
+  DrizzleUserRepository,
+  DrizzleUserRepositoryLive,
+} from "./drizzle-user-repository";
+

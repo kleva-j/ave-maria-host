@@ -5,10 +5,11 @@ import { Data } from "effect";
 
 export type { TransactionRepository } from "./transaction-repository";
 export type { SavingsRepository } from "./savings-repository";
+export type { UserRepository } from "./user-repository";
 export type {
+  WalletTransactionSummary,
   WalletRepository,
   Wallet,
-  WalletTransactionSummary,
 } from "./wallet-repository";
 
 /**
