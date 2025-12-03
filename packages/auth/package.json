@@ -28,6 +28,7 @@
     "dotenv": "catalog:",
     "zod": "catalog:",
     "@host/db": "workspace:*",
+    "@host/domain": "workspace:*",
     "@host/shared": "workspace:*",
     "@host/infrastructure": "workspace:*",
     "effect": "catalog:",

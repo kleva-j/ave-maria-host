@@ -1,5 +1,5 @@
-// Application Use Cases
-// Orchestrate domain objects to fulfill specific application requirements
+// Use Cases - Application Business Logic
+// Orchestrate domain entities and repositories to implement business use cases
 
 // Savings Plan Management Use Cases
 export * from "./savings";
@@ -12,3 +12,6 @@ export * from "./wallet";
 
 // Analytics and Reporting Use Cases
 export * from "./analytics";
+
+// User Management Use Cases
+export * from "./user";

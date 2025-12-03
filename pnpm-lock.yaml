@@ -603,6 +603,9 @@ importers:
       '@host/db':
         specifier: workspace:*
         version: link:../db
+      '@host/domain':
+        specifier: workspace:*
+        version: link:../domain
       '@host/infrastructure':
         specifier: workspace:*
         version: link:../infrastructure
