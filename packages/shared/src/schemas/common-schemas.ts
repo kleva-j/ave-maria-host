@@ -3,6 +3,8 @@
 
 import { Schema } from "effect";
 
+import { LGAS, STATES } from "../constant";
+
 // ============================================================================
 // Common Value Objects
 // ============================================================================
@@ -141,7 +143,24 @@ export const PhoneNumberSchema = Schema.Trimmed.pipe(
     message: () =>
       "Invalid phone number format. Use international format (e.g., +2348012345678)",
   })
-);
+).annotations({ description: "Phone number" });
+
+/**
+ * Schema for Firstname and Lastname
+ */
+export const FirstNameSchema = Schema.Trimmed.pipe(
+  Schema.minLength(1, { message: () => "First name is required" }),
+  Schema.maxLength(100, {
+    message: () => "First name must not exceed 100 characters",
+  })
+).annotations({ description: "First name" });
+
+export const LastNameSchema = Schema.Trimmed.pipe(
+  Schema.minLength(1, { message: () => "Last name is required" }),
+  Schema.maxLength(100, {
+    message: () => "Last name must not exceed 100 characters",
+  })
+).annotations({ description: "Last name" });
 
 /**
  * Schema for email validation
@@ -150,7 +169,61 @@ export const EmailSchema = Schema.Trimmed.pipe(
   Schema.pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, {
     message: () => "Invalid email format",
   })
+).annotations({ description: "Email address" });
+
+/**
+ * Schema for Physical Address validation
+ */
+export const AddressSchema = Schema.Trimmed.pipe(
+  Schema.minLength(10, {
+    message: () => "Address must be at least 10 characters",
+  }),
+  Schema.maxLength(255, {
+    message: () => "Address must not exceed 255 characters",
+  })
+).annotations({ description: "Physical address" });
+
+/**
+ * Schema for State validation
+ */
+export const StateSchema = Schema.Literal(...STATES)
+  .pipe(Schema.brand("State"))
+  .annotations({
+    message: () => "Invalid State code",
+    description: "State code",
+  });
+
+/**
+ * Schema for City validation
+ */
+export const CitySchema = Schema.Trimmed.pipe(
+  Schema.minLength(3, {
+    message: () => "City code must be at least 3 characters",
+  }),
+  Schema.maxLength(10, {
+    message: () => "City code must not exceed 10 characters",
+  })
 );
+
+/**
+ * Schema for LGA (Local Government Area) validation
+ */
+
+export const LgaSchema = Schema.Literal(...LGAS)
+  .pipe(Schema.brand("Lga"))
+  .annotations({
+    message: () => "Invalid LGA code",
+    description: "LGA code",
+  });
+
+/**
+ * Schema Validator for postal code validation
+ */
+export const PostalCodeSchema = Schema.Trimmed.pipe(
+  Schema.pattern(/^\d{6}$/, {
+    message: () => "Postal code must be exactly 6 digits",
+  })
+).annotations({ description: "Postal code" });
 
 /**
  * Schema for Nigerian Bank Verification Number (BVN)
@@ -159,7 +232,7 @@ export const BvnSchema = Schema.Trimmed.pipe(
   Schema.pattern(/^\d{11}$/, {
     message: () => "BVN must be exactly 11 digits",
   })
-);
+).annotations({ description: "Biometric verification number (BVN)" });
 
 /**
  * Schema for Nigerian bank account number
@@ -168,7 +241,7 @@ export const NigerianAccountNumberSchema = Schema.Trimmed.pipe(
   Schema.pattern(/^\d{10}$/, {
     message: () => "Account number must be exactly 10 digits",
   })
-);
+).annotations({ description: "Bank account number" });
 
 /**
  * Schema for Nigerian bank code
@@ -177,7 +250,7 @@ export const NigerianBankCodeSchema = Schema.Trimmed.pipe(
   Schema.pattern(/^\d{3}$/, {
     message: () => "Bank code must be exactly 3 digits",
   })
-);
+).annotations({ description: "Bank code" });
 
 /**
  * Schema for time in HH:MM format
@@ -186,7 +259,7 @@ export const TimeSchema = Schema.Trimmed.pipe(
   Schema.pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
     message: () => "Invalid time format. Use HH:MM (e.g., 09:00)",
   })
-);
+).annotations({ description: "Time in HH:MM format" });
 
 /**
  * Schema for percentage (0-100)
@@ -196,7 +269,7 @@ export const PercentageSchema = Schema.Number.pipe(
   Schema.between(0, 100, {
     message: () => "Percentage must be between 0 and 100",
   })
-);
+).annotations({ description: "Percentage (0-100)" });
 
 /**
  * Schema for positive integer
@@ -204,7 +277,7 @@ export const PercentageSchema = Schema.Number.pipe(
 export const PositiveIntSchema = Schema.Number.pipe(
   Schema.int({ message: () => "Must be a whole number" }),
   Schema.positive({ message: () => "Must be positive" })
-);
+).annotations({ description: "Positive integer" });
 
 /**
  * Schema for non-negative integer
@@ -212,7 +285,7 @@ export const PositiveIntSchema = Schema.Number.pipe(
 export const NonNegativeIntSchema = Schema.Number.pipe(
   Schema.int({ message: () => "Must be a whole number" }),
   Schema.nonNegative({ message: () => "Cannot be negative" })
-);
+).annotations({ description: "Non-negative integer" });
 
 /**
  * Schema for URL validation
@@ -221,7 +294,17 @@ export const UrlSchema = Schema.Trimmed.pipe(
   Schema.pattern(/^https?:\/\/.+/, {
     message: () => "Invalid URL format. Must start with http:// or https://",
   })
-);
+).annotations({ description: "URL" });
+
+/**
+ * Schema for Country Name
+ */
+export const CountryNameSchema = Schema.Literal("Nigeria")
+  .pipe(Schema.brand("CountryName"))
+  .annotations({
+    message: () => "Invalid country name",
+    description: "Country name",
+  });
 
 /**
  * Schema for ISO country code (2 letters)
@@ -230,26 +313,7 @@ export const CountryCodeSchema = Schema.Trimmed.pipe(
   Schema.pattern(/^[A-Z]{2}$/, {
     message: () => "Country code must be a 2-letter ISO code (e.g., NG, US)",
   })
-);
-
-/**
- * Schema for currency code (3 letters) Might Remove later
- */
-// export const CurrencyCodeSchema = Schema.Trimmed.pipe(
-//   Schema.pattern(/^[A-Z]{3}$/, {
-//     message: () => "Currency code must be a 3-letter ISO code (e.g., NGN, USD)",
-//   }),
-//   Schema.filter(
-//     (s) => {
-//       const codes = CURRENCY_CODES as readonly string[];
-//       return codes.includes(s);
-//     },
-//     {
-//       message: (s) => `${s} is not a valid ISO 4217 currency code`,
-//     }
-//   ),
-//   Schema.brand("CurrencyCode")
-// );
+).annotations({ description: "ISO country code (2 letters)" });
 
 /**
  * Schema for invite code (6 alphanumeric characters)
@@ -258,7 +322,7 @@ export const InviteCodeSchema = Schema.Trimmed.pipe(
   Schema.pattern(/^[A-Z0-9]{6}$/, {
     message: () => "Invite code must be 6 alphanumeric characters",
   })
-);
+).annotations({ description: "Invite code (6 alphanumeric characters)" });
 
 /**
  * Schema for OTP (6 digits)
@@ -267,7 +331,7 @@ export const OtpSchema = Schema.Trimmed.pipe(
   Schema.pattern(/^\d{6}$/, {
     message: () => "OTP must be exactly 6 digits",
   })
-);
+).annotations({ description: "OTP (6 digits)" });
 
 /**
  * Schema for password validation
@@ -279,7 +343,89 @@ export const PasswordSchema = Schema.Trimmed.pipe(
   Schema.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
     message: () => "Password must contain uppercase, lowercase, and number",
   })
-);
+).annotations({ description: "Password" });
+
+/**
+ * Schema for KYC status
+ */
+export const KycStatusEnum = {
+  PENDING: "pending",
+  APPROVED: "approved",
+  REJECTED: "rejected",
+  UNDER_REVIEW: "under_review",
+} as const;
+
+export const KycStatusSchema = Schema.Literal(...Object.values(KycStatusEnum));
+
+export type KycStatus = typeof KycStatusSchema.Type;
+
+/**
+ * Schema for KYC ID type
+ */
+export const KycIdTypeEnum = {
+  DRIVERS_LICENSE: "drivers_license",
+  NATIONAL_ID: "national_id",
+  VOTERS_CARD: "voters_card",
+  PASSPORT: "passport",
+} as const;
+
+export const KycIdTypeSchema = Schema.Literal(...Object.values(KycIdTypeEnum))
+  .pipe(Schema.brand("KycIdType"))
+  .annotations({
+    message: () => "Invalid ID type",
+    description: "Type of government-issued ID",
+  });
+
+export type KycIdType = typeof KycIdTypeSchema.Type;
+
+/**
+ * KYC Tier Schema
+ */
+export const KycTierEnum = { "0": 0, "1": 1, "2": 2 } as const;
+
+// export const KycTierSchema = Schema.Literal(...Object.values(KycTierEnum))
+//   .pipe(Schema.brand("KycTier"))
+//   .annotations({
+//     message: () => "Invalid KYC tier",
+//     description: "KYC tier level",
+//   });
+
+export const KycTierSchema = Schema.Number.pipe(
+  Schema.int({ message: () => "KYC tier must be a whole number" }),
+  Schema.between(0, 2, { message: () => "KYC tier must be between 0 and 2" })
+).annotations({ description: "KYC tier level" });
+
+export type KycTier = (typeof KycTierEnum)[keyof typeof KycTierEnum];
+
+/**
+ * Schema for Kyc id number
+ */
+export const KycIdNumberSchema = Schema.String.pipe(
+  Schema.minLength(5, { message: () => "ID number is required" }),
+  Schema.maxLength(50, {
+    message: () => "ID number must not exceed 50 characters",
+  })
+).annotations({ description: "ID number" });
+
+/**
+ * Biometric authentication types & schemas
+ */
+export const BiometricTypeEnum = {
+  FINGERPRINT: "fingerprint",
+  FACE: "face_id",
+  IRIS: "iris",
+};
+
+export const BiometricTypeSchema = Schema.Literal(
+  ...Object.values(BiometricTypeEnum)
+)
+  .pipe(Schema.brand("BiometricType"))
+  .annotations({
+    message: () => "Invalid biometric type",
+    description: "Type of biometric verification",
+  });
+
+export type BiometricType = typeof BiometricTypeSchema.Type;
 
 // ============================================================================
 // Common Enums
@@ -288,38 +434,39 @@ export const PasswordSchema = Schema.Trimmed.pipe(
 /**
  * Schema for transaction status
  */
+export const TransactionStatusEnum = {
+  PENDING: "pending",
+  COMPLETED: "completed",
+  FAILED: "failed",
+  CANCELLED: "cancelled",
+} as const;
+
 export const TransactionStatusSchema = Schema.Literal(
-  "pending",
-  "completed",
-  "failed",
-  "cancelled"
-);
+  ...Object.values(TransactionStatusEnum)
+)
+  .pipe(Schema.brand("TransactionStatus"))
+  .annotations({
+    message: () => "Invalid transaction status",
+    description: "Status of a transaction",
+  });
 
 export type TransactionStatus = typeof TransactionStatusSchema.Type;
 
 /**
  * Schema for plan status
  */
+export const PlanStatusEnum = {
+  ACTIVE: "active",
+  PAUSED: "paused",
+  COMPLETED: "completed",
+  CANCELLED: "cancelled",
+} as const;
+
 export const PlanStatusSchema = Schema.Literal(
-  "active",
-  "paused",
-  "completed",
-  "cancelled"
+  ...Object.values(PlanStatusEnum)
 );
 
 export type PlanStatus = typeof PlanStatusSchema.Type;
-
-/**
- * Schema for KYC status
- */
-export const KycStatusSchema = Schema.Literal(
-  "pending",
-  "approved",
-  "rejected",
-  "under_review"
-);
-
-export type KycStatus = typeof KycStatusSchema.Type;
 
 /**
  * Schema for notification channel

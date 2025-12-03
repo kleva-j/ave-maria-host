@@ -3,6 +3,20 @@
 
 import { Schema } from "effect";
 
+import {
+  KycIdNumberSchema,
+  PhoneNumberSchema,
+  KycIdTypeSchema,
+  KycStatusSchema,
+  FirstNameSchema,
+  PasswordSchema,
+  LastNameSchema,
+  KycTierSchema,
+  EmailSchema,
+  BvnSchema,
+  UrlSchema,
+} from "./common-schemas";
+
 // ============================================================================
 // Input Schemas
 // ============================================================================
@@ -13,43 +27,14 @@ import { Schema } from "effect";
 export class RegisterUserSchema extends Schema.Class<RegisterUserSchema>(
   "RegisterUserSchema"
 )({
-  phoneNumber: Schema.String.pipe(
-    Schema.pattern(/^\+?[1-9]\d{1,14}$/, {
-      message: () => "Invalid phone number format",
-    })
-  ),
-  email: Schema.optional(
-    Schema.String.pipe(
-      Schema.pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, {
-        message: () => "Invalid email format",
-      })
-    )
-  ),
-  password: Schema.String.pipe(
-    Schema.minLength(8, {
-      message: () => "Password must be at least 8 characters",
-    }),
-    Schema.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
-      message: () => "Password must contain uppercase, lowercase, and number",
-    })
-  ),
-  firstName: Schema.String.pipe(
-    Schema.minLength(1, { message: () => "First name is required" }),
-    Schema.maxLength(100, {
-      message: () => "First name must not exceed 100 characters",
-    }),
-    Schema.trimmed()
-  ),
-  lastName: Schema.String.pipe(
-    Schema.minLength(1, { message: () => "Last name is required" }),
-    Schema.maxLength(100, {
-      message: () => "Last name must not exceed 100 characters",
-    }),
-    Schema.trimmed()
-  ),
+  phoneNumber: PhoneNumberSchema,
+  email: Schema.optional(EmailSchema), // Optional email for registration
+  password: PasswordSchema,
+  firstName: FirstNameSchema,
+  lastName: LastNameSchema,
 }) {}
 
-export type RegisterUserInput = Schema.Schema.Type<typeof RegisterUserSchema>;
+export type RegisterUserInput = typeof RegisterUserSchema.Type;
 
 /**
  * Schema for Tier 1 KYC submission (basic verification)
@@ -82,9 +67,7 @@ export class SubmitTier1KycSchema extends Schema.Class<SubmitTier1KycSchema>(
   ),
 }) {}
 
-export type SubmitTier1KycInput = Schema.Schema.Type<
-  typeof SubmitTier1KycSchema
->;
+export type SubmitTier1KycInput = typeof SubmitTier1KycSchema.Type;
 
 /**
  * Schema for Tier 2 KYC submission (full verification with ID)
@@ -92,45 +75,15 @@ export type SubmitTier1KycInput = Schema.Schema.Type<
 export class SubmitTier2KycSchema extends Schema.Class<SubmitTier2KycSchema>(
   "SubmitTier2KycSchema"
 )({
-  idType: Schema.Literal(
-    "national_id",
-    "drivers_license",
-    "passport",
-    "voters_card"
-  ).pipe(
-    Schema.annotations({
-      description: "Type of government-issued ID",
-    })
-  ),
-  idNumber: Schema.String.pipe(
-    Schema.minLength(5, { message: () => "ID number is required" }),
-    Schema.maxLength(50, {
-      message: () => "ID number must not exceed 50 characters",
-    })
-  ),
+  idType: KycIdTypeSchema,
+  idNumber: KycIdNumberSchema,
   idExpiryDate: Schema.optional(Schema.DateTimeUtc),
-  bvn: Schema.optional(
-    Schema.String.pipe(
-      Schema.pattern(/^\d{11}$/, {
-        message: () => "BVN must be exactly 11 digits",
-      })
-    )
-  ),
-  idDocumentUrl: Schema.String.pipe(
-    Schema.pattern(/^https?:\/\/.+/, {
-      message: () => "Invalid document URL",
-    })
-  ),
-  selfieUrl: Schema.String.pipe(
-    Schema.pattern(/^https?:\/\/.+/, {
-      message: () => "Invalid selfie URL",
-    })
-  ),
+  bvn: Schema.optional(BvnSchema),
+  idDocumentUrl: UrlSchema,
+  selfieUrl: UrlSchema,
 }) {}
 
-export type SubmitTier2KycInput = Schema.Schema.Type<
-  typeof SubmitTier2KycSchema
->;
+export type SubmitTier2KycInput = typeof SubmitTier2KycSchema.Type;
 
 /**
  * Schema for updating user profile
@@ -241,14 +194,9 @@ export class KycSubmissionOutputSchema extends Schema.Class<KycSubmissionOutputS
   "KycSubmissionOutputSchema"
 )({
   status: Schema.Literal("success", "error"),
-  kycTier: Schema.Number.pipe(Schema.int()),
+  kycTier: KycTierSchema,
   message: Schema.String,
-  reviewStatus: Schema.Literal(
-    "pending",
-    "approved",
-    "rejected",
-    "under_review"
-  ),
+  reviewStatus: KycStatusSchema,
 }) {}
 
 export type KycSubmissionOutput = Schema.Schema.Type<
@@ -292,7 +240,7 @@ export type UpdateProfileOutput = Schema.Schema.Type<
 export class KycLimitsSchema extends Schema.Class<KycLimitsSchema>(
   "KycLimitsSchema"
 )({
-  tier: Schema.Number.pipe(Schema.int(), Schema.between(0, 2)),
+  tier: KycTierSchema,
   dailyTransactionLimit: Schema.Number,
   monthlyTransactionLimit: Schema.Number,
   maxSavingsPlans: Schema.Number.pipe(Schema.int()),

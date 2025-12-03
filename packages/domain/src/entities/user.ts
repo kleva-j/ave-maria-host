@@ -2,24 +2,13 @@ import { type UserId } from "../value-objects";
 
 import { Schema } from "effect";
 
-/**
- * KYC Status enum
- */
-export const KycStatusEnum = {
-  PENDING: "pending",
-  APPROVED: "approved",
-  REJECTED: "rejected",
-  UNDER_REVIEW: "under_review",
-} as const;
-
-export const KycStatus = Schema.Literal(
-  KycStatusEnum.PENDING,
-  KycStatusEnum.APPROVED,
-  KycStatusEnum.REJECTED,
-  KycStatusEnum.UNDER_REVIEW
-).annotations({ description: "KYC verification status" });
-
-export type KycStatus = typeof KycStatus.Type;
+import {
+  type KycStatus,
+  PhoneNumberSchema,
+  KycStatusSchema,
+  KycStatusEnum,
+  EmailSchema,
+} from "@host/shared";
 
 /**
  * User entity representing a user in the system
@@ -31,7 +20,7 @@ export class User extends Schema.Class<User>("User")({
   name: Schema.String.annotations({
     description: "User's full name",
   }),
-  email: Schema.String.annotations({
+  email: EmailSchema.annotations({
     description: "User's email address",
   }),
   emailVerified: Schema.Boolean.annotations({
@@ -40,7 +29,7 @@ export class User extends Schema.Class<User>("User")({
   image: Schema.NullOr(Schema.String).annotations({
     description: "URL to user's profile image",
   }),
-  phoneNumber: Schema.NullOr(Schema.String).annotations({
+  phoneNumber: Schema.NullOr(PhoneNumberSchema).annotations({
     description: "User's phone number",
   }),
   phoneVerified: Schema.Boolean.annotations({
@@ -52,7 +41,7 @@ export class User extends Schema.Class<User>("User")({
   kycTier: Schema.Number.annotations({
     description: "KYC tier level: 0 = Unverified, 1 = Basic, 2 = Full",
   }),
-  kycStatus: Schema.String.annotations({
+  kycStatus: KycStatusSchema.annotations({
     description: "KYC verification status",
   }),
   kycData: Schema.NullOr(Schema.Unknown).annotations({
