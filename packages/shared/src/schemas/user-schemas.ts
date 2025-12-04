@@ -4,15 +4,20 @@
 import { Schema } from "effect";
 
 import {
+  BiometricTypeSchema,
   KycIdNumberSchema,
   PhoneNumberSchema,
+  PostalCodeSchema,
   KycIdTypeSchema,
   KycStatusSchema,
   FirstNameSchema,
   PasswordSchema,
   LastNameSchema,
   KycTierSchema,
+  AddressSchema,
+  StateSchema,
   EmailSchema,
+  CitySchema,
   BvnSchema,
   UrlSchema,
 } from "./common-schemas";
@@ -43,28 +48,15 @@ export class SubmitTier1KycSchema extends Schema.Class<SubmitTier1KycSchema>(
   "SubmitTier1KycSchema"
 )({
   dateOfBirth: Schema.DateTimeUtc,
-  address: Schema.String.pipe(
-    Schema.minLength(10, {
-      message: () => "Address must be at least 10 characters",
-    }),
-    Schema.maxLength(200, {
-      message: () => "Address must not exceed 200 characters",
-    })
-  ),
-  city: Schema.String.pipe(
-    Schema.minLength(1, { message: () => "City is required" }),
-    Schema.maxLength(100)
-  ),
-  state: Schema.String.pipe(
-    Schema.minLength(1, { message: () => "State is required" }),
-    Schema.maxLength(100)
-  ),
-  postalCode: Schema.optional(Schema.String.pipe(Schema.maxLength(20))),
+  address: AddressSchema,
+  city: CitySchema,
+  state: StateSchema,
+  postalCode: Schema.optional(PostalCodeSchema),
   country: Schema.String.pipe(
     Schema.pattern(/^[A-Z]{2}$/, {
       message: () => "Country must be a 2-letter ISO code",
     })
-  ),
+  ).annotations({ default: "NG" }),
 }) {}
 
 export type SubmitTier1KycInput = typeof SubmitTier1KycSchema.Type;
@@ -91,29 +83,13 @@ export type SubmitTier2KycInput = typeof SubmitTier2KycSchema.Type;
 export class UpdateProfileSchema extends Schema.Class<UpdateProfileSchema>(
   "UpdateProfileSchema"
 )({
-  firstName: Schema.optional(
-    Schema.String.pipe(Schema.minLength(1), Schema.maxLength(100))
-  ),
-  lastName: Schema.optional(
-    Schema.String.pipe(Schema.minLength(1), Schema.maxLength(100))
-  ),
-  email: Schema.optional(
-    Schema.String.pipe(
-      Schema.pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, {
-        message: () => "Invalid email format",
-      })
-    )
-  ),
-  phoneNumber: Schema.optional(
-    Schema.String.pipe(
-      Schema.pattern(/^\+?[1-9]\d{1,14}$/, {
-        message: () => "Invalid phone number format",
-      })
-    )
-  ),
+  firstName: Schema.optional(FirstNameSchema),
+  lastName: Schema.optional(LastNameSchema),
+  email: Schema.optional(EmailSchema),
+  phoneNumber: Schema.optional(PhoneNumberSchema),
 }) {}
 
-export type UpdateProfileInput = Schema.Schema.Type<typeof UpdateProfileSchema>;
+export type UpdateProfileInput = typeof UpdateProfileSchema.Type;
 
 /**
  * Schema for changing password
@@ -121,22 +97,11 @@ export type UpdateProfileInput = Schema.Schema.Type<typeof UpdateProfileSchema>;
 export class ChangePasswordSchema extends Schema.Class<ChangePasswordSchema>(
   "ChangePasswordSchema"
 )({
-  currentPassword: Schema.String.pipe(
-    Schema.minLength(1, { message: () => "Current password is required" })
-  ),
-  newPassword: Schema.String.pipe(
-    Schema.minLength(8, {
-      message: () => "Password must be at least 8 characters",
-    }),
-    Schema.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
-      message: () => "Password must contain uppercase, lowercase, and number",
-    })
-  ),
+  currentPassword: PasswordSchema,
+  newPassword: PasswordSchema,
 }) {}
 
-export type ChangePasswordInput = Schema.Schema.Type<
-  typeof ChangePasswordSchema
->;
+export type ChangePasswordInput = typeof ChangePasswordSchema.Type;
 
 /**
  * Schema for enabling biometric authentication
@@ -144,11 +109,7 @@ export type ChangePasswordInput = Schema.Schema.Type<
 export class EnableBiometricSchema extends Schema.Class<EnableBiometricSchema>(
   "EnableBiometricSchema"
 )({
-  biometricType: Schema.Literal("fingerprint", "face_id", "iris").pipe(
-    Schema.annotations({
-      description: "Type of biometric authentication",
-    })
-  ),
+  biometricType: BiometricTypeSchema,
   publicKey: Schema.String.pipe(
     Schema.minLength(1, { message: () => "Public key is required" })
   ),
@@ -157,9 +118,7 @@ export class EnableBiometricSchema extends Schema.Class<EnableBiometricSchema>(
   ),
 }) {}
 
-export type EnableBiometricInput = Schema.Schema.Type<
-  typeof EnableBiometricSchema
->;
+export type EnableBiometricInput = typeof EnableBiometricSchema.Type;
 
 // ============================================================================
 // Output Schemas
@@ -172,20 +131,20 @@ export class UserProfileSchema extends Schema.Class<UserProfileSchema>(
   "UserProfileSchema"
 )({
   id: Schema.UUID,
-  phoneNumber: Schema.String,
-  email: Schema.NullOr(Schema.String),
-  firstName: Schema.String,
-  lastName: Schema.String,
+  phoneNumber: PhoneNumberSchema,
+  email: Schema.NullOr(EmailSchema),
+  firstName: FirstNameSchema,
+  lastName: LastNameSchema,
   dateOfBirth: Schema.NullOr(Schema.DateTimeUtc),
-  kycTier: Schema.Number.pipe(Schema.int(), Schema.between(0, 2)),
-  kycStatus: Schema.Literal("pending", "approved", "rejected", "under_review"),
+  kycTier: KycTierSchema,
+  kycStatus: KycStatusSchema,
   isActive: Schema.Boolean,
   hasBiometric: Schema.Boolean,
   createdAt: Schema.DateTimeUtc,
   updatedAt: Schema.DateTimeUtc,
 }) {}
 
-export type UserProfile = Schema.Schema.Type<typeof UserProfileSchema>;
+export type UserProfile = typeof UserProfileSchema.Type;
 
 /**
  * Schema for KYC submission response
@@ -199,9 +158,7 @@ export class KycSubmissionOutputSchema extends Schema.Class<KycSubmissionOutputS
   reviewStatus: KycStatusSchema,
 }) {}
 
-export type KycSubmissionOutput = Schema.Schema.Type<
-  typeof KycSubmissionOutputSchema
->;
+export type KycSubmissionOutput = typeof KycSubmissionOutputSchema.Type;
 
 /**
  * Schema for user registration response
@@ -215,9 +172,7 @@ export class RegisterUserOutputSchema extends Schema.Class<RegisterUserOutputSch
   requiresOtpVerification: Schema.Boolean,
 }) {}
 
-export type RegisterUserOutput = Schema.Schema.Type<
-  typeof RegisterUserOutputSchema
->;
+export type RegisterUserOutput = typeof RegisterUserOutputSchema.Type;
 
 /**
  * Schema for profile update response
@@ -230,9 +185,7 @@ export class UpdateProfileOutputSchema extends Schema.Class<UpdateProfileOutputS
   profile: UserProfileSchema,
 }) {}
 
-export type UpdateProfileOutput = Schema.Schema.Type<
-  typeof UpdateProfileOutputSchema
->;
+export type UpdateProfileOutput = typeof UpdateProfileOutputSchema.Type;
 
 /**
  * Schema for KYC limits based on tier
@@ -241,15 +194,15 @@ export class KycLimitsSchema extends Schema.Class<KycLimitsSchema>(
   "KycLimitsSchema"
 )({
   tier: KycTierSchema,
-  dailyTransactionLimit: Schema.Number,
-  monthlyTransactionLimit: Schema.Number,
+  dailyTransactionLimit: Schema.Number.pipe(Schema.int()),
+  monthlyTransactionLimit: Schema.Number.pipe(Schema.int()),
   maxSavingsPlans: Schema.Number.pipe(Schema.int()),
   canJoinGroups: Schema.Boolean,
   canCreateGroups: Schema.Boolean,
-  withdrawalLimit: Schema.Number,
+  withdrawalLimit: Schema.Number.pipe(Schema.int()),
 }) {}
 
-export type KycLimits = Schema.Schema.Type<typeof KycLimitsSchema>;
+export type KycLimits = typeof KycLimitsSchema.Type;
 
 /**
  * Schema for user statistics
@@ -267,4 +220,4 @@ export class UserStatisticsSchema extends Schema.Class<UserStatisticsSchema>(
   totalInterestEarned: Schema.Number,
 }) {}
 
-export type UserStatistics = Schema.Schema.Type<typeof UserStatisticsSchema>;
+export type UserStatistics = typeof UserStatisticsSchema.Type;

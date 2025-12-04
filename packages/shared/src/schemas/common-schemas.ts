@@ -1,7 +1,7 @@
 // Common Validation Schemas using Effect Schema
 // Reusable schemas and validation patterns used across the application
 
-import { Schema } from "effect";
+import { pipe, Schema } from "effect";
 
 import { LGAS, STATES } from "../constant";
 
@@ -129,11 +129,61 @@ export const PaginatedResponseSchema = <A, I, R>(
   });
 
 /**
+ * Schema for non-empty trimmed string
+ */
+export const NonEmptyTrimmedString = pipe(
+  Schema.String,
+  Schema.trimmed(),
+  Schema.nonEmptyString({ message: () => "must not be empty" })
+);
+
+/**
+ * Schema for Base64 string (RFC 4648 §4 – only the standard alphabet)
+ */
+export const Base64String = NonEmptyTrimmedString.pipe(
+  Schema.pattern(
+    /^[A-Za-z0-9+/]*={0,2}$/, // allows padding with = or ==
+    { message: () => "must be a valid Base64-encoded string" }
+  )
+).annotations({
+  title: "Base64",
+  description: "Base64-encoded data (e.g. data URL payload or raw binary)",
+  examples: [
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+    "SGVsbG8gV29ybGQh", // "Hello World!"
+  ],
+});
+
+export type Base64String = typeof Base64String.Type;
+
+export const UrlStringSchema = NonEmptyTrimmedString.pipe(
+  Schema.pattern(
+    /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)$/,
+    { message: () => "must be a valid http(s) URL" }
+  )
+).annotations({
+  title: "URL",
+  description: "A valid HTTP(S) URL",
+  examples: ["https://example.com/image.png"],
+});
+
+export type UrlString = typeof UrlStringSchema.Type;
+
+/**
  * Schema for UUID validation
  */
 export const UuidSchema = Schema.UUID.annotations({
   message: () => "Invalid UUID format",
 });
+
+export type Uuid = typeof UuidSchema.Type;
+
+/**
+ * Schema for UserId validation
+ */
+export const UserIdSchema = Schema.UUID.pipe(Schema.brand("UserId"));
+
+export type UserIdType = typeof UserIdSchema.Type;
 
 /**
  * Schema for phone number validation (international format)
@@ -379,23 +429,51 @@ export const KycIdTypeSchema = Schema.Literal(...Object.values(KycIdTypeEnum))
 export type KycIdType = typeof KycIdTypeSchema.Type;
 
 /**
- * KYC Tier Schema
+ * KYC Tier Schemas
  */
-export const KycTierEnum = { "0": 0, "1": 1, "2": 2 } as const;
 
-// export const KycTierSchema = Schema.Literal(...Object.values(KycTierEnum))
-//   .pipe(Schema.brand("KycTier"))
-//   .annotations({
-//     message: () => "Invalid KYC tier",
-//     description: "KYC tier level",
-//   });
+export const KycTierEnum = {
+  UNVERIFIED: 0,
+  BASIC: 1,
+  FULL: 2,
+} as const;
 
-export const KycTierSchema = Schema.Number.pipe(
-  Schema.int({ message: () => "KYC tier must be a whole number" }),
-  Schema.between(0, 2, { message: () => "KYC tier must be between 0 and 2" })
-).annotations({ description: "KYC tier level" });
+export const KycTierSchema = Schema.Literal(...Object.values(KycTierEnum))
+  .pipe(Schema.brand("KycTier"))
+  .annotations({
+    message: () => "Invalid KYC tier. KYC tier must be between 0 and 2",
+    description: "KYC tier level",
+  });
 
-export type KycTier = (typeof KycTierEnum)[keyof typeof KycTierEnum];
+export type KycTier = typeof KycTierSchema.Type;
+
+export const KycGovernmentIdTypeEnum = {
+  DRIVERS_LICENSE: "DriversLicense",
+  VOTERS_CARD: "VotersCard",
+  PASSPORT: "Passport",
+  BVN: "BVN",
+  NIN: "NIN",
+} as const;
+
+export const KycGovernmentIdTypeSchema = Schema.Literal(
+  ...Object.values(KycGovernmentIdTypeEnum)
+)
+  .pipe(Schema.brand("KycGovIdType"))
+  .annotations({
+    message: () => "Invalid ID type",
+    description: "Type of government-issued ID",
+  });
+
+export type KycGovernmentIdType = typeof KycGovernmentIdTypeSchema.Type;
+
+export const KycGovernmentIdNumberSchema = Schema.String.pipe(
+  Schema.minLength(5, { message: () => "ID number is required" }),
+  Schema.maxLength(32, {
+    message: () => "ID number must not exceed 32 characters",
+  })
+).annotations({ description: "ID number" });
+
+export type KycGovernmentIdNumber = typeof KycGovernmentIdNumberSchema.Type;
 
 /**
  * Schema for Kyc id number

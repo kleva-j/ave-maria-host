@@ -1,4 +1,15 @@
-import { Schema } from "@effect/schema";
+import { Schema } from "effect";
+
+import {
+  PhoneNumberSchema,
+  KycStatusSchema,
+  UserIdSchema,
+  OtpSchema,
+  LastNameSchema,
+  FirstNameSchema,
+  EmailSchema,
+  UrlSchema,
+} from "@host/shared";
 
 /**
  * User schema for Effect programs
@@ -6,7 +17,7 @@ import { Schema } from "@effect/schema";
 const name = Schema.String.pipe(Schema.minLength(1));
 const password = Schema.String.pipe(Schema.minLength(8));
 const email = Schema.String.pipe(Schema.pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/));
-const phoneNumber = Schema.String.pipe(Schema.pattern(/^\+?[1-9]\d{1,14}$/)); // E.164 format
+// const phoneNumber = Schema.String.pipe(Schema.pattern(/^\+?[1-9]\d{1,14}$/)); // E.164 format
 const ipAddress = Schema.NullOr(Schema.String);
 const userAgent = Schema.NullOr(Schema.String);
 
@@ -14,30 +25,31 @@ const userAgent = Schema.NullOr(Schema.String);
 export const KycTierSchema = Schema.Literal(0, 1, 2);
 export type KycTier = typeof KycTierSchema.Type;
 
-// KYC status enum
-export const KycStatusSchema = Schema.Literal(
-  "pending",
-  "approved",
-  "rejected",
-  "under_review"
-);
-export type KycStatus = typeof KycStatusSchema.Type;
-
 export const UserSchema = Schema.Struct({
-  id: Schema.String,
-  name,
-  email,
+  id: UserIdSchema,
+  name: Schema.String.pipe(Schema.minLength(2)),
+  email: EmailSchema,
   emailVerified: Schema.Boolean,
-  image: Schema.NullOr(Schema.String),
-  phoneNumber: Schema.NullOr(Schema.String),
+  image: Schema.NullOr(UrlSchema),
+  phoneNumber: Schema.NullOr(PhoneNumberSchema),
   phoneVerified: Schema.Boolean,
   dateOfBirth: Schema.NullOr(Schema.Date),
   kycTier: KycTierSchema,
   kycStatus: KycStatusSchema,
+  kycData: Schema.NullOr(
+    Schema.Struct({
+      tier: KycTierSchema,
+      status: KycStatusSchema,
+      verifiedAt: Schema.NullOr(Schema.Date),
+    })
+  ),
   kycVerifiedAt: Schema.NullOr(Schema.Date),
   biometricEnabled: Schema.Boolean,
+  biometricPublicKey: Schema.NullOr(Schema.String),
   isActive: Schema.Boolean,
   isSuspended: Schema.Boolean,
+  suspendedAt: Schema.NullOr(Schema.Date),
+  suspendedReason: Schema.NullOr(Schema.String),
   createdAt: Schema.Date,
   updatedAt: Schema.Date,
 });
@@ -138,7 +150,7 @@ export type KycTier2Data = typeof KycTier2DataSchema.Type;
  * Phone verification request
  */
 export const PhoneVerificationRequestSchema = Schema.Struct({
-  phoneNumber,
+  phoneNumber: PhoneNumberSchema,
 });
 
 export type PhoneVerificationRequest =
@@ -148,8 +160,8 @@ export type PhoneVerificationRequest =
  * Phone verification confirmation
  */
 export const PhoneVerificationConfirmSchema = Schema.Struct({
-  phoneNumber,
-  otp: Schema.String.pipe(Schema.pattern(/^\d{6}$/)),
+  phoneNumber: PhoneNumberSchema,
+  otp: OtpSchema,
 });
 
 export type PhoneVerificationConfirm =
@@ -170,7 +182,7 @@ export type BiometricRegistration = typeof BiometricRegistrationSchema.Type;
  * Biometric authentication request
  */
 export const BiometricAuthRequestSchema = Schema.Struct({
-  userId: Schema.String,
+  userId: UserIdSchema,
   deviceId: Schema.String,
   signature: Schema.String, // Signed challenge
   challenge: Schema.String, // Original challenge

@@ -1,4 +1,4 @@
-import { type UserId } from "../value-objects";
+import type { UserId } from "../value-objects";
 
 import { Schema } from "effect";
 

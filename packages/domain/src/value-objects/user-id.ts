@@ -1,10 +1,5 @@
+import { UserIdSchema } from "@host/shared";
 import { Equal, Schema } from "effect";
-
-/**
- * Schema for UserId validation
- */
-export const UserIdSchema = Schema.UUID.pipe(Schema.brand("UserId"));
-export type UserIdType = typeof UserIdSchema.Type;
 
 /**
  * UserId value object representing a unique identifier for users
