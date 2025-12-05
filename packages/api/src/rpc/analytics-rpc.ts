@@ -22,7 +22,7 @@
 import { type Layer, Effect, Schema, DateTime } from "effect";
 import { Rpc, RpcGroup } from "@effect/rpc";
 
-import type {
+import {
   GenerateProgressReportUseCase,
   GetSavingsAnalyticsUseCase,
   CalculateRewardsUseCase,
@@ -210,53 +210,152 @@ export const AnalyticsHandlersLive: Layer.Layer<
    * Returns trends, insights, and performance metrics
    */
   GetSavingsAnalytics: (_payload) =>
-    Effect.succeed(
-      new GetSavingsAnalyticsResponse({
-        totalSaved: 0,
-        averageDailyContribution: 0,
-        contributionFrequency: 0,
-        savingsGrowthRate: 0,
-        trendData: [],
-        topPerformingPlan: null,
-        insights: ["Analytics implementation pending"],
-      })
-    ),
+    Effect.gen(function* () {
+      const getSavingsAnalyticsUseCase = yield* GetSavingsAnalyticsUseCase;
+      
+      // Get user ID from auth context (placeholder)
+      const userId = crypto.randomUUID();
+
+      const result = yield* getSavingsAnalyticsUseCase
+        .execute({
+          userId,
+          period: "all",
+        })
+        .pipe(
+          Effect.mapError(
+            (error) =>
+              new AnalyticsError({
+                operation: "GetSavingsAnalytics",
+                message: error._tag || "Failed to get savings analytics",
+                cause: error,
+              })
+          )
+        );
+
+      return new GetSavingsAnalyticsResponse({
+        totalSaved: result.totalSaved,
+        averageDailyContribution: result.averageDailyContribution,
+        contributionFrequency: result.totalContributions,
+        savingsGrowthRate: result.savingsRate,
+        trendData: [], // TODO: Implement trend data calculation
+        topPerformingPlan: result.topPerformingPlan
+          ? {
+              planId: result.topPerformingPlan.planId,
+              planName: result.topPerformingPlan.planName,
+              totalSaved: result.totalSaved,
+            }
+          : null,
+        insights: result.insights,
+      });
+    }),
 
   /**
    * Generate detailed progress report
    * Creates comprehensive report with projections and comparisons
    */
-  GenerateProgressReport: (_payload) =>
-    Effect.succeed(
-      new GenerateProgressReportResponse({
+  GenerateProgressReport: (payload) =>
+    Effect.gen(function* () {
+      const generateProgressReportUseCase = yield* GenerateProgressReportUseCase;
+      
+      // Get user ID from auth context (placeholder)
+      const userId = crypto.randomUUID();
+
+      // Validate planId is provided
+      if (!payload.planId) {
+        return yield* Effect.fail(
+          new AnalyticsError({
+            operation: "GenerateProgressReport",
+            message: "Plan ID is required for progress report",
+          })
+        );
+      }
+
+      const result = yield* generateProgressReportUseCase
+        .execute({
+          userId,
+          planId: payload.planId,
+          includeTransactionHistory: payload.includeProjections ?? false,
+        })
+        .pipe(
+          Effect.mapError(
+            (error) =>
+              new AnalyticsError({
+                operation: "GenerateProgressReport",
+                message: error._tag || "Failed to generate progress report",
+                cause: error,
+              })
+          )
+        );
+
+      return new GenerateProgressReportResponse({
         reportId: crypto.randomUUID(),
         generatedAt: DateTime.unsafeMake(new Date()),
         summary: new ReportSummary({
-          totalPlans: 0,
-          activePlans: 0,
-          completedPlans: 0,
-          totalSaved: 0,
-          totalTarget: 0,
-          overallProgress: 0,
+          totalPlans: 1,
+          activePlans: result.status === "active" ? 1 : 0,
+          completedPlans: result.status === "completed" ? 1 : 0,
+          totalSaved: result.currentAmount,
+          totalTarget: result.targetAmount,
+          overallProgress: result.progressPercentage,
         }),
-        achievements: [],
-      })
-    ),
+        achievements: result.milestones
+          .filter((m) => m.achieved)
+          .map((m) => ({
+            title: `${m.percentage}% Milestone`,
+            description: `Reached ${m.percentage}% of your savings goal`,
+            earnedAt: DateTime.unsafeMake(m.achievedDate || new Date()),
+          })),
+      });
+    }),
 
   /**
    * Calculate available rewards and points
    * Returns current points, available rewards, and next milestones
    */
   CalculateRewards: (_payload) =>
-    Effect.succeed(
-      new CalculateRewardsResponse({
-        totalPoints: 0,
-        availableRewards: [],
-        nextMilestone: null,
-        streakBonus: 0,
-        recommendations: ["Rewards calculation implementation pending"],
-      })
-    ),
+    Effect.gen(function* () {
+      const calculateRewardsUseCase = yield* CalculateRewardsUseCase;
+      
+      // Get user ID from auth context (placeholder)
+      const userId = crypto.randomUUID();
+
+      const result = yield* calculateRewardsUseCase
+        .execute({ userId })
+        .pipe(
+          Effect.mapError(
+            (error) =>
+              new AnalyticsError({
+                operation: "CalculateRewards",
+                message: error._tag || "Failed to calculate rewards",
+                cause: error,
+              })
+          )
+        );
+
+      return new CalculateRewardsResponse({
+        totalPoints: result.totalPoints,
+        availableRewards: result.badges.map((badge) => ({
+          id: crypto.randomUUID(),
+          type: "badge" as const,
+          title: badge.name,
+          description: badge.description,
+          value: 0,
+          earnedAt: DateTime.unsafeMake(badge.earnedDate || new Date()),
+          expiresAt: null,
+          isRedeemed: false,
+        })),
+        nextMilestone: result.nextTier
+          ? {
+              title: `${result.nextTier} Tier`,
+              requiredPoints: result.totalPoints + result.pointsToNextTier,
+              currentPoints: result.totalPoints,
+              progressPercentage: (result.totalPoints / (result.totalPoints + result.pointsToNextTier)) * 100,
+            }
+          : null,
+        streakBonus: result.streakBonus,
+        recommendations: result.recommendations,
+      });
+    }),
 
   /**
    * Get spending insights and recommendations
@@ -282,12 +381,48 @@ export const AnalyticsHandlersLive: Layer.Layer<
    * Returns all achievements with unlock status and progress
    */
   GetAchievements: (_payload) =>
-    Effect.succeed(
-      new GetAchievementsResponse({
-        achievements: [],
-        totalUnlocked: 0,
-        totalAvailable: 0,
-        recentlyEarned: [],
-      })
-    ),
+    Effect.gen(function* () {
+      const calculateRewardsUseCase = yield* CalculateRewardsUseCase;
+      
+      // Get user ID from auth context (placeholder)
+      const userId = crypto.randomUUID();
+
+      const result = yield* calculateRewardsUseCase
+        .execute({ userId })
+        .pipe(
+          Effect.mapError(
+            (error) =>
+              new AnalyticsError({
+                operation: "GetAchievements",
+                message: error._tag || "Failed to get achievements",
+                cause: error,
+              })
+          )
+        );
+
+      return new GetAchievementsResponse({
+        achievements: result.badges.map((badge) => ({
+          id: crypto.randomUUID(),
+          title: badge.name,
+          description: badge.description,
+          iconUrl: badge.icon,
+          category: "savings" as const,
+          earnedAt: badge.earnedDate ? DateTime.unsafeMake(badge.earnedDate) : null,
+          progress: 100,
+          isUnlocked: true,
+        })),
+        totalUnlocked: result.badges.length,
+        totalAvailable: 13, // Total number of badge types
+        recentlyEarned: result.newBadges.map((badge) => ({
+          id: crypto.randomUUID(),
+          title: badge.name,
+          description: badge.description,
+          iconUrl: badge.icon,
+          category: "savings" as const,
+          earnedAt: badge.earnedDate ? DateTime.unsafeMake(badge.earnedDate) : null,
+          progress: 100,
+          isUnlocked: true,
+        })),
+      });
+    }),
 });
