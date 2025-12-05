@@ -43,7 +43,7 @@ import {
   ReportSummarySchema,
 } from "@host/shared";
 
-import { AuthMiddleware } from "./auth-rpc";
+import { AuthMiddleware, CurrentUser } from "./auth-rpc";
 
 // ============================================================================
 // Payload Classes
@@ -212,15 +212,12 @@ export const AnalyticsHandlersLive: Layer.Layer<
   GetSavingsAnalytics: (_payload) =>
     Effect.gen(function* () {
       const getSavingsAnalyticsUseCase = yield* GetSavingsAnalyticsUseCase;
-      
-      // Get user ID from auth context (placeholder)
-      const userId = crypto.randomUUID();
+
+      // Get authenticated user from context
+      const currentUser = yield* CurrentUser;
 
       const result = yield* getSavingsAnalyticsUseCase
-        .execute({
-          userId,
-          period: "all",
-        })
+        .execute({ userId: currentUser.id, period: "all" })
         .pipe(
           Effect.mapError(
             (error) =>
@@ -255,10 +252,11 @@ export const AnalyticsHandlersLive: Layer.Layer<
    */
   GenerateProgressReport: (payload) =>
     Effect.gen(function* () {
-      const generateProgressReportUseCase = yield* GenerateProgressReportUseCase;
-      
-      // Get user ID from auth context (placeholder)
-      const userId = crypto.randomUUID();
+      const generateProgressReportUseCase =
+        yield* GenerateProgressReportUseCase;
+
+      // Get authenticated user from context
+      const currentUser = yield* CurrentUser;
 
       // Validate planId is provided
       if (!payload.planId) {
@@ -272,7 +270,7 @@ export const AnalyticsHandlersLive: Layer.Layer<
 
       const result = yield* generateProgressReportUseCase
         .execute({
-          userId,
+          userId: currentUser.id,
           planId: payload.planId,
           includeTransactionHistory: payload.includeProjections ?? false,
         })
@@ -287,9 +285,14 @@ export const AnalyticsHandlersLive: Layer.Layer<
           )
         );
 
+      // Safe DateTime creation with fallback
+      const generatedAt = yield* DateTime.make(new Date()).pipe(
+        Effect.orElseSucceed(() => DateTime.unsafeNow())
+      );
+
       return new GenerateProgressReportResponse({
         reportId: crypto.randomUUID(),
-        generatedAt: DateTime.unsafeMake(new Date()),
+        generatedAt,
         summary: new ReportSummary({
           totalPlans: 1,
           activePlans: result.status === "active" ? 1 : 0,
@@ -298,13 +301,24 @@ export const AnalyticsHandlersLive: Layer.Layer<
           totalTarget: result.targetAmount,
           overallProgress: result.progressPercentage,
         }),
-        achievements: result.milestones
-          .filter((m) => m.achieved)
-          .map((m) => ({
-            title: `${m.percentage}% Milestone`,
-            description: `Reached ${m.percentage}% of your savings goal`,
-            earnedAt: DateTime.unsafeMake(m.achievedDate || new Date()),
-          })),
+        achievements: yield* Effect.all(
+          result.milestones
+            .filter((m) => m.achieved)
+            .map((m) =>
+              Effect.gen(function* () {
+                const earnedAt = m.achievedDate
+                  ? yield* DateTime.make(m.achievedDate).pipe(
+                      Effect.orElseSucceed(() => DateTime.unsafeNow())
+                    )
+                  : DateTime.unsafeNow();
+                return {
+                  title: `${m.percentage}% Milestone`,
+                  description: `Reached ${m.percentage}% of your savings goal`,
+                  earnedAt,
+                };
+              })
+            )
+        ),
       });
     }),
 
@@ -315,12 +329,12 @@ export const AnalyticsHandlersLive: Layer.Layer<
   CalculateRewards: (_payload) =>
     Effect.gen(function* () {
       const calculateRewardsUseCase = yield* CalculateRewardsUseCase;
-      
-      // Get user ID from auth context (placeholder)
-      const userId = crypto.randomUUID();
+
+      // Get authenticated user from context
+      const currentUser = yield* CurrentUser;
 
       const result = yield* calculateRewardsUseCase
-        .execute({ userId })
+        .execute({ userId: currentUser.id })
         .pipe(
           Effect.mapError(
             (error) =>
@@ -332,24 +346,41 @@ export const AnalyticsHandlersLive: Layer.Layer<
           )
         );
 
+      // Map badges to rewards with safe DateTime
+      const availableRewards = yield* Effect.all(
+        result.badges.map((badge) =>
+          Effect.gen(function* () {
+            const earnedAt = badge.earnedDate
+              ? yield* DateTime.make(badge.earnedDate).pipe(
+                  Effect.orElseSucceed(() => DateTime.unsafeNow())
+                )
+              : DateTime.unsafeNow();
+            return {
+              id: crypto.randomUUID(),
+              type: "badge" as const,
+              title: badge.name,
+              description: badge.description,
+              value: 0,
+              earnedAt,
+              expiresAt: null,
+              isRedeemed: false,
+            };
+          })
+        )
+      );
+
       return new CalculateRewardsResponse({
         totalPoints: result.totalPoints,
-        availableRewards: result.badges.map((badge) => ({
-          id: crypto.randomUUID(),
-          type: "badge" as const,
-          title: badge.name,
-          description: badge.description,
-          value: 0,
-          earnedAt: DateTime.unsafeMake(badge.earnedDate || new Date()),
-          expiresAt: null,
-          isRedeemed: false,
-        })),
+        availableRewards,
         nextMilestone: result.nextTier
           ? {
               title: `${result.nextTier} Tier`,
               requiredPoints: result.totalPoints + result.pointsToNextTier,
               currentPoints: result.totalPoints,
-              progressPercentage: (result.totalPoints / (result.totalPoints + result.pointsToNextTier)) * 100,
+              progressPercentage:
+                (result.totalPoints /
+                  (result.totalPoints + result.pointsToNextTier)) *
+                100,
             }
           : null,
         streakBonus: result.streakBonus,
@@ -360,19 +391,14 @@ export const AnalyticsHandlersLive: Layer.Layer<
   /**
    * Get spending insights and recommendations
    * Analyzes spending patterns and provides actionable insights
+   *
+   * NOTE: This feature is not yet implemented. Returns error until use case is available.
    */
   GetSpendingInsights: (_payload) =>
-    Effect.succeed(
-      new GetSpendingInsightsResponse({
-        totalSpent: 0,
-        categoryBreakdown: [],
-        averageDailySpending: 0,
-        comparisonToPreviousPeriod: new ComparisonToPreviousPeriod({
-          percentageChange: 0,
-          trend: "stable",
-        }),
-        insights: ["No spending data available yet"],
-        recommendations: ["Start tracking your expenses to get insights"],
+    Effect.fail(
+      new AnalyticsError({
+        operation: "GetSpendingInsights",
+        message: "Spending insights feature is not yet implemented",
       })
     ),
 
@@ -383,12 +409,12 @@ export const AnalyticsHandlersLive: Layer.Layer<
   GetAchievements: (_payload) =>
     Effect.gen(function* () {
       const calculateRewardsUseCase = yield* CalculateRewardsUseCase;
-      
-      // Get user ID from auth context (placeholder)
-      const userId = crypto.randomUUID();
+
+      // Get authenticated user from context
+      const currentUser = yield* CurrentUser;
 
       const result = yield* calculateRewardsUseCase
-        .execute({ userId })
+        .execute({ userId: currentUser.id })
         .pipe(
           Effect.mapError(
             (error) =>
@@ -400,29 +426,56 @@ export const AnalyticsHandlersLive: Layer.Layer<
           )
         );
 
+      // Map badges to achievements with safe DateTime
+      const achievements = yield* Effect.all(
+        result.badges.map((badge) =>
+          Effect.gen(function* () {
+            const earnedAt = badge.earnedDate
+              ? yield* DateTime.make(badge.earnedDate).pipe(
+                  Effect.orElseSucceed(() => DateTime.unsafeNow())
+                )
+              : null;
+            return {
+              id: crypto.randomUUID(),
+              title: badge.name,
+              description: badge.description,
+              iconUrl: badge.icon,
+              category: "savings" as const,
+              earnedAt,
+              progress: 100,
+              isUnlocked: true,
+            };
+          })
+        )
+      );
+
+      const recentlyEarned = yield* Effect.all(
+        result.newBadges.map((badge) =>
+          Effect.gen(function* () {
+            const earnedAt = badge.earnedDate
+              ? yield* DateTime.make(badge.earnedDate).pipe(
+                  Effect.orElseSucceed(() => DateTime.unsafeNow())
+                )
+              : null;
+            return {
+              id: crypto.randomUUID(),
+              title: badge.name,
+              description: badge.description,
+              iconUrl: badge.icon,
+              category: "savings" as const,
+              earnedAt,
+              progress: 100,
+              isUnlocked: true,
+            };
+          })
+        )
+      );
+
       return new GetAchievementsResponse({
-        achievements: result.badges.map((badge) => ({
-          id: crypto.randomUUID(),
-          title: badge.name,
-          description: badge.description,
-          iconUrl: badge.icon,
-          category: "savings" as const,
-          earnedAt: badge.earnedDate ? DateTime.unsafeMake(badge.earnedDate) : null,
-          progress: 100,
-          isUnlocked: true,
-        })),
+        achievements,
         totalUnlocked: result.badges.length,
         totalAvailable: 13, // Total number of badge types
-        recentlyEarned: result.newBadges.map((badge) => ({
-          id: crypto.randomUUID(),
-          title: badge.name,
-          description: badge.description,
-          iconUrl: badge.icon,
-          category: "savings" as const,
-          earnedAt: badge.earnedDate ? DateTime.unsafeMake(badge.earnedDate) : null,
-          progress: 100,
-          isUnlocked: true,
-        })),
+        recentlyEarned,
       });
     }),
 });
