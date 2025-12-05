@@ -176,7 +176,47 @@ export const UuidSchema = Schema.UUID.annotations({
   message: () => "Invalid UUID format",
 });
 
+/**
+ * Schema for Date validation
+ */
+export const DateSchema = Schema.Date.annotations({
+  message: () => "Invalid date format",
+});
+
+/**
+ * Schema for DateTime validation
+ */
+export const DateTimeSchema = Schema.DateTimeUtc.annotations({
+  message: () => "Invalid date format",
+});
+
+/**
+ * Schema for UserAgent validation
+ */
+export const UserAgentSchema = Schema.String.pipe(Schema.minLength(1));
+
+/**
+ * Schema for IP Address validation
+ */
+export const IpAddressSchema = Schema.String.pipe(
+  Schema.pattern(/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/)
+).annotations({
+  message: () => "Invalid IP address format",
+});
+
+/**
+ * Schema for Token validation
+ */
+export const TokenSchema = Schema.String.pipe(Schema.minLength(1)).annotations({
+  message: () => "Invalid token format",
+});
+
 export type Uuid = typeof UuidSchema.Type;
+export type Date = typeof DateSchema.Type;
+export type DateTime = typeof DateTimeSchema.Type;
+export type UserAgent = typeof UserAgentSchema.Type;
+export type IpAddress = typeof IpAddressSchema.Type;
+export type Token = typeof TokenSchema.Type;
 
 /**
  * Schema for UserId validation
@@ -184,6 +224,10 @@ export type Uuid = typeof UuidSchema.Type;
 export const UserIdSchema = Schema.UUID.pipe(Schema.brand("UserId"));
 
 export type UserIdType = typeof UserIdSchema.Type;
+
+export const SessionIdSchema = Schema.UUID.pipe(Schema.brand("SessionId"));
+
+export type SessionIdType = typeof SessionIdSchema.Type;
 
 /**
  * Schema for phone number validation (international format)

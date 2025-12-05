@@ -1,5 +1,5 @@
-import { AuthService } from "./auth-service";
-
+import type { KycStatus, KycTier } from "@host/shared";
+import type { UserRepository } from "@host/domain";
 import type {
   BiometricRegistration,
   BiometricAuthRequest,
@@ -14,9 +14,21 @@ import type {
 } from "./auth-types";
 
 import { EmailService } from "@host/infrastructure";
-import { Effect, Layer } from "effect";
+import { Effect, Layer, Context } from "effect";
+import { UserId } from "@host/domain";
 
+import { AuthService } from "./auth-service";
 import { auth } from "..";
+
+import {
+  SessionIdSchema,
+  KycTierSchema,
+  KycStatusEnum,
+  UserIdSchema,
+  KycTierEnum,
+  TokenSchema,
+} from "@host/shared";
+
 import {
   type UnauthorizedError,
   EmailVerificationRateLimitError,
@@ -43,7 +55,7 @@ import {
  */
 function createUserFromBetterAuth(betterAuthUser: any): User {
   return {
-    id: betterAuthUser.id,
+    id: UserIdSchema.make(betterAuthUser.id),
     name: betterAuthUser.name,
     email: betterAuthUser.email,
     emailVerified: betterAuthUser.emailVerified,
@@ -51,12 +63,16 @@ function createUserFromBetterAuth(betterAuthUser: any): User {
     phoneNumber: null,
     phoneVerified: false,
     dateOfBirth: null,
-    kycTier: 0 as const,
-    kycStatus: "pending" as const,
+    kycTier: KycTierSchema.make(KycTierEnum.UNVERIFIED),
+    kycStatus: KycStatusEnum.PENDING,
+    kycData: null,
     kycVerifiedAt: null,
     biometricEnabled: false,
+    biometricPublicKey: null,
     isActive: true,
     isSuspended: false,
+    suspendedAt: null,
+    suspensionReason: null,
     createdAt: new Date(betterAuthUser.createdAt),
     updatedAt: new Date(betterAuthUser.updatedAt),
   };
@@ -67,14 +83,21 @@ function createUserFromBetterAuth(betterAuthUser: any): User {
  */
 function createSessionFromBetterAuth(betterAuthSession: any): Session {
   return {
-    id: betterAuthSession.id,
+    id: SessionIdSchema.make(betterAuthSession.id),
     expiresAt: new Date(betterAuthSession.expiresAt),
-    token: betterAuthSession.token,
+    token: TokenSchema.make(betterAuthSession.token),
+    refreshToken: betterAuthSession.refreshToken
+      ? TokenSchema.make(betterAuthSession.refreshToken)
+      : null,
+    refreshTokenExpiresAt: betterAuthSession.refreshTokenExpiresAt
+      ? new Date(betterAuthSession.refreshTokenExpiresAt)
+      : null,
+    deviceId: betterAuthSession.deviceId || null,
     createdAt: new Date(betterAuthSession.createdAt),
     updatedAt: new Date(betterAuthSession.updatedAt),
-    ipAddress: betterAuthSession.ipAddress || null,
-    userAgent: betterAuthSession.userAgent || null,
-    userId: betterAuthSession.userId,
+    ipAddress: betterAuthSession.ipAddress || "0.0.0.0",
+    userAgent: betterAuthSession.userAgent || "unknown",
+    userId: UserIdSchema.make(betterAuthSession.userId),
   };
 }
 
@@ -82,7 +105,10 @@ function createSessionFromBetterAuth(betterAuthSession: any): Session {
  * Live implementation of AuthService using Better-Auth
  */
 class AuthServiceImpl implements AuthService {
-  constructor(private readonly emailService: EmailService) {}
+  constructor(
+    private readonly emailService: EmailService,
+    private readonly userRepository: UserRepository
+  ) {}
   validateToken = (
     token: string
   ): Effect.Effect<
@@ -194,14 +220,17 @@ class AuthServiceImpl implements AuthService {
         // For now, we'll create a placeholder implementation
 
         const sessionData: Session = {
-          id: crypto.randomUUID(),
-          token: crypto.randomUUID(),
-          userId,
-          ipAddress: options?.ipAddress || null,
-          userAgent: options?.userAgent || null,
+          id: SessionIdSchema.make(crypto.randomUUID()),
+          token: TokenSchema.make(crypto.randomUUID()),
+          userId: UserIdSchema.make(userId),
+          ipAddress: options?.ipAddress || "0.0.0.0",
+          userAgent: options?.userAgent || "unknown",
+          deviceId: options?.deviceId || null,
           expiresAt: options?.expiresIn
             ? new Date(Date.now() + options.expiresIn * 1000)
             : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days default
+          refreshToken: null,
+          refreshTokenExpiresAt: null,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
@@ -249,60 +278,45 @@ class AuthServiceImpl implements AuthService {
   ): Effect.Effect<AuthContext, InvalidCredentialsError | UserNotFoundError> =>
     Effect.tryPromise({
       try: async () => {
+        const { email, password } = credentials;
         const result = await auth.api.signInEmail({
-          body: {
-            email: credentials.email,
-            password: credentials.password,
-          },
+          body: { email, password },
         });
 
         if (!result?.user) {
           throw new InvalidCredentialsError({
             message: "Invalid email or password",
-            email: credentials.email,
+            email,
           });
         }
 
         const { user } = result;
 
-        // Create a session context (Better-Auth handles session creation internally)
+        // Create a session context using helper functions
+        // Note: Better-Auth's signInEmail returns {user, token, redirect, url} but not session
         const authContext: AuthContext = {
-          user: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            emailVerified: user.emailVerified,
-            image: user.image ?? null,
-            phoneNumber: user.phoneNumber ?? null,
-            phoneVerified: user.phoneVerified,
-            dateOfBirth: user.dateOfBirth ?? null,
-            kycTier: user.kycTier,
-            kycStatus: user.kycStatus,
-            kycVerifiedAt: user.kycVerifiedAt ?? null,
-            biometricEnabled: user.biometricEnabled,
-            isActive: user.isActive,
-            isSuspended: user.isSuspended,
-            createdAt: new Date(user.createdAt),
-            updatedAt: new Date(user.updatedAt),
-          },
+          user: createUserFromBetterAuth(user),
           session: {
-            id: crypto.randomUUID(), // Placeholder - Better-Auth manages this internally
+            id: SessionIdSchema.make(crypto.randomUUID()),
             expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-            token: result.token || crypto.randomUUID(),
+            token: result.token
+              ? TokenSchema.make(result.token)
+              : TokenSchema.make(crypto.randomUUID()),
+            refreshToken: null,
+            refreshTokenExpiresAt: null,
+            deviceId: null,
             createdAt: new Date(),
             updatedAt: new Date(),
-            ipAddress: null,
-            userAgent: null,
-            userId: user.id,
+            ipAddress: "0.0.0.0",
+            userAgent: "unknown",
+            userId: UserIdSchema.make(user.id),
           },
         };
 
         return authContext;
       },
       catch: (error) => {
-        if (error instanceof InvalidCredentialsError) {
-          return error;
-        }
+        if (error instanceof InvalidCredentialsError) return error;
         return new InvalidCredentialsError({
           message: "Login failed",
           email: credentials.email,
@@ -314,12 +328,9 @@ class AuthServiceImpl implements AuthService {
   register = (data: RegisterData): Effect.Effect<User, AuthError> =>
     Effect.tryPromise({
       try: async () => {
+        const { name, email, password } = data;
         const result = await auth.api.signUpEmail({
-          body: {
-            name: data.name,
-            email: data.email,
-            password: data.password,
-          },
+          body: { name, email, password },
         });
 
         if (!result?.user) {
@@ -328,99 +339,182 @@ class AuthServiceImpl implements AuthService {
 
         const { user } = result;
 
-        return {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          emailVerified: user.emailVerified,
-          image: user.image ?? null,
-          phoneNumber: user.phoneNumber ?? null,
-          phoneVerified: user.phoneVerified,
-          dateOfBirth: user.dateOfBirth ?? null,
-          kycTier: user.kycTier,
-          kycStatus: user.kycStatus,
-          kycVerifiedAt: user.kycVerifiedAt ?? null,
-          biometricEnabled: user.biometricEnabled,
-          isActive: user.isActive,
-          isSuspended: user.isSuspended,
-          createdAt: new Date(user.createdAt),
-          updatedAt: new Date(user.updatedAt),
-        };
+        return createUserFromBetterAuth(user);
       },
       catch: (error) => {
-        if (error instanceof AuthError) {
-          return error;
-        }
+        if (error instanceof AuthError) return error;
         return new AuthError({ message: "Registration failed", cause: error });
       },
     });
 
-  getUserById = (userId: string): Effect.Effect<User, UserNotFoundError> =>
-    Effect.tryPromise({
-      try: async () => {
-        // Note: Better-Auth doesn't expose a direct getUserById API
-        // This would typically be implemented using database queries
-        // For now, this is a placeholder implementation
-        throw new UserNotFoundError({
-          message: "getUserById not implemented",
-          userId,
-        });
-      },
-      catch: (error) => {
-        if (error instanceof UserNotFoundError) {
-          return error;
-        }
-        return new UserNotFoundError({
-          message: "Failed to get user",
-          cause: error,
-          userId,
-        });
-      },
-    });
+  getUserById = (userId: string): Effect.Effect<User, UserNotFoundError> => {
+    const self = this;
+    return Effect.gen(function* () {
+      const userIdVO = UserId.fromString(userId);
+      const domainUser = yield* self.userRepository.findById(userIdVO).pipe(
+        Effect.mapError(
+          (error) =>
+            new UserNotFoundError({
+              message: error.message || "Failed to get user",
+              userId,
+              cause: error,
+            })
+        )
+      );
 
-  getUserByEmail = (email: string): Effect.Effect<User, UserNotFoundError> =>
-    Effect.tryPromise({
-      try: async () => {
-        // Note: Better-Auth doesn't have a direct getUserByEmail API
-        // This would need to be implemented using database queries
-        // For now, this is a placeholder implementation
-        throw new UserNotFoundError({
-          message: "getUserByEmail not implemented",
-          email,
-        });
-      },
-      catch: (error) => {
-        if (error instanceof UserNotFoundError) {
-          return error;
-        }
-        return new UserNotFoundError({
-          message: "Failed to get user by email",
-          email,
-          cause: error,
-        });
-      },
+      if (!domainUser) {
+        return yield* Effect.fail(
+          new UserNotFoundError({ message: "User not found", userId })
+        );
+      }
+
+      // Map domain User to auth User
+      return {
+        id: domainUser.id,
+        name: domainUser.name,
+        email: domainUser.email,
+        emailVerified: domainUser.emailVerified,
+        image: domainUser.image,
+        phoneNumber: domainUser.phoneNumber,
+        phoneVerified: domainUser.phoneVerified,
+        dateOfBirth: domainUser.dateOfBirth,
+        kycTier: domainUser.kycTier as KycTier,
+        kycStatus: domainUser.kycStatus as KycStatus,
+        kycData: domainUser.kycData,
+        kycVerifiedAt: domainUser.kycVerifiedAt,
+        biometricEnabled: domainUser.biometricEnabled,
+        biometricPublicKey: domainUser.biometricPublicKey,
+        isActive: domainUser.isActive,
+        isSuspended: domainUser.isSuspended,
+        suspendedAt: domainUser.suspendedAt,
+        suspensionReason: domainUser.suspensionReason,
+        createdAt: domainUser.createdAt,
+        updatedAt: domainUser.updatedAt,
+      };
     });
+  };
+
+  getUserByEmail = (email: string): Effect.Effect<User, UserNotFoundError> => {
+    const self = this;
+    return Effect.gen(function* () {
+      const domainUser = yield* self.userRepository.findByEmail(email).pipe(
+        Effect.mapError(
+          (error) =>
+            new UserNotFoundError({
+              message: error.message || "Failed to get user by email",
+              email,
+              cause: error,
+            })
+        )
+      );
+
+      if (!domainUser) {
+        return yield* Effect.fail(
+          new UserNotFoundError({
+            message: "User not found",
+            email,
+          })
+        );
+      }
+
+      // Map domain User to auth User
+      return {
+        id: domainUser.id,
+        name: domainUser.name,
+        email: domainUser.email,
+        emailVerified: domainUser.emailVerified,
+        image: domainUser.image,
+        phoneNumber: domainUser.phoneNumber,
+        phoneVerified: domainUser.phoneVerified,
+        dateOfBirth: domainUser.dateOfBirth,
+        kycTier: domainUser.kycTier as KycTier,
+        kycStatus: domainUser.kycStatus as KycStatus,
+        kycData: domainUser.kycData,
+        kycVerifiedAt: domainUser.kycVerifiedAt,
+        biometricEnabled: domainUser.biometricEnabled,
+        biometricPublicKey: domainUser.biometricPublicKey,
+        isActive: domainUser.isActive,
+        isSuspended: domainUser.isSuspended,
+        suspendedAt: domainUser.suspendedAt,
+        suspensionReason: domainUser.suspensionReason,
+        createdAt: domainUser.createdAt,
+        updatedAt: domainUser.updatedAt,
+      };
+    });
+  };
 
   updateUser = (
-    _userId: string,
-    _updates: Partial<Pick<User, "name" | "email" | "image">>
-  ): Effect.Effect<User, UserNotFoundError | AuthError> =>
-    Effect.tryPromise({
-      try: async () => {
-        // Note: Better-Auth update user API would be used here
-        // This is a placeholder implementation
-        throw new AuthError({ message: "updateUser not implemented" });
-      },
-      catch: (error) => {
-        if (error instanceof UserNotFoundError || error instanceof AuthError) {
-          return error;
-        }
-        return new AuthError({
-          message: "Failed to update user",
-          cause: error,
-        });
-      },
+    userId: string,
+    updates: Partial<Pick<User, "name" | "email" | "image">>
+  ): Effect.Effect<User, UserNotFoundError | AuthError> => {
+    const self = this;
+    return Effect.gen(function* () {
+      const userIdVO = UserId.fromString(userId);
+      const domainUser = yield* self.userRepository.findById(userIdVO).pipe(
+        Effect.mapError(
+          (error) =>
+            new UserNotFoundError({
+              message: error.message || "Failed to get user",
+              userId,
+              cause: error,
+            })
+        )
+      );
+
+      if (!domainUser) {
+        return yield* Effect.fail(
+          new UserNotFoundError({
+            message: "User not found",
+            userId,
+          })
+        );
+      }
+
+      // Create updated user with new values
+      const updatedDomainUser = new (domainUser.constructor as any)({
+        ...domainUser,
+        name: updates.name ?? domainUser.name,
+        email: updates.email ?? domainUser.email,
+        image: updates.image !== undefined ? updates.image : domainUser.image,
+        updatedAt: new Date(),
+      });
+
+      // Update in repository
+      yield* self.userRepository.update(updatedDomainUser).pipe(
+        Effect.mapError(
+          (error) =>
+            new AuthError({
+              message: error.message || "Failed to update user",
+              cause: error,
+            })
+        )
+      );
+
+      // Map domain User to auth User
+      return {
+        id: updatedDomainUser.id.value,
+        name: updatedDomainUser.name,
+        email: updatedDomainUser.email,
+        emailVerified: updatedDomainUser.emailVerified,
+        image: updatedDomainUser.image,
+        phoneNumber: updatedDomainUser.phoneNumber,
+        phoneVerified: updatedDomainUser.phoneVerified,
+        dateOfBirth: updatedDomainUser.dateOfBirth,
+        kycTier: updatedDomainUser.kycTier as KycTier,
+        kycStatus: updatedDomainUser.kycStatus as KycStatus,
+        kycData: updatedDomainUser.kycData,
+        kycVerifiedAt: updatedDomainUser.kycVerifiedAt,
+        biometricEnabled: updatedDomainUser.biometricEnabled,
+        biometricPublicKey: updatedDomainUser.biometricPublicKey,
+        isActive: updatedDomainUser.isActive,
+        isSuspended: updatedDomainUser.isSuspended,
+        suspendedAt: updatedDomainUser.suspendedAt,
+        suspensionReason: updatedDomainUser.suspensionReason,
+        createdAt: updatedDomainUser.createdAt,
+        updatedAt: updatedDomainUser.updatedAt,
+      };
     });
+  };
 
   checkPermission = (
     _userId: string,
@@ -603,7 +697,7 @@ class AuthServiceImpl implements AuthService {
         });
 
         // Send verification email using our EmailService
-        const userName = user?.user?.name || email.split("@")[0] as string;
+        const userName = user?.user?.name || (email.split("@")[0] as string);
         await Effect.runPromise(
           this.emailService.sendVerificationEmail(email, token, userName)
         );
@@ -694,7 +788,7 @@ class AuthServiceImpl implements AuthService {
         });
 
         // Send verification email using our EmailService
-        const userName = user.user.name || email.split("@")[0] as string;
+        const userName = user.user.name || (email.split("@")[0] as string);
         await Effect.runPromise(
           this.emailService.sendVerificationEmail(email, token, userName)
         );
@@ -907,14 +1001,22 @@ class AuthServiceImpl implements AuthService {
  * Layer that provides the live AuthService implementation
  * Requires EmailService to be provided
  */
+/**
+ * Tag for UserRepository dependency
+ */
+const UserRepositoryTag = Context.GenericTag<UserRepository>(
+  "@domain/UserRepository"
+);
+
 export const AuthServiceLive: Layer.Layer<
   AuthService,
   never,
-  EmailService
+  EmailService | UserRepository
 > = Layer.effect(
   AuthService,
   Effect.gen(function* () {
     const emailService = yield* EmailService;
-    return new AuthServiceImpl(emailService);
+    const userRepository = yield* UserRepositoryTag;
+    return new AuthServiceImpl(emailService, userRepository);
   })
 );

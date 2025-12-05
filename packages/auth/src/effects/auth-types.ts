@@ -1,57 +1,51 @@
 import { Schema } from "effect";
 
 import {
+  KycGovernmentIdNumberSchema,
+  KycGovernmentIdTypeSchema,
   PhoneNumberSchema,
-  KycStatusSchema,
-  UserIdSchema,
-  OtpSchema,
-  LastNameSchema,
+  UrlStringSchema,
   FirstNameSchema,
+  KycStatusSchema,
+  IpAddressSchema,
+  UserAgentSchema,
+  SessionIdSchema,
+  LastNameSchema,
+  PasswordSchema,
+  KycTierSchema,
+  AddressSchema,
+  UserIdSchema,
   EmailSchema,
-  UrlSchema,
+  TokenSchema,
+  DateSchema,
+  OtpSchema,
 } from "@host/shared";
 
 /**
  * User schema for Effect programs
  */
-const name = Schema.String.pipe(Schema.minLength(1));
-const password = Schema.String.pipe(Schema.minLength(8));
-const email = Schema.String.pipe(Schema.pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/));
-// const phoneNumber = Schema.String.pipe(Schema.pattern(/^\+?[1-9]\d{1,14}$/)); // E.164 format
-const ipAddress = Schema.NullOr(Schema.String);
-const userAgent = Schema.NullOr(Schema.String);
-
-// KYC tier enum: 0 = Unverified, 1 = Basic (Tier 1), 2 = Full (Tier 2)
-export const KycTierSchema = Schema.Literal(0, 1, 2);
-export type KycTier = typeof KycTierSchema.Type;
 
 export const UserSchema = Schema.Struct({
   id: UserIdSchema,
-  name: Schema.String.pipe(Schema.minLength(2)),
+  name: FirstNameSchema,
   email: EmailSchema,
   emailVerified: Schema.Boolean,
-  image: Schema.NullOr(UrlSchema),
+  image: Schema.NullOr(UrlStringSchema),
   phoneNumber: Schema.NullOr(PhoneNumberSchema),
   phoneVerified: Schema.Boolean,
-  dateOfBirth: Schema.NullOr(Schema.Date),
+  dateOfBirth: Schema.NullOr(DateSchema),
   kycTier: KycTierSchema,
   kycStatus: KycStatusSchema,
-  kycData: Schema.NullOr(
-    Schema.Struct({
-      tier: KycTierSchema,
-      status: KycStatusSchema,
-      verifiedAt: Schema.NullOr(Schema.Date),
-    })
-  ),
-  kycVerifiedAt: Schema.NullOr(Schema.Date),
+  kycData: Schema.NullOr(Schema.Unknown),
+  kycVerifiedAt: Schema.NullOr(DateSchema),
   biometricEnabled: Schema.Boolean,
   biometricPublicKey: Schema.NullOr(Schema.String),
   isActive: Schema.Boolean,
   isSuspended: Schema.Boolean,
-  suspendedAt: Schema.NullOr(Schema.Date),
-  suspendedReason: Schema.NullOr(Schema.String),
-  createdAt: Schema.Date,
-  updatedAt: Schema.Date,
+  suspendedAt: Schema.NullOr(DateSchema),
+  suspensionReason: Schema.NullOr(Schema.String),
+  createdAt: DateSchema,
+  updatedAt: DateSchema,
 });
 
 export type User = typeof UserSchema.Type;
@@ -60,14 +54,17 @@ export type User = typeof UserSchema.Type;
  * Session schema for Effect programs
  */
 export const SessionSchema = Schema.Struct({
-  id: Schema.String,
-  token: Schema.String,
-  userId: Schema.String,
-  expiresAt: Schema.Date,
-  createdAt: Schema.Date,
-  updatedAt: Schema.Date,
-  ipAddress,
-  userAgent,
+  id: SessionIdSchema,
+  token: TokenSchema,
+  userId: UserIdSchema,
+  expiresAt: DateSchema,
+  refreshToken: Schema.NullOr(TokenSchema),
+  refreshTokenExpiresAt: Schema.NullOr(DateSchema),
+  deviceId: Schema.NullOr(Schema.String),
+  createdAt: DateSchema,
+  updatedAt: DateSchema,
+  ipAddress: IpAddressSchema,
+  userAgent: UserAgentSchema,
 });
 
 export type Session = typeof SessionSchema.Type;
@@ -87,8 +84,8 @@ export type AuthContext = typeof AuthContextSchema.Type;
  */
 
 export const LoginCredentialsSchema = Schema.Struct({
-  email,
-  password,
+  email: EmailSchema,
+  password: PasswordSchema,
 });
 
 export type LoginCredentials = typeof LoginCredentialsSchema.Type;
@@ -97,9 +94,9 @@ export type LoginCredentials = typeof LoginCredentialsSchema.Type;
  * Registration data schema
  */
 export const RegisterDataSchema = Schema.Struct({
-  name,
-  email,
-  password,
+  name: FirstNameSchema,
+  email: EmailSchema,
+  password: PasswordSchema,
 });
 
 export type RegisterData = typeof RegisterDataSchema.Type;
@@ -108,8 +105,8 @@ export type RegisterData = typeof RegisterDataSchema.Type;
  * Session creation options
  */
 export const SessionOptionsSchema = Schema.Struct({
-  ipAddress: Schema.optional(ipAddress),
-  userAgent: Schema.optional(userAgent),
+  ipAddress: Schema.optional(IpAddressSchema),
+  userAgent: Schema.optional(UserAgentSchema),
   deviceId: Schema.optional(Schema.String),
   expiresIn: Schema.optional(Schema.Number), // Duration in seconds
 });
@@ -120,10 +117,10 @@ export type SessionOptions = typeof SessionOptionsSchema.Type;
  * KYC Tier 1 verification data (Basic)
  */
 export const KycTier1DataSchema = Schema.Struct({
-  firstName: Schema.String.pipe(Schema.minLength(1)),
-  lastName: Schema.String.pipe(Schema.minLength(1)),
-  dateOfBirth: Schema.Date,
-  address: Schema.String.pipe(Schema.minLength(10)),
+  firstName: FirstNameSchema,
+  lastName: LastNameSchema,
+  dateOfBirth: DateSchema,
+  address: AddressSchema,
 });
 
 export type KycTier1Data = typeof KycTier1DataSchema.Type;
@@ -132,16 +129,10 @@ export type KycTier1Data = typeof KycTier1DataSchema.Type;
  * KYC Tier 2 verification data (Full)
  */
 export const KycTier2DataSchema = Schema.Struct({
-  governmentIdType: Schema.Literal(
-    "NIN",
-    "BVN",
-    "Passport",
-    "DriversLicense",
-    "VotersCard"
-  ),
-  governmentIdNumber: Schema.String.pipe(Schema.minLength(5)),
-  governmentIdImage: Schema.String, // Base64 or URL
-  selfieImage: Schema.String, // Base64 or URL
+  governmentIdType: KycGovernmentIdTypeSchema,
+  governmentIdNumber: KycGovernmentIdNumberSchema,
+  governmentIdImage: UrlStringSchema, // Base64 or URL
+  selfieImage: UrlStringSchema, // Base64 or URL
 });
 
 export type KycTier2Data = typeof KycTier2DataSchema.Type;

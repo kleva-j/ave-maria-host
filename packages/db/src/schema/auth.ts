@@ -18,7 +18,7 @@ export const user = pgTable(
     name: text("name").notNull(),
     email: text("email").notNull().unique(),
     emailVerified: boolean("email_verified").notNull(),
-    image: text("image"),
+    image: text("image"), // URL to user's profile image
     // AV-Daily specific fields
     phoneNumber: varchar("phone_number", { length: 20 }).unique(),
     phoneVerified: boolean("phone_verified").default(false),

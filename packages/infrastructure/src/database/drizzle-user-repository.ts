@@ -1,18 +1,20 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { UserRepository, UserId } from "@host/domain";
+import type { KycStatus, KycTier } from "@host/shared";
 
 import { DatabaseService, user } from "@host/db";
 import { Effect, Context, Layer } from "effect";
 import { eq, and } from "drizzle-orm";
 
 import { RepositoryError, User } from "@host/domain";
+import { UserIdSchema } from "@host/shared";
 
 /**
  * Map database row to User domain entity
  */
 function mapToDomainEntity(row: typeof user.$inferSelect): User {
   return new User({
-    id: { value: row.id } as UserId,
+    id: UserIdSchema.make(row.id),
     name: row.name,
     email: row.email,
     emailVerified: row.emailVerified,
@@ -20,8 +22,8 @@ function mapToDomainEntity(row: typeof user.$inferSelect): User {
     phoneNumber: row.phoneNumber,
     phoneVerified: row.phoneVerified ?? false,
     dateOfBirth: row.dateOfBirth ? new Date(row.dateOfBirth) : null,
-    kycTier: row.kycTier,
-    kycStatus: row.kycStatus,
+    kycTier: row.kycTier as KycTier,
+    kycStatus: row.kycStatus as KycStatus,
     kycData: row.kycData,
     kycVerifiedAt: row.kycVerifiedAt,
     biometricEnabled: row.biometricEnabled ?? false,
@@ -52,7 +54,7 @@ export const DrizzleUserRepositoryLive = Layer.effect(
         Effect.gen(function* () {
           yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
             await drizzle.insert(user).values({
-              id: userEntity.id.value,
+              id: userEntity.id,
               name: userEntity.name,
               email: userEntity.email,
               emailVerified: userEntity.emailVerified,
@@ -168,7 +170,7 @@ export const DrizzleUserRepositoryLive = Layer.effect(
                 suspensionReason: userEntity.suspensionReason,
                 updatedAt: new Date(),
               })
-              .where(eq(user.id, userEntity.id.value));
+              .where(eq(user.id, userEntity.id));
           });
         }).pipe(
           Effect.catchAll((error) =>

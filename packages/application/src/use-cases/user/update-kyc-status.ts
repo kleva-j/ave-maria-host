@@ -1,14 +1,14 @@
-import type { UserRepository } from "@host/domain";
-
-import { User, UserId, KycStatusEnum } from "@host/domain";
 import { Effect, Context, Layer } from "effect";
 import { Schema } from "effect";
 
+import { type UserRepository, User, UserId } from "@host/domain";
+
 import {
   type FinancialError,
+  UserNotFoundError,
   ValidationError,
   DatabaseError,
-  UserNotFoundError,
+  KycStatusEnum,
 } from "@host/shared";
 
 /**

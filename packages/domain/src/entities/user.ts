@@ -4,20 +4,26 @@ import { Schema } from "effect";
 
 import {
   type KycStatus,
+  type KycTier,
   PhoneNumberSchema,
   KycStatusSchema,
+  UrlStringSchema,
+  FirstNameSchema,
   KycStatusEnum,
+  KycTierSchema,
+  UserIdSchema,
   EmailSchema,
+  KycTierEnum,
 } from "@host/shared";
 
 /**
  * User entity representing a user in the system
  */
 export class User extends Schema.Class<User>("User")({
-  id: Schema.propertySignature(Schema.Any).annotations({
+  id: Schema.propertySignature(UserIdSchema).annotations({
     description: "Unique identifier for the user",
   }),
-  name: Schema.String.annotations({
+  name: FirstNameSchema.annotations({
     description: "User's full name",
   }),
   email: EmailSchema.annotations({
@@ -26,7 +32,7 @@ export class User extends Schema.Class<User>("User")({
   emailVerified: Schema.Boolean.annotations({
     description: "Whether the email has been verified",
   }),
-  image: Schema.NullOr(Schema.String).annotations({
+  image: Schema.NullOr(UrlStringSchema).annotations({
     description: "URL to user's profile image",
   }),
   phoneNumber: Schema.NullOr(PhoneNumberSchema).annotations({
@@ -38,7 +44,7 @@ export class User extends Schema.Class<User>("User")({
   dateOfBirth: Schema.NullOr(Schema.Date).annotations({
     description: "User's date of birth",
   }),
-  kycTier: Schema.Number.annotations({
+  kycTier: KycTierSchema.annotations({
     description: "KYC tier level: 0 = Unverified, 1 = Basic, 2 = Full",
   }),
   kycStatus: KycStatusSchema.annotations({
@@ -87,7 +93,7 @@ export class User extends Schema.Class<User>("User")({
     phoneNumber?: string | null;
     phoneVerified?: boolean;
     dateOfBirth?: Date | null;
-    kycTier?: number;
+    kycTier?: KycTier;
     kycStatus?: KycStatus;
     kycData?: unknown | null;
     kycVerifiedAt?: Date | null;
@@ -100,7 +106,7 @@ export class User extends Schema.Class<User>("User")({
   }): User {
     const now = new Date();
     return new User({
-      id: params.id,
+      id: params.id.value,
       name: params.name,
       email: params.email,
       emailVerified: params.emailVerified ?? false,
@@ -108,7 +114,7 @@ export class User extends Schema.Class<User>("User")({
       phoneNumber: params.phoneNumber ?? null,
       phoneVerified: params.phoneVerified ?? false,
       dateOfBirth: params.dateOfBirth ?? null,
-      kycTier: params.kycTier ?? 0,
+      kycTier: params.kycTier ?? KycTierSchema.make(KycTierEnum.UNVERIFIED),
       kycStatus: params.kycStatus ?? KycStatusEnum.PENDING,
       kycData: params.kycData ?? null,
       kycVerifiedAt: params.kycVerifiedAt ?? null,
