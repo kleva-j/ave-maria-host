@@ -13,8 +13,8 @@ import type {
   User,
 } from "./auth-types";
 
+import { Effect, Layer, Context, Schema } from "effect";
 import { EmailService } from "@host/infrastructure";
-import { Effect, Layer, Context } from "effect";
 import { UserId } from "@host/domain";
 
 import { AuthService } from "./auth-service";
@@ -22,6 +22,7 @@ import { auth } from "..";
 
 import {
   SessionIdSchema,
+  DateTimeSchema,
   KycTierSchema,
   KycStatusEnum,
   UserIdSchema,
@@ -50,63 +51,134 @@ import {
   AuthError,
 } from "./auth-errors";
 
+// ============================================================================
+// Better-Auth Response Validation Schemas
+// ============================================================================
+
 /**
- * Converts Better-Auth user data to internal User type
+ * Schema for Better-Auth user response validation
+ * Validates the shape of data returned from Better-Auth API
  *
- * This helper ensures all required fields are present and properly typed,
- * including branded types (UserIdSchema, KycTierSchema) and default values
- * for fields not provided by Better-Auth.
+ * @remarks
+ * This schema ensures Better-Auth API responses match our expectations.
+ * If Better-Auth changes their response format, validation will fail with
+ * detailed error messages indicating which fields are invalid.
+ */
+const BetterAuthUserSchema = Schema.Struct({
+  id: Schema.UUID,
+  name: Schema.String,
+  email: Schema.String,
+  emailVerified: Schema.Boolean,
+  image: Schema.NullOr(Schema.String),
+  phoneNumber: Schema.optional(Schema.NullOr(Schema.String)),
+  phoneVerified: Schema.optional(Schema.Boolean),
+  dateOfBirth: Schema.optional(Schema.NullOr(DateTimeSchema)),
+  kycTier: Schema.optional(Schema.Number),
+  kycStatus: Schema.optional(Schema.String),
+  kycVerifiedAt: Schema.optional(Schema.NullOr(DateTimeSchema)),
+  biometricEnabled: Schema.optional(Schema.Boolean),
+  isActive: Schema.optional(Schema.Boolean),
+  isSuspended: Schema.optional(Schema.Boolean),
+  createdAt: DateTimeSchema,
+  updatedAt: DateTimeSchema,
+});
+
+export type BetterAuthUser = typeof BetterAuthUserSchema.Type;
+
+/**
+ * Schema for Better-Auth session response validation
+ * Validates the shape of session data returned from Better-Auth API
  *
- * @param betterAuthUser - Raw user data from Better-Auth API response
- * @returns Fully typed User with all required fields and branded types
+ * @remarks
+ * Ensures session data integrity and catches API changes early.
+ */
+const BetterAuthSessionSchema = Schema.Struct({
+  id: Schema.UUID,
+  token: Schema.String,
+  userId: Schema.UUID,
+  expiresAt: DateTimeSchema,
+  refreshToken: Schema.optional(Schema.NullOr(Schema.String)),
+  refreshTokenExpiresAt: Schema.optional(Schema.NullOr(DateTimeSchema)),
+  deviceId: Schema.optional(Schema.NullOr(Schema.String)),
+  ipAddress: Schema.optional(Schema.NullOr(Schema.String)),
+  userAgent: Schema.optional(Schema.NullOr(Schema.String)),
+  createdAt: DateTimeSchema,
+  updatedAt: DateTimeSchema,
+});
+
+export type BetterAuthSession = typeof BetterAuthSessionSchema.Type;
+
+/**
+ * Converts Better-Auth user data to internal User type with runtime validation
+ *
+ * This helper validates Better-Auth API responses at runtime and ensures all
+ * required fields are present and properly typed, including branded types.
+ *
+ * @param betterAuthUser - Raw user data from Better-Auth API response (unknown type)
+ * @returns Effect that either succeeds with User or fails with ParseError
  *
  * @example
  * ```typescript
  * const betterAuthResponse = await auth.api.signInEmail({ ... });
- * const user = createUserFromBetterAuth(betterAuthResponse.user);
- * // user.id is BrandedUserId
- * // user.kycTier is BrandedKycTier (defaults to UNVERIFIED)
+ * const user = yield* createUserFromBetterAuth(betterAuthResponse.user);
+ * // If validation fails, Effect will contain ParseError with details
  * ```
  *
  * @remarks
+ * **Runtime Validation**: Validates response against BetterAuthUserSchema
+ *
  * Default values applied:
- * - KYC tier: UNVERIFIED (0)
- * - KYC status: PENDING
+ * - KYC tier: UNVERIFIED (0) if not provided
+ * - KYC status: PENDING if not provided
  * - Phone fields: null/false
  * - Biometric fields: false/null
  * - Account status: active, not suspended
- * - All nullable fields: null
  *
  * Branded types created:
  * - `id`: UserIdSchema.make()
  * - `kycTier`: KycTierSchema.make()
  *
  * @see {@link UserSchema} for the complete User type definition
- * @see {@link https://better-auth.com/docs/api Better-Auth API Documentation}
+ * @see {@link BetterAuthUserSchema} for the validation schema
  */
-function createUserFromBetterAuth(betterAuthUser: any): User {
-  return {
-    id: UserIdSchema.make(betterAuthUser.id),
-    name: betterAuthUser.name,
-    email: betterAuthUser.email,
-    emailVerified: betterAuthUser.emailVerified,
-    image: betterAuthUser.image ?? null,
-    phoneNumber: null,
-    phoneVerified: false,
-    dateOfBirth: null,
-    kycTier: KycTierSchema.make(KycTierEnum.UNVERIFIED),
-    kycStatus: KycStatusEnum.PENDING,
-    kycData: null,
-    kycVerifiedAt: null,
-    biometricEnabled: false,
-    biometricPublicKey: null,
-    isActive: true,
-    isSuspended: false,
-    suspendedAt: null,
-    suspensionReason: null,
-    createdAt: new Date(betterAuthUser.createdAt),
-    updatedAt: new Date(betterAuthUser.updatedAt),
-  };
+function createUserFromBetterAuth(betterAuthUser: unknown) {
+  return Effect.gen(function* () {
+    // Runtime validation - throws ParseError if data is invalid
+    const validated =
+      yield* Schema.decodeUnknown(BetterAuthUserSchema)(betterAuthUser);
+
+    // Map validated data to internal User type with branded types
+    return {
+      id: UserIdSchema.make(validated.id),
+      name: validated.name,
+      email: validated.email,
+      emailVerified: validated.emailVerified,
+      image: validated.image,
+      phoneNumber: validated.phoneNumber ?? null,
+      phoneVerified: validated.phoneVerified ?? false,
+      dateOfBirth: validated.dateOfBirth
+        ? new Date(validated.dateOfBirth.toString())
+        : null,
+      kycTier: validated.kycTier
+        ? KycTierSchema.make(validated.kycTier as 0 | 1 | 2)
+        : KycTierSchema.make(KycTierEnum.UNVERIFIED),
+      kycStatus: validated.kycStatus
+        ? (validated.kycStatus as KycStatus)
+        : KycStatusEnum.PENDING,
+      kycData: null,
+      kycVerifiedAt: validated.kycVerifiedAt
+        ? new Date(validated.kycVerifiedAt.toString())
+        : null,
+      biometricEnabled: validated.biometricEnabled ?? false,
+      biometricPublicKey: null,
+      isActive: validated.isActive ?? true,
+      isSuspended: validated.isSuspended ?? false,
+      suspendedAt: null,
+      suspensionReason: null,
+      createdAt: new Date(validated.createdAt.toString()),
+      updatedAt: new Date(validated.updatedAt.toString()),
+    };
+  });
 }
 
 /**
@@ -177,48 +249,68 @@ class AuthServiceImpl implements AuthService {
     AuthContext,
     InvalidTokenError | SessionExpiredError | UserNotFoundError
   > =>
-    Effect.tryPromise({
-      try: async () => {
+    Effect.gen(function* () {
+      try {
         // Better-Auth session validation using token
         const headers = { authorization: `Bearer ${token}` };
-        const result = await auth.api.getSession({ headers });
+        const result = yield* Effect.promise(() =>
+          auth.api.getSession({ headers })
+        );
 
         if (!result?.session || !result?.user) {
-          throw new InvalidTokenError({
-            message: "Invalid or expired token",
-            token,
-          });
+          return yield* Effect.fail(
+            new InvalidTokenError({
+              message: "Invalid or expired token",
+              token,
+            })
+          );
         }
 
         const { session, user } = result;
 
         // Check if session is expired
         if (new Date(session.expiresAt) < new Date()) {
-          throw new SessionExpiredError({
-            message: "Session has expired",
-            sessionId: session.id,
-            expiredAt: new Date(session.expiresAt),
-          });
+          return yield* Effect.fail(
+            new SessionExpiredError({
+              message: "Session has expired",
+              sessionId: session.id,
+              expiredAt: new Date(session.expiresAt),
+            })
+          );
         }
 
+        // Unwrap the Effect<User> returned by createUserFromBetterAuth
+        // Map ParseError to InvalidTokenError since malformed data means invalid token
+        const validatedUser = yield* createUserFromBetterAuth(user).pipe(
+          Effect.mapError(
+            (error) =>
+              new InvalidTokenError({
+                message: "Invalid user data from authentication provider",
+                cause: error,
+                token,
+              })
+          )
+        );
+
         return {
-          user: createUserFromBetterAuth(user),
+          user: validatedUser,
           session: createSessionFromBetterAuth(session),
         } satisfies AuthContext;
-      },
-      catch: (error) => {
+      } catch (error) {
         if (
           error instanceof InvalidTokenError ||
           error instanceof SessionExpiredError
         ) {
-          return error;
+          return yield* Effect.fail(error);
         }
-        return new InvalidTokenError({
-          message: "Token validation failed",
-          cause: error,
-          token,
-        });
-      },
+        return yield* Effect.fail(
+          new InvalidTokenError({
+            message: "Token validation failed",
+            cause: error,
+            token,
+          })
+        );
+      }
     });
 
   validateSession = (
@@ -227,48 +319,68 @@ class AuthServiceImpl implements AuthService {
     AuthContext,
     SessionValidationError | SessionExpiredError | UserNotFoundError
   > =>
-    Effect.tryPromise({
-      try: async () => {
+    Effect.gen(function* () {
+      try {
         // Better-Auth session validation using session ID
         const headers = { "x-session-id": sessionId };
-        const result = await auth.api.getSession({ headers });
+        const result = yield* Effect.promise(() =>
+          auth.api.getSession({ headers })
+        );
 
         if (!result?.session || !result?.user) {
-          throw new SessionValidationError({
-            message: "Session not found",
-            sessionId,
-          });
+          return yield* Effect.fail(
+            new SessionValidationError({
+              message: "Session not found",
+              sessionId,
+            })
+          );
         }
 
         const { session, user } = result;
 
         // Check if session is expired
         if (new Date(session.expiresAt) < new Date()) {
-          throw new SessionExpiredError({
-            message: "Session has expired",
-            sessionId: session.id,
-            expiredAt: new Date(session.expiresAt),
-          });
+          return yield* Effect.fail(
+            new SessionExpiredError({
+              message: "Session has expired",
+              sessionId: session.id,
+              expiredAt: new Date(session.expiresAt),
+            })
+          );
         }
 
+        // Unwrap the Effect<User> returned by createUserFromBetterAuth
+        // Map ParseError to SessionValidationError since malformed data means invalid session
+        const validatedUser = yield* createUserFromBetterAuth(user).pipe(
+          Effect.mapError(
+            (error) =>
+              new SessionValidationError({
+                message: "Invalid user data from authentication provider",
+                cause: error,
+                sessionId,
+              })
+          )
+        );
+
         return {
-          user: createUserFromBetterAuth(user),
+          user: validatedUser,
           session: createSessionFromBetterAuth(session),
         } satisfies AuthContext;
-      },
-      catch: (error) => {
+      } catch (error) {
         if (
           error instanceof SessionValidationError ||
           error instanceof SessionExpiredError
         ) {
-          return error;
+          return yield* Effect.fail(error);
         }
-        return new SessionValidationError({
-          message: "Session validation failed",
-          cause: error,
-          sessionId,
-        });
-      },
+        return yield* Effect.fail(
+          new SessionValidationError({
+            message: "Session validation failed",
+            cause: error,
+            sessionId,
+          })
+        );
+      }
     });
 
   createSession = (
@@ -338,26 +450,43 @@ class AuthServiceImpl implements AuthService {
   login = (
     credentials: LoginCredentials
   ): Effect.Effect<AuthContext, InvalidCredentialsError | UserNotFoundError> =>
-    Effect.tryPromise({
-      try: async () => {
+    Effect.gen(function* () {
+      try {
         const { email, password } = credentials;
-        const result = await auth.api.signInEmail({
-          body: { email, password },
-        });
+        const result = yield* Effect.promise(() =>
+          auth.api.signInEmail({
+            body: { email, password },
+          })
+        );
 
         if (!result?.user) {
-          throw new InvalidCredentialsError({
-            message: "Invalid email or password",
-            email,
-          });
+          return yield* Effect.fail(
+            new InvalidCredentialsError({
+              message: "Invalid email or password",
+              email,
+            })
+          );
         }
 
         const { user } = result;
 
+        // Unwrap the Effect<User> returned by createUserFromBetterAuth
+        // Map ParseError to InvalidCredentialsError since malformed data indicates auth failure
+        const validatedUser = yield* createUserFromBetterAuth(user).pipe(
+          Effect.mapError(
+            (error) =>
+              new InvalidCredentialsError({
+                message: "Invalid user data from authentication provider",
+                cause: error,
+                email,
+              })
+          )
+        );
+
         // Create a session context using helper functions
         // Note: Better-Auth's signInEmail returns {user, token, redirect, url} but not session
         const authContext: AuthContext = {
-          user: createUserFromBetterAuth(user),
+          user: validatedUser,
           session: {
             id: SessionIdSchema.make(crypto.randomUUID()),
             expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
@@ -376,37 +505,57 @@ class AuthServiceImpl implements AuthService {
         };
 
         return authContext;
-      },
-      catch: (error) => {
-        if (error instanceof InvalidCredentialsError) return error;
-        return new InvalidCredentialsError({
-          message: "Login failed",
-          email: credentials.email,
-          cause: error,
-        });
-      },
+      } catch (error) {
+        if (error instanceof InvalidCredentialsError) {
+          return yield* Effect.fail(error);
+        }
+        return yield* Effect.fail(
+          new InvalidCredentialsError({
+            message: "Login failed",
+            email: credentials.email,
+            cause: error,
+          })
+        );
+      }
     });
 
   register = (data: RegisterData): Effect.Effect<User, AuthError> =>
-    Effect.tryPromise({
-      try: async () => {
+    Effect.gen(function* () {
+      try {
         const { name, email, password } = data;
-        const result = await auth.api.signUpEmail({
-          body: { name, email, password },
-        });
+        const result = yield* Effect.promise(() =>
+          auth.api.signUpEmail({
+            body: { name, email, password },
+          })
+        );
 
         if (!result?.user) {
-          throw new AuthError({ message: "Registration failed" });
+          return yield* Effect.fail(
+            new AuthError({ message: "Registration failed" })
+          );
         }
 
         const { user } = result;
 
-        return createUserFromBetterAuth(user);
-      },
-      catch: (error) => {
-        if (error instanceof AuthError) return error;
-        return new AuthError({ message: "Registration failed", cause: error });
-      },
+        // Unwrap the Effect<User> returned by createUserFromBetterAuth
+        // Map ParseError to AuthError since malformed data indicates registration failure
+        return yield* createUserFromBetterAuth(user).pipe(
+          Effect.mapError(
+            (error) =>
+              new AuthError({
+                message: "Invalid user data from authentication provider",
+                cause: error,
+              })
+          )
+        );
+      } catch (error) {
+        if (error instanceof AuthError) {
+          return yield* Effect.fail(error);
+        }
+        return yield* Effect.fail(
+          new AuthError({ message: "Registration failed", cause: error })
+        );
+      }
     });
 
   getUserById = (userId: string): Effect.Effect<User, UserNotFoundError> => {
