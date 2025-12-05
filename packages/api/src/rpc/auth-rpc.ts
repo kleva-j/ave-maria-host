@@ -17,29 +17,39 @@ import { Rpc, RpcGroup, RpcMiddleware } from "@effect/rpc";
 import { Schema, Context, Effect } from "effect";
 import { DatabaseService } from "@host/db";
 import { AuthService } from "@host/auth";
+import {
+  FirstNameSchema,
+  SessionIdSchema,
+  UserAgentSchema,
+  IpAddressSchema,
+  UserIdSchema,
+  EmailSchema,
+  DateSchema,
+  TokenSchema,
+} from "@host/shared";
 
 /**
  * User data model using Effect Schema
  */
 export class User extends Schema.Class<User>("User")({
-  id: Schema.String.pipe(Schema.minLength(1)),
-  email: Schema.String.pipe(Schema.pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)),
-  name: Schema.String.pipe(Schema.minLength(2), Schema.maxLength(100)),
-  createdAt: Schema.optional(Schema.Date),
-  updatedAt: Schema.optional(Schema.Date),
+  id: UserIdSchema,
+  email: EmailSchema,
+  name: FirstNameSchema,
+  createdAt: Schema.optional(DateSchema),
+  updatedAt: Schema.optional(DateSchema),
 }) {}
 
 /**
  * Session data model
  */
 export class Session extends Schema.Class<Session>("Session")({
-  id: Schema.String.pipe(Schema.minLength(1)),
-  token: Schema.String.pipe(Schema.minLength(1)),
-  expiresAt: Schema.Date,
-  createdAt: Schema.optional(Schema.Date),
-  updatedAt: Schema.optional(Schema.Date),
-  userAgent: Schema.optional(Schema.String),
-  ipAddress: Schema.optional(Schema.String),
+  id: SessionIdSchema,
+  token: TokenSchema,
+  expiresAt: DateSchema,
+  createdAt: Schema.optional(DateSchema),
+  updatedAt: Schema.optional(DateSchema),
+  userAgent: Schema.optional(UserAgentSchema),
+  ipAddress: Schema.optional(IpAddressSchema),
 }) {}
 
 /**
@@ -48,8 +58,8 @@ export class Session extends Schema.Class<Session>("Session")({
 export class AuthResponse extends Schema.Class<AuthResponse>("AuthResponse")({
   user: User,
   session: Schema.Struct({
-    token: Schema.String,
-    expiresAt: Schema.Date,
+    token: TokenSchema,
+    expiresAt: DateSchema,
   }),
 }) {}
 
@@ -71,11 +81,11 @@ export class SessionListResponse extends Schema.Class<SessionListResponse>(
 )({
   sessions: Schema.Array(
     Schema.Struct({
-      id: Schema.String,
-      createdAt: Schema.Date,
-      updatedAt: Schema.Date,
-      userAgent: Schema.optional(Schema.String),
-      ipAddress: Schema.optional(Schema.String),
+      id: SessionIdSchema,
+      createdAt: DateSchema,
+      updatedAt: DateSchema,
+      userAgent: Schema.optional(UserAgentSchema),
+      ipAddress: Schema.optional(IpAddressSchema),
     })
   ),
 }) {}

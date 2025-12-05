@@ -1,13 +1,12 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import type { KycStatus, BrandedKycTier } from "@host/shared";
 import type { UserRepository, UserId } from "@host/domain";
-import type { KycStatus, KycTier } from "@host/shared";
-
-import { DatabaseService, user } from "@host/db";
-import { Effect, Context, Layer } from "effect";
-import { eq, and } from "drizzle-orm";
 
 import { RepositoryError, User } from "@host/domain";
+import { DatabaseService, user } from "@host/db";
+import { Effect, Context, Layer } from "effect";
 import { UserIdSchema } from "@host/shared";
+import { eq, and } from "drizzle-orm";
 
 /**
  * Map database row to User domain entity
@@ -22,7 +21,7 @@ function mapToDomainEntity(row: typeof user.$inferSelect): User {
     phoneNumber: row.phoneNumber,
     phoneVerified: row.phoneVerified ?? false,
     dateOfBirth: row.dateOfBirth ? new Date(row.dateOfBirth) : null,
-    kycTier: row.kycTier as KycTier,
+    kycTier: row.kycTier as BrandedKycTier,
     kycStatus: row.kycStatus as KycStatus,
     kycData: row.kycData,
     kycVerifiedAt: row.kycVerifiedAt,

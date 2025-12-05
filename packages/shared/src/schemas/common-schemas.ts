@@ -223,11 +223,64 @@ export type Token = typeof TokenSchema.Type;
  */
 export const UserIdSchema = Schema.UUID.pipe(Schema.brand("UserId"));
 
-export type UserIdType = typeof UserIdSchema.Type;
-
+/**
+ * Schema for SessionId validation
+ */
 export const SessionIdSchema = Schema.UUID.pipe(Schema.brand("SessionId"));
 
-export type SessionIdType = typeof SessionIdSchema.Type;
+// ============================================================================
+// Branded Type Utilities
+// ============================================================================
+
+/**
+ * Branded UserId type - ensures type safety when passing user identifiers
+ *
+ * @example
+ * ```typescript
+ * function getUser(id: BrandedUserId) { ... }
+ * const userId = UserIdSchema.make("uuid-here");
+ * getUser(userId); // ✅ Works
+ * getUser("plain-string"); // ❌ Type error
+ * ```
+ */
+export type BrandedUserId = typeof UserIdSchema.Type;
+
+/**
+ * Branded SessionId type - ensures type safety for session identifiers
+ *
+ * @example
+ * ```typescript
+ * function getSession(id: BrandedSessionId) { ... }
+ * const sessionId = SessionIdSchema.make("uuid-here");
+ * getSession(sessionId); // ✅ Works
+ * ```
+ */
+export type BrandedSessionId = typeof SessionIdSchema.Type;
+
+/**
+ * Branded KycTier type - only accepts 0, 1, or 2 with brand
+ *
+ * @example
+ * ```typescript
+ * function checkKycTier(tier: BrandedKycTier) { ... }
+ * const tier = KycTierSchema.make(1);
+ * checkKycTier(tier); // ✅ Works
+ * checkKycTier(1); // ❌ Type error
+ * ```
+ */
+export type BrandedKycTier = typeof KycTierSchema.Type;
+
+/**
+ * Branded Token type - ensures type safety for authentication tokens
+ *
+ * @example
+ * ```typescript
+ * function validateToken(token: BrandedToken) { ... }
+ * const token = TokenSchema.make("jwt-token");
+ * validateToken(token); // ✅ Works
+ * ```
+ */
+export type BrandedToken = typeof TokenSchema.Type;
 
 /**
  * Schema for phone number validation (international format)
@@ -398,16 +451,21 @@ export const CountryNameSchema = Schema.Literal("Nigeria")
   .annotations({
     message: () => "Invalid country name",
     description: "Country name",
+    defaultValue: "Nigeria",
   });
 
 /**
  * Schema for ISO country code (2 letters)
  */
 export const CountryCodeSchema = Schema.Trimmed.pipe(
+  Schema.brand("CountryCode"),
   Schema.pattern(/^[A-Z]{2}$/, {
     message: () => "Country code must be a 2-letter ISO code (e.g., NG, US)",
   })
-).annotations({ description: "ISO country code (2 letters)" });
+).annotations({
+  description: "ISO country code (2 letters)",
+  defaultValue: "NG",
+});
 
 /**
  * Schema for invite code (6 alphanumeric characters)
@@ -488,8 +546,6 @@ export const KycTierSchema = Schema.Literal(...Object.values(KycTierEnum))
     message: () => "Invalid KYC tier. KYC tier must be between 0 and 2",
     description: "KYC tier level",
   });
-
-export type KycTier = typeof KycTierSchema.Type;
 
 export const KycGovernmentIdTypeEnum = {
   DRIVERS_LICENSE: "DriversLicense",

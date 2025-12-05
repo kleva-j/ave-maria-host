@@ -7,35 +7,22 @@ import {
   type FinancialError,
   UserNotFoundError,
   ValidationError,
+  KycStatusSchema,
   DatabaseError,
   KycStatusEnum,
+  KycTierSchema,
+  UserIdSchema,
 } from "@host/shared";
-
-/**
- * KYC tier schema
- */
-export const KycTierSchema = Schema.Literal(0, 1, 2);
-export type KycTier = typeof KycTierSchema.Type;
-
-/**
- * KYC status schema
- */
-export const KycStatusSchema = Schema.Literal(
-  KycStatusEnum.PENDING,
-  KycStatusEnum.APPROVED,
-  KycStatusEnum.REJECTED,
-  KycStatusEnum.UNDER_REVIEW
-);
 
 /**
  * Input for updating KYC status
  */
 export const UpdateKycStatusInput = Schema.Struct({
-  userId: Schema.UUID,
+  userId: UserIdSchema,
   tier: KycTierSchema,
   status: KycStatusSchema,
   kycData: Schema.optional(Schema.Unknown),
-  adminUserId: Schema.UUID, // Admin performing the update
+  adminUserId: UserIdSchema,
 });
 
 export type UpdateKycStatusInput = typeof UpdateKycStatusInput.Type;

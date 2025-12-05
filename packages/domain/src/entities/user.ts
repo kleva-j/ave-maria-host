@@ -3,8 +3,8 @@ import type { UserId } from "../value-objects";
 import { Schema } from "effect";
 
 import {
+  type BrandedKycTier,
   type KycStatus,
-  type KycTier,
   PhoneNumberSchema,
   KycStatusSchema,
   UrlStringSchema,
@@ -93,7 +93,7 @@ export class User extends Schema.Class<User>("User")({
     phoneNumber?: string | null;
     phoneVerified?: boolean;
     dateOfBirth?: Date | null;
-    kycTier?: KycTier;
+    kycTier?: BrandedKycTier;
     kycStatus?: KycStatus;
     kycData?: unknown | null;
     kycVerifiedAt?: Date | null;

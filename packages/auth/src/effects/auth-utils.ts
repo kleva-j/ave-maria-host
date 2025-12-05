@@ -1,19 +1,27 @@
+import type {
+  BrandedSessionId,
+  BrandedKycTier,
+  BrandedUserId,
+} from "@host/shared";
+
+import type {
+  SessionValidationError,
+  SessionExpiredError,
+  UserNotFoundError,
+  InvalidTokenError,
+} from "./auth-errors";
+
 import type { AuthContext } from "./auth-types";
 
 import { createHash, createVerify, randomBytes } from "node:crypto";
 import { Effect } from "effect";
 
+import { AuthService } from "./auth-service";
 import {
-  type SessionValidationError,
-  type SessionExpiredError,
-  type UserNotFoundError,
-  type InvalidTokenError,
   InsufficientKycTierError,
   AccountSuspendedError,
   UnauthorizedError,
 } from "./auth-errors";
-
-import { AuthService } from "./auth-service";
 
 /**
  * Utility function to require authentication for an Effect program
@@ -108,13 +116,13 @@ export const requirePermission = (
 /**
  * Utility function to extract user ID from auth context
  */
-export const extractUserId = (authContext: AuthContext): string =>
+export const extractUserId = (authContext: AuthContext): BrandedUserId =>
   authContext.user.id;
 
 /**
  * Utility function to extract session ID from auth context
  */
-export const extractSessionId = (authContext: AuthContext): string =>
+export const extractSessionId = (authContext: AuthContext): BrandedSessionId =>
   authContext.session.id;
 
 /**
@@ -280,7 +288,7 @@ export const checkKycTierRequirement = (
  * Get transaction limits based on KYC tier
  */
 export const getTransactionLimits = (
-  kycTier: number
+  kycTier: BrandedKycTier
 ): { daily: number; monthly: number; perTransaction: number } => {
   switch (kycTier) {
     case 0: // Unverified

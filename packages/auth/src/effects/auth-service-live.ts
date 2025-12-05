@@ -1,4 +1,4 @@
-import type { KycStatus, KycTier } from "@host/shared";
+import type { KycStatus, BrandedKycTier } from "@host/shared";
 import type { UserRepository } from "@host/domain";
 import type {
   BiometricRegistration,
@@ -51,7 +51,38 @@ import {
 } from "./auth-errors";
 
 /**
- * Helper function to create a complete User object from Better-Auth user data
+ * Converts Better-Auth user data to internal User type
+ *
+ * This helper ensures all required fields are present and properly typed,
+ * including branded types (UserIdSchema, KycTierSchema) and default values
+ * for fields not provided by Better-Auth.
+ *
+ * @param betterAuthUser - Raw user data from Better-Auth API response
+ * @returns Fully typed User with all required fields and branded types
+ *
+ * @example
+ * ```typescript
+ * const betterAuthResponse = await auth.api.signInEmail({ ... });
+ * const user = createUserFromBetterAuth(betterAuthResponse.user);
+ * // user.id is BrandedUserId
+ * // user.kycTier is BrandedKycTier (defaults to UNVERIFIED)
+ * ```
+ *
+ * @remarks
+ * Default values applied:
+ * - KYC tier: UNVERIFIED (0)
+ * - KYC status: PENDING
+ * - Phone fields: null/false
+ * - Biometric fields: false/null
+ * - Account status: active, not suspended
+ * - All nullable fields: null
+ *
+ * Branded types created:
+ * - `id`: UserIdSchema.make()
+ * - `kycTier`: KycTierSchema.make()
+ *
+ * @see {@link UserSchema} for the complete User type definition
+ * @see {@link https://better-auth.com/docs/api Better-Auth API Documentation}
  */
 function createUserFromBetterAuth(betterAuthUser: any): User {
   return {
@@ -79,7 +110,38 @@ function createUserFromBetterAuth(betterAuthUser: any): User {
 }
 
 /**
- * Helper function to create a Session object from Better-Auth session data
+ * Converts Better-Auth session data to internal Session type
+ *
+ * Handles optional fields and provides sensible defaults for missing data.
+ * All IDs and tokens are converted to branded types for type safety.
+ *
+ * @param betterAuthSession - Raw session data from Better-Auth API
+ * @returns Fully typed Session with branded IDs and tokens
+ *
+ * @example
+ * ```typescript
+ * const betterAuthSession = await auth.api.getSession({ ... });
+ * const session = createSessionFromBetterAuth(betterAuthSession.session);
+ * // session.id is BrandedSessionId
+ * // session.token is BrandedToken
+ * // session.userId is BrandedUserId
+ * ```
+ *
+ * @remarks
+ * Default values applied when fields are missing:
+ * - `ipAddress`: "0.0.0.0"
+ * - `userAgent`: "unknown"
+ * - `refreshToken`: null
+ * - `refreshTokenExpiresAt`: null
+ * - `deviceId`: null
+ *
+ * Branded types created:
+ * - `id`: SessionIdSchema.make()
+ * - `token`: TokenSchema.make()
+ * - `userId`: UserIdSchema.make()
+ * - `refreshToken`: TokenSchema.make() (if present)
+ *
+ * @see {@link SessionSchema} for the complete Session type definition
  */
 function createSessionFromBetterAuth(betterAuthSession: any): Session {
   return {
@@ -378,7 +440,7 @@ class AuthServiceImpl implements AuthService {
         phoneNumber: domainUser.phoneNumber,
         phoneVerified: domainUser.phoneVerified,
         dateOfBirth: domainUser.dateOfBirth,
-        kycTier: domainUser.kycTier as KycTier,
+        kycTier: domainUser.kycTier as BrandedKycTier,
         kycStatus: domainUser.kycStatus as KycStatus,
         kycData: domainUser.kycData,
         kycVerifiedAt: domainUser.kycVerifiedAt,
@@ -427,7 +489,7 @@ class AuthServiceImpl implements AuthService {
         phoneNumber: domainUser.phoneNumber,
         phoneVerified: domainUser.phoneVerified,
         dateOfBirth: domainUser.dateOfBirth,
-        kycTier: domainUser.kycTier as KycTier,
+        kycTier: domainUser.kycTier as BrandedKycTier,
         kycStatus: domainUser.kycStatus as KycStatus,
         kycData: domainUser.kycData,
         kycVerifiedAt: domainUser.kycVerifiedAt,
@@ -463,10 +525,7 @@ class AuthServiceImpl implements AuthService {
 
       if (!domainUser) {
         return yield* Effect.fail(
-          new UserNotFoundError({
-            message: "User not found",
-            userId,
-          })
+          new UserNotFoundError({ message: "User not found", userId })
         );
       }
 
@@ -500,7 +559,7 @@ class AuthServiceImpl implements AuthService {
         phoneNumber: updatedDomainUser.phoneNumber,
         phoneVerified: updatedDomainUser.phoneVerified,
         dateOfBirth: updatedDomainUser.dateOfBirth,
-        kycTier: updatedDomainUser.kycTier as KycTier,
+        kycTier: updatedDomainUser.kycTier as BrandedKycTier,
         kycStatus: updatedDomainUser.kycStatus as KycStatus,
         kycData: updatedDomainUser.kycData,
         kycVerifiedAt: updatedDomainUser.kycVerifiedAt,

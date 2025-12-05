@@ -7,14 +7,17 @@ import {
   BiometricTypeSchema,
   KycIdNumberSchema,
   PhoneNumberSchema,
+  CountryCodeSchema,
   PostalCodeSchema,
   KycIdTypeSchema,
   KycStatusSchema,
   FirstNameSchema,
   PasswordSchema,
   LastNameSchema,
+  DateTimeSchema,
   KycTierSchema,
   AddressSchema,
+  UserIdSchema,
   StateSchema,
   EmailSchema,
   CitySchema,
@@ -47,16 +50,12 @@ export type RegisterUserInput = typeof RegisterUserSchema.Type;
 export class SubmitTier1KycSchema extends Schema.Class<SubmitTier1KycSchema>(
   "SubmitTier1KycSchema"
 )({
-  dateOfBirth: Schema.DateTimeUtc,
+  dateOfBirth: DateTimeSchema,
   address: AddressSchema,
   city: CitySchema,
   state: StateSchema,
   postalCode: Schema.optional(PostalCodeSchema),
-  country: Schema.String.pipe(
-    Schema.pattern(/^[A-Z]{2}$/, {
-      message: () => "Country must be a 2-letter ISO code",
-    })
-  ).annotations({ default: "NG" }),
+  country: CountryCodeSchema,
 }) {}
 
 export type SubmitTier1KycInput = typeof SubmitTier1KycSchema.Type;
@@ -69,7 +68,7 @@ export class SubmitTier2KycSchema extends Schema.Class<SubmitTier2KycSchema>(
 )({
   idType: KycIdTypeSchema,
   idNumber: KycIdNumberSchema,
-  idExpiryDate: Schema.optional(Schema.DateTimeUtc),
+  idExpiryDate: Schema.optional(DateTimeSchema),
   bvn: Schema.optional(BvnSchema),
   idDocumentUrl: UrlSchema,
   selfieUrl: UrlSchema,
@@ -130,18 +129,18 @@ export type EnableBiometricInput = typeof EnableBiometricSchema.Type;
 export class UserProfileSchema extends Schema.Class<UserProfileSchema>(
   "UserProfileSchema"
 )({
-  id: Schema.UUID,
+  id: UserIdSchema,
   phoneNumber: PhoneNumberSchema,
   email: Schema.NullOr(EmailSchema),
   firstName: FirstNameSchema,
   lastName: LastNameSchema,
-  dateOfBirth: Schema.NullOr(Schema.DateTimeUtc),
+  dateOfBirth: Schema.NullOr(DateTimeSchema),
   kycTier: KycTierSchema,
   kycStatus: KycStatusSchema,
   isActive: Schema.Boolean,
   hasBiometric: Schema.Boolean,
-  createdAt: Schema.DateTimeUtc,
-  updatedAt: Schema.DateTimeUtc,
+  createdAt: DateTimeSchema,
+  updatedAt: DateTimeSchema,
 }) {}
 
 export type UserProfile = typeof UserProfileSchema.Type;
@@ -166,7 +165,7 @@ export type KycSubmissionOutput = typeof KycSubmissionOutputSchema.Type;
 export class RegisterUserOutputSchema extends Schema.Class<RegisterUserOutputSchema>(
   "RegisterUserOutputSchema"
 )({
-  userId: Schema.UUID,
+  userId: UserIdSchema,
   status: Schema.Literal("success", "error"),
   message: Schema.String,
   requiresOtpVerification: Schema.Boolean,
