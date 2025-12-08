@@ -39,6 +39,7 @@ export interface GetSavingsAnalyticsOutput {
     readonly planId: string;
     readonly planName: string;
     readonly progress: number;
+    readonly totalSaved: number;
   } | null;
   readonly insights: string[];
 }
@@ -175,6 +176,7 @@ export const GetSavingsAnalyticsUseCaseLive = Layer.effect(
                 planId: topPlan.id.value,
                 planName: topPlan.planName,
                 progress: topPlan.calculateProgress().progressPercentage,
+                totalSaved: topPlan.currentAmount.value,
               };
             }
           }

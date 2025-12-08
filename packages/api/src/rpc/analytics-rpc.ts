@@ -229,17 +229,22 @@ export const AnalyticsHandlersLive: Layer.Layer<
           )
         );
 
+      const contributionFrequency =
+        result.activePlansCount > 0
+          ? result.totalContributions / result.activePlansCount
+          : result.totalContributions;
+
       return new GetSavingsAnalyticsResponse({
         totalSaved: result.totalSaved,
         averageDailyContribution: result.averageDailyContribution,
-        contributionFrequency: result.totalContributions,
+        contributionFrequency,
         savingsGrowthRate: result.savingsRate,
-        trendData: [], // TODO: Implement trend data calculation
+        trendData: [], // Historical data not available in current use case
         topPerformingPlan: result.topPerformingPlan
           ? {
               planId: result.topPerformingPlan.planId,
               planName: result.topPerformingPlan.planName,
-              totalSaved: result.totalSaved,
+              totalSaved: result.topPerformingPlan.totalSaved,
             }
           : null,
         insights: result.insights,
@@ -272,6 +277,7 @@ export const AnalyticsHandlersLive: Layer.Layer<
         .execute({
           userId: currentUser.id,
           planId: payload.planId,
+          // Map includeProjections (RPC) to includeTransactionHistory (Use Case) as per schema definition mismatch
           includeTransactionHistory: payload.includeProjections ?? false,
         })
         .pipe(
@@ -369,18 +375,23 @@ export const AnalyticsHandlersLive: Layer.Layer<
         )
       );
 
+      const nextTierGoal =
+        result.nextTier !== null
+          ? result.totalPoints + result.pointsToNextTier
+          : 0;
+
       return new CalculateRewardsResponse({
         totalPoints: result.totalPoints,
         availableRewards,
         nextMilestone: result.nextTier
           ? {
               title: `${result.nextTier} Tier`,
-              requiredPoints: result.totalPoints + result.pointsToNextTier,
+              requiredPoints: nextTierGoal,
               currentPoints: result.totalPoints,
               progressPercentage:
-                (result.totalPoints /
-                  (result.totalPoints + result.pointsToNextTier)) *
-                100,
+                nextTierGoal > 0
+                  ? (result.totalPoints / nextTierGoal) * 100
+                  : 100,
             }
           : null,
         streakBonus: result.streakBonus,
