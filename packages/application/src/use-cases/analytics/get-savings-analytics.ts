@@ -1,4 +1,4 @@
-import type { SavingsRepository } from "@host/domain";
+import type { SavingsRepository, TransactionRepository } from "@host/domain";
 
 import { Effect, Context, Layer } from "effect";
 import { Schema } from "@effect/schema";
@@ -41,6 +41,11 @@ export interface GetSavingsAnalyticsOutput {
     readonly progress: number;
     readonly totalSaved: number;
   } | null;
+  readonly trendData: Array<{
+    readonly date: Date;
+    readonly amount: number;
+    readonly contributionCount: number;
+  }>;
   readonly insights: string[];
 }
 
@@ -68,8 +73,11 @@ export const GetSavingsAnalyticsUseCaseLive = Layer.effect(
     const savingsRepo = yield* Effect.serviceOption(
       Context.GenericTag<SavingsRepository>("@domain/SavingsRepository")
     );
+    const transactionRepo = yield* Effect.serviceOption(
+      Context.GenericTag<TransactionRepository>("@domain/TransactionRepository")
+    );
 
-    if (savingsRepo._tag === "None") {
+    if (savingsRepo._tag === "None" || transactionRepo._tag === "None") {
       return yield* Effect.fail(
         new ValidationError({
           field: "dependencies",
@@ -79,6 +87,7 @@ export const GetSavingsAnalyticsUseCaseLive = Layer.effect(
     }
 
     const savingsRepository = savingsRepo.value;
+    const transactionRepository = transactionRepo.value;
 
     return {
       execute: (input: GetSavingsAnalyticsInput) =>
@@ -200,43 +209,90 @@ export const GetSavingsAnalyticsUseCaseLive = Layer.effect(
             );
           }
 
+          // Calculate trend data
+          const transactions = yield* transactionRepository
+            .findByUserId(userId)
+            .pipe(
+              Effect.mapError(
+                (error) =>
+                  new DatabaseError({
+                    operation: "findByUserId",
+                    table: "transactions",
+                    message:
+                      (error as any).message || "Failed to fetch transactions",
+                  })
+              )
+            );
+
+          // Group transactions by date for trend data
+          const trendMap = new Map<
+            string,
+            { amount: number; count: number; date: Date }
+          >();
+          const sortedTransactions = [...transactions].sort(
+            (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+          );
+
+          for (const tx of sortedTransactions) {
+            // Only consider successful contributions and auto-saves
+            const { createdAt, amount, type, status } = tx;
+            if (
+              status === "completed" &&
+              (type === "contribution" || type === "auto_save")
+            ) {
+              const dateKey = createdAt.toISOString().split("T")[0] || ""; // YYYY-MM-DD
+              const current = trendMap.get(dateKey) || {
+                amount: 0,
+                count: 0,
+                date: createdAt,
+              };
+
+              trendMap.set(dateKey, {
+                amount: current.amount + amount.value,
+                count: current.count + 1,
+                date: createdAt,
+              });
+            }
+          }
+
+          const trendData = Array.from(trendMap.values()).map((data) => ({
+            date: data.date,
+            amount: data.amount,
+            contributionCount: data.count,
+          }));
+
           // Generate insights
           const insights: string[] = [];
 
-          if (currentStreak >= 7) {
+          if (currentStreak > 7) {
             insights.push(
-              `Great job! You've maintained a ${currentStreak}-day saving streak.`
+              `Great job! You've maintained a ${currentStreak}-day streak!`
             );
+          } else if (currentStreak === 0 && activePlans.length > 0) {
+            insights.push("Start a streak by making a contribution today!");
           }
 
-          if (completedPlans.length > 0) {
-            const planWord = completedPlans.length > 1 ? "plans" : "plan";
-            insights.push(
-              `You've successfully completed ${completedPlans.length} savings ${planWord}.`
+          // Generate completion insight
+          if (
+            topPerformingPlan &&
+            topPerformingPlan.progress > 0 &&
+            topPerformingPlan.progress < 100
+          ) {
+            const plan = activePlans.find(
+              (p) => p.id.value === topPerformingPlan.planId
             );
-          }
-
-          if (savingsRate >= 80) {
-            insights.push(
-              `You're on track! Your plans are ${savingsRate.toFixed(1)}% complete on average.`
-            );
-          } else if (savingsRate < 50 && activePlans.length > 0) {
-            insights.push(
-              "Consider increasing your contribution frequency to reach your goals faster."
-            );
-          }
-
-          if (activePlans.length > 3) {
-            insights.push(
-              `You have ${activePlans.length} active plans. Consider focusing on fewer plans for better results.`
-            );
-          }
-
-          if (totalSaved > 0 && averageDailyContribution > 0) {
-            const projectedMonthly = averageDailyContribution * 30;
-            insights.push(
-              `At your current rate, you'll save approximately ${projectedMonthly.toFixed(2)} per month.`
-            );
+            if (plan) {
+              const remaining = plan.targetAmount
+                ? plan.targetAmount.subtract(plan.currentAmount).value
+                : 0;
+              insights.push(
+                `You're ${topPerformingPlan.progress.toFixed(
+                  1
+                )}% of the way to your ${
+                  topPerformingPlan.planName
+                } goal. Only ₦${remaining} to go!`
+              );
+            }
           }
 
           return {
@@ -250,6 +306,7 @@ export const GetSavingsAnalyticsUseCaseLive = Layer.effect(
             savingsRate,
             projectedCompletion,
             topPerformingPlan,
+            trendData,
             insights,
           };
         }),

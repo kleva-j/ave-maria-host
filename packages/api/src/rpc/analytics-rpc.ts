@@ -243,12 +243,21 @@ export const AnalyticsHandlersLive: Layer.Layer<
           ? result.totalContributions / result.activePlansCount
           : result.totalContributions;
 
+      const trendData = yield* Effect.all(
+        result.trendData.map(({ date, amount, contributionCount }) =>
+          Effect.gen(function* () {
+            const safeDate = yield* safeDateTimeFromDate(date);
+            return { date: safeDate, amount, contributionCount };
+          })
+        )
+      );
+
       return new GetSavingsAnalyticsResponse({
         totalSaved: result.totalSaved,
         averageDailyContribution: result.averageDailyContribution,
         contributionFrequency,
         savingsGrowthRate: result.savingsRate,
-        trendData: [], // Historical data not available in current use case
+        trendData,
         topPerformingPlan: result.topPerformingPlan
           ? {
               planId: result.topPerformingPlan.planId,
