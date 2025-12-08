@@ -19,7 +19,7 @@
  * - getAchievements: Get user achievements and badges
  */
 
-import { type Layer, Effect, Schema, DateTime } from "effect";
+import { type Layer, Effect, Schema } from "effect";
 import { Rpc, RpcGroup } from "@effect/rpc";
 
 import {
@@ -44,6 +44,11 @@ import {
 } from "@host/shared";
 
 import { AuthMiddleware, CurrentUser } from "./auth-rpc";
+import {
+  safeDateTimeFromDate,
+  mapToAnalyticsError,
+  safeDateTimeOrNull,
+} from "./analytics-helpers";
 
 // ============================================================================
 // Payload Classes
@@ -216,16 +221,20 @@ export const AnalyticsHandlersLive: Layer.Layer<
       // Get authenticated user from context
       const currentUser = yield* CurrentUser;
 
+      yield* Schema.decodeUnknown(GetSavingsAnalyticsSchema)(_payload).pipe(
+        Effect.mapError(
+          mapToAnalyticsError("GetSavingsAnalytics", "Error decoding payload")
+        )
+      );
+
       const result = yield* getSavingsAnalyticsUseCase
         .execute({ userId: currentUser.id, period: "all" })
         .pipe(
           Effect.mapError(
-            (error) =>
-              new AnalyticsError({
-                operation: "GetSavingsAnalytics",
-                message: error._tag || "Failed to get savings analytics",
-                cause: error,
-              })
+            mapToAnalyticsError(
+              "GetSavingsAnalytics",
+              "Failed to get savings analytics"
+            )
           )
         );
 
@@ -255,7 +264,7 @@ export const AnalyticsHandlersLive: Layer.Layer<
    * Generate detailed progress report
    * Creates comprehensive report with projections and comparisons
    */
-  GenerateProgressReport: (payload) =>
+  GenerateProgressReport: (_payload) =>
     Effect.gen(function* () {
       const generateProgressReportUseCase =
         yield* GenerateProgressReportUseCase;
@@ -263,7 +272,18 @@ export const AnalyticsHandlersLive: Layer.Layer<
       // Get authenticated user from context
       const currentUser = yield* CurrentUser;
 
-      // Validate planId is provided
+      const payload = yield* Schema.decodeUnknown(GenerateProgressReportSchema)(
+        _payload
+      ).pipe(
+        Effect.mapError(
+          mapToAnalyticsError(
+            "GenerateProgressReport",
+            "Error decoding payload"
+          )
+        )
+      );
+
+      // Validate planId is provided (schema has it optional but RPC requires it logically here)
       if (!payload.planId) {
         return yield* Effect.fail(
           new AnalyticsError({
@@ -282,19 +302,14 @@ export const AnalyticsHandlersLive: Layer.Layer<
         })
         .pipe(
           Effect.mapError(
-            (error) =>
-              new AnalyticsError({
-                operation: "GenerateProgressReport",
-                message: error._tag || "Failed to generate progress report",
-                cause: error,
-              })
+            mapToAnalyticsError(
+              "GenerateProgressReport",
+              "Failed to generate progress report"
+            )
           )
         );
 
-      // Safe DateTime creation with fallback
-      const generatedAt = yield* DateTime.make(new Date()).pipe(
-        Effect.orElseSucceed(() => DateTime.unsafeNow())
-      );
+      const generatedAt = yield* safeDateTimeFromDate(new Date());
 
       return new GenerateProgressReportResponse({
         reportId: crypto.randomUUID(),
@@ -312,11 +327,7 @@ export const AnalyticsHandlersLive: Layer.Layer<
             .filter((m) => m.achieved)
             .map((m) =>
               Effect.gen(function* () {
-                const earnedAt = m.achievedDate
-                  ? yield* DateTime.make(m.achievedDate).pipe(
-                      Effect.orElseSucceed(() => DateTime.unsafeNow())
-                    )
-                  : DateTime.unsafeNow();
+                const earnedAt = yield* safeDateTimeFromDate(m.achievedDate);
                 return {
                   title: `${m.percentage}% Milestone`,
                   description: `Reached ${m.percentage}% of your savings goal`,
@@ -339,16 +350,20 @@ export const AnalyticsHandlersLive: Layer.Layer<
       // Get authenticated user from context
       const currentUser = yield* CurrentUser;
 
+      yield* Schema.decodeUnknown(CalculateRewardsSchema)(_payload).pipe(
+        Effect.mapError(
+          mapToAnalyticsError("calculateRewards", "Error decoding payload")
+        )
+      );
+
       const result = yield* calculateRewardsUseCase
         .execute({ userId: currentUser.id })
         .pipe(
           Effect.mapError(
-            (error) =>
-              new AnalyticsError({
-                operation: "CalculateRewards",
-                message: error._tag || "Failed to calculate rewards",
-                cause: error,
-              })
+            mapToAnalyticsError(
+              "CalculateRewards",
+              "Failed to calculate rewards"
+            )
           )
         );
 
@@ -356,11 +371,7 @@ export const AnalyticsHandlersLive: Layer.Layer<
       const availableRewards = yield* Effect.all(
         result.badges.map((badge) =>
           Effect.gen(function* () {
-            const earnedAt = badge.earnedDate
-              ? yield* DateTime.make(badge.earnedDate).pipe(
-                  Effect.orElseSucceed(() => DateTime.unsafeNow())
-                )
-              : DateTime.unsafeNow();
+            const earnedAt = yield* safeDateTimeFromDate(badge.earnedDate);
             return {
               id: crypto.randomUUID(),
               type: "badge" as const,
@@ -424,62 +435,42 @@ export const AnalyticsHandlersLive: Layer.Layer<
       // Get authenticated user from context
       const currentUser = yield* CurrentUser;
 
+      yield* Schema.decodeUnknown(GetAchievementsSchema)(_payload).pipe(
+        Effect.mapError(
+          mapToAnalyticsError("GetAchievements", "Error decoding payload")
+        )
+      );
+
       const result = yield* calculateRewardsUseCase
         .execute({ userId: currentUser.id })
         .pipe(
           Effect.mapError(
-            (error) =>
-              new AnalyticsError({
-                operation: "GetAchievements",
-                message: error._tag || "Failed to get achievements",
-                cause: error,
-              })
+            mapToAnalyticsError("GetAchievements", "Failed to get achievements")
           )
         );
 
       // Map badges to achievements with safe DateTime
+      const mapBadgeToAchievement = (badge: any) =>
+        Effect.gen(function* () {
+          const earnedAt = yield* safeDateTimeOrNull(badge.earnedDate);
+          return {
+            id: crypto.randomUUID(),
+            title: badge.name,
+            description: badge.description,
+            iconUrl: badge.icon,
+            category: "savings" as const,
+            earnedAt,
+            progress: 100,
+            isUnlocked: true,
+          };
+        });
+
       const achievements = yield* Effect.all(
-        result.badges.map((badge) =>
-          Effect.gen(function* () {
-            const earnedAt = badge.earnedDate
-              ? yield* DateTime.make(badge.earnedDate).pipe(
-                  Effect.orElseSucceed(() => DateTime.unsafeNow())
-                )
-              : null;
-            return {
-              id: crypto.randomUUID(),
-              title: badge.name,
-              description: badge.description,
-              iconUrl: badge.icon,
-              category: "savings" as const,
-              earnedAt,
-              progress: 100,
-              isUnlocked: true,
-            };
-          })
-        )
+        result.badges.map(mapBadgeToAchievement)
       );
 
       const recentlyEarned = yield* Effect.all(
-        result.newBadges.map((badge) =>
-          Effect.gen(function* () {
-            const earnedAt = badge.earnedDate
-              ? yield* DateTime.make(badge.earnedDate).pipe(
-                  Effect.orElseSucceed(() => DateTime.unsafeNow())
-                )
-              : null;
-            return {
-              id: crypto.randomUUID(),
-              title: badge.name,
-              description: badge.description,
-              iconUrl: badge.icon,
-              category: "savings" as const,
-              earnedAt,
-              progress: 100,
-              isUnlocked: true,
-            };
-          })
-        )
+        result.newBadges.map(mapBadgeToAchievement)
       );
 
       return new GetAchievementsResponse({
