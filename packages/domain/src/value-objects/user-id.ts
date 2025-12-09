@@ -1,10 +1,10 @@
-import { UserIdSchema } from "@host/shared";
+import { UserIdSchema, type UserIdType } from "@host/shared";
 import { Equal, Schema } from "effect";
 
 /**
  * UserId value object representing a unique identifier for users
  */
-export class UserId extends Schema.Class<UserId>("UserId")({
+export class UserId extends Schema.Class<UserIdType>("UserId")({
   value: UserIdSchema,
 }) {
   /**

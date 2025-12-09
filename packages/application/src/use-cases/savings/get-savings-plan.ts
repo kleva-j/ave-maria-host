@@ -1,8 +1,7 @@
 import type { SavingsRepository, SavingsPlan } from "@host/domain";
 
-import { Effect, Context, Layer } from "effect";
+import { Effect, Context, Layer, Schema } from "effect";
 import { PlanId, UserId } from "@host/domain";
-import { Schema } from "@effect/schema";
 import {
   type FinancialError,
   AuthorizationError,
@@ -15,8 +14,8 @@ import {
  * Input for getting a savings plan
  */
 export const GetSavingsPlanInput = Schema.Struct({
-  planId: Schema.UUID,
-  userId: Schema.UUID,
+  planId: PlanId,
+  userId: UserId,
 });
 
 export type GetSavingsPlanInput = typeof GetSavingsPlanInput.Type;

@@ -1,4 +1,6 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import type { CurrencyCode } from "@host/shared";
+
 import type {
   WalletTransactionSummary,
   WalletRepository,
@@ -7,18 +9,11 @@ import type {
   Money,
 } from "@host/domain";
 
-import { DEFAULT_CURRENCY, type CurrencyCode } from "@host/shared";
-
+import { TransactionStatusEnum, TransactionTypeEnum, DEFAULT_CURRENCY } from "@host/shared";
 import { wallets, transactions, DatabaseService } from "@host/db";
+import { Money as MoneyVO, RepositoryError } from "@host/domain";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { Effect, Context, Layer } from "effect";
-
-import {
-  TransactionStatusEnum,
-  TransactionTypeEnum,
-  Money as MoneyVO,
-  RepositoryError,
-} from "@host/domain";
 
 /**
  * Map database row to Wallet domain entity

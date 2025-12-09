@@ -1,20 +1,15 @@
 import type { TransactionRepository } from "@host/domain";
+import type { FinancialError } from "@host/shared";
 
-import { Effect, Context, Layer } from "effect";
-import { Schema } from "@effect/schema";
+import { ValidationError, DatabaseError } from "@host/shared";
+import { Effect, Context, Layer, Schema } from "effect";
 import { UserId } from "@host/domain";
-
-import {
-  type FinancialError,
-  ValidationError,
-  DatabaseError,
-} from "@host/shared";
 
 /**
  * Input for getting spending insights
  */
 export const GetSpendingInsightsInput = Schema.Struct({
-  userId: Schema.UUID,
+  userId: UserId,
   startDate: Schema.Date,
   endDate: Schema.Date,
   categories: Schema.optional(Schema.Array(Schema.String)),

@@ -8,6 +8,12 @@ import { Schema } from "effect";
 // ============================================================================
 
 /**
+ * PlanId value object representing a unique identifier for savings plans
+ */
+export const PlanIdSchema = Schema.UUID.pipe(Schema.brand("PlanId"));
+export type PlanIdType = typeof PlanIdSchema.Type;
+
+/**
  * Schema for creating a new savings plan
  * Validates all required fields and business rules for plan creation
  */
@@ -84,11 +90,13 @@ export type GetPlanProgressInput = typeof GetPlanProgressSchema.Type;
 /**
  * Schema for retrieving a savings plan
  */
-export class GetPlanSchema extends Schema.Class<GetPlanSchema>(
-  "GetPlanSchema"
-)({
-  planId: Schema.UUID.annotations({ message: () => "Invalid plan ID format" }),
-}) {}
+export class GetPlanSchema extends Schema.Class<GetPlanSchema>("GetPlanSchema")(
+  {
+    planId: Schema.UUID.annotations({
+      message: () => "Invalid plan ID format",
+    }),
+  }
+) {}
 
 export type GetPlanInput = typeof GetPlanSchema.Type;
 

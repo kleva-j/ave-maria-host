@@ -1,10 +1,9 @@
+import type { KycStatus, BrandedKycTier } from "@host/shared";
 import type { UserId } from "../value-objects";
 
 import { Schema } from "effect";
 
 import {
-  type BrandedKycTier,
-  type KycStatus,
   PhoneNumberSchema,
   KycStatusSchema,
   UrlStringSchema,
@@ -115,7 +114,8 @@ export class User extends Schema.Class<User>("User")({
       phoneVerified: params.phoneVerified ?? false,
       dateOfBirth: params.dateOfBirth ?? null,
       kycTier: params.kycTier ?? KycTierSchema.make(KycTierEnum.UNVERIFIED),
-      kycStatus: params.kycStatus ?? KycStatusEnum.PENDING,
+      kycStatus:
+        params.kycStatus ?? KycStatusSchema.make(KycStatusEnum.PENDING),
       kycData: params.kycData ?? null,
       kycVerifiedAt: params.kycVerifiedAt ?? null,
       biometricEnabled: params.biometricEnabled ?? false,

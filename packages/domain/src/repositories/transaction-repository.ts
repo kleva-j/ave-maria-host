@@ -1,12 +1,8 @@
 import type { TransactionId, UserId, PlanId, Money } from "../value-objects";
+import type { TransactionType, TransactionStatus } from "@host/shared";
+import type { Transaction } from "../entities/transaction";
 import type { RepositoryError } from ".";
 import type { Effect } from "effect";
-
-import type {
-  TransactionStatus,
-  TransactionType,
-  Transaction,
-} from "../entities/transaction";
 
 /**
  * Repository interface for Transaction entity

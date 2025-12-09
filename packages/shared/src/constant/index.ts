@@ -1,3 +1,25 @@
+import type {
+  ContributionStreak,
+  TotalContributions,
+  AutoSaveEnabled,
+  AutoSaveTime,
+  InterestRate,
+} from "../schemas";
+
+export * from "./enums";
+
+/**
+ * Default values for common schemas
+ */
+export const DEFAULT_CONTRIBUTION_STREAK = 0 as ContributionStreak;
+export const DEFAULT_TOTAL_CONTRIBUTIONS = 0 as TotalContributions;
+export const DEFAULT_AUTO_SAVE_ENABLED = false as AutoSaveEnabled;
+export const DEFAULT_AUTO_SAVE_TIME = "09:00" as AutoSaveTime;
+export const DEFAULT_INTEREST_RATE = 0.0 as InterestRate;
+
+/**
+ * Lagos LGAs
+ */
 export const LGAS = [
   "Agbado/Oke-Odo",
   "Epe",
@@ -56,6 +78,9 @@ export const LGAS = [
   "Mushin",
 ] as const;
 
+/**
+ * Nigerian states
+ */
 export const STATES = [
   "abia",
   "adamawa",

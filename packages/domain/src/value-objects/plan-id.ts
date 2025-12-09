@@ -1,10 +1,5 @@
+import { PlanIdSchema, type PlanIdType } from "@host/shared";
 import { Equal, Schema } from "effect";
-
-/**
- * Schema for PlanId validation
- */
-export const PlanIdSchema = Schema.UUID.pipe(Schema.brand("PlanId"));
-export type PlanIdType = typeof PlanIdSchema.Type;
 
 /**
  * PlanId value object representing a unique identifier for savings plans

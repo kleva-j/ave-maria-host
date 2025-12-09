@@ -1,109 +1,23 @@
-import { Schema } from "@effect/schema";
+import type {
+  TotalContributions,
+  ContributionStreak,
+  AutoSaveEnabled,
+  CycleDuration,
+  InterestRate,
+  AutoSaveTime,
+  PlanStatus,
+  PlanName,
+} from "@host/shared";
 
 import { type UserId, PlanId, Money, PlanProgress } from "../value-objects";
 
-/**
- * Savings plan status values
- */
-export const PlanStatusEnum = {
-  ACTIVE: "active",
-  PAUSED: "paused",
-  COMPLETED: "completed",
-  CANCELLED: "cancelled",
-} as const;
-
-const DEFAULT_AUTO_SAVE_TIME = "09:00" as AutoSaveTime;
-const DEFAULT_AUTO_SAVE_ENABLED = false as AutoSaveEnabled;
-const DEFAULT_INTEREST_RATE = 0.0 as InterestRate;
-
-/**
- * Savings plan status type
- */
-export const PlanStatus = Schema.Literal(
-  PlanStatusEnum.ACTIVE,
-  PlanStatusEnum.PAUSED,
-  PlanStatusEnum.COMPLETED,
-  PlanStatusEnum.CANCELLED
-);
-
-/**
- * Plan name schema
- */
-export const PlanNameSchema = Schema.Trimmed.pipe(
-  Schema.minLength(1, {
-    message: () => "Plan name must be at least 1 character long",
-  }),
-  Schema.maxLength(100, {
-    message: () => "Plan name must be at most 100 characters long",
-  })
-).annotations({ description: "Plan name" });
-
-/**
- * Interest rate schema
- */
-export const InterestRateSchema = Schema.Number.pipe(
-  Schema.between(0, 1)
-).annotations({
-  description: "Interest rate in percentage",
-  message: () => "Interest rate must be between 0 and 1",
-});
-
-/**
- * Cycle duration schema
- */
-export const CycleDurationSchema = Schema.Number.pipe(
-  Schema.int(),
-  Schema.between(7, 365)
-).annotations({
-  description: "Cycle duration in days",
-  message: () => "Cycle duration must be between 7 and 365 days",
-});
-
-/**
- * Auto-save time schema
- */
-export const AutoSaveTimeSchema = Schema.Trimmed.pipe(
-  Schema.pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
-).annotations({
-  description: "Auto-save time in HH:mm format",
-  message: () => "Invalid auto-save time format",
-  default: DEFAULT_AUTO_SAVE_TIME,
-});
-
-/**
- * Contribution streak schema
- */
-export const ContributionStreakSchema = Schema.Number.pipe(
-  Schema.int(),
-  Schema.between(0, 365)
-).annotations({
-  description: "Contribution streak in days",
-  message: () => "Contribution streak must be between 0 and 365 days",
-});
-
-/**
- * Total contributions schema
- */
-export const TotalContributionsSchema = Schema.Number.pipe(
-  Schema.int(),
-  Schema.between(0, 365)
-).annotations({
-  description: "Total contributions in days",
-  message: () => "Total contributions must be between 0 and 365 days",
-});
-
-/**
- * Schema types
- */
-export type PlanStatus = typeof PlanStatus.Type;
-export type PlanName = typeof PlanNameSchema.Type;
-export type InterestRate = typeof InterestRateSchema.Type;
-export type AutoSaveTime = typeof AutoSaveTimeSchema.Type;
-export type CycleDuration = typeof CycleDurationSchema.Type;
-export type ContributionStreak = typeof ContributionStreakSchema.Type;
-export type TotalContributions = typeof TotalContributionsSchema.Type;
-
-export type AutoSaveEnabled = boolean;
+import {
+  DEFAULT_AUTO_SAVE_ENABLED,
+  DEFAULT_AUTO_SAVE_TIME,
+  DEFAULT_INTEREST_RATE,
+  PlanStatusSchema,
+  PlanStatusEnum,
+} from "@host/shared";
 
 /**
  * SavingsPlan entity representing a user's savings plan with business rules
@@ -173,7 +87,7 @@ export class SavingsPlan {
       Money.zero(dailyAmount.currency),
       autoSaveEnabled,
       autoSaveTime,
-      PlanStatusEnum.ACTIVE,
+      PlanStatusSchema.make(PlanStatusEnum.ACTIVE),
       now,
       endDate,
       interestRate,
@@ -233,7 +147,9 @@ export class SavingsPlan {
       newCurrentAmount,
       this.autoSaveEnabled,
       this.autoSaveTime,
-      shouldComplete ? PlanStatusEnum.COMPLETED : this.status,
+      shouldComplete
+        ? PlanStatusSchema.make(PlanStatusEnum.COMPLETED)
+        : this.status,
       this.startDate,
       this.endDate,
       this.interestRate,
@@ -342,7 +258,7 @@ export class SavingsPlan {
       this.currentAmount,
       this.autoSaveEnabled,
       this.autoSaveTime,
-      PlanStatusEnum.PAUSED,
+      PlanStatusSchema.make(PlanStatusEnum.PAUSED),
       this.startDate,
       this.endDate,
       this.interestRate,
@@ -371,7 +287,7 @@ export class SavingsPlan {
       this.currentAmount,
       this.autoSaveEnabled,
       this.autoSaveTime,
-      PlanStatusEnum.ACTIVE,
+      PlanStatusSchema.make(PlanStatusEnum.ACTIVE),
       this.startDate,
       this.endDate,
       this.interestRate,
@@ -400,7 +316,7 @@ export class SavingsPlan {
       this.currentAmount,
       this.autoSaveEnabled,
       this.autoSaveTime,
-      PlanStatusEnum.COMPLETED,
+      PlanStatusSchema.make(PlanStatusEnum.COMPLETED),
       this.startDate,
       this.endDate,
       this.interestRate,
@@ -432,7 +348,7 @@ export class SavingsPlan {
       this.currentAmount,
       this.autoSaveEnabled,
       this.autoSaveTime,
-      PlanStatusEnum.CANCELLED,
+      PlanStatusSchema.make(PlanStatusEnum.CANCELLED),
       this.startDate,
       this.endDate,
       this.interestRate,

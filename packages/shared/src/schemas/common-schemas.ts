@@ -3,7 +3,22 @@
 
 import { pipe, Schema } from "effect";
 
-import { LGAS, STATES } from "../constant";
+import {
+  DEFAULT_AUTO_SAVE_TIME,
+  NotificationChannelEnum,
+  KycGovernmentIdTypeEnum,
+  TransactionStatusEnum,
+  TransactionTypeEnum,
+  PaymentMethodEnum,
+  BiometricTypeEnum,
+  PaymentSourceEnum,
+  PlanStatusEnum,
+  KycIdTypeEnum,
+  KycStatusEnum,
+  KycTierEnum,
+  STATES,
+  LGAS,
+} from "../constant";
 
 // ============================================================================
 // Common Value Objects
@@ -14,6 +29,10 @@ import { LGAS, STATES } from "../constant";
  * Represents monetary amounts with currency (ISO_4217_CODES)
  */
 export const CURRENCY_CODES = ["NGN", "USD", "EUR", "GBP"] as const;
+
+/**
+ * Default values for common schemas
+ */
 
 export const CurrencyCodeSchema = Schema.Literal(...CURRENCY_CODES).pipe(
   Schema.brand("CurrencyCode")
@@ -222,11 +241,13 @@ export type Token = typeof TokenSchema.Type;
  * Schema for UserId validation
  */
 export const UserIdSchema = Schema.UUID.pipe(Schema.brand("UserId"));
+export type UserIdType = typeof UserIdSchema.Type;
 
 /**
  * Schema for SessionId validation
  */
 export const SessionIdSchema = Schema.UUID.pipe(Schema.brand("SessionId"));
+export type SessionIdType = typeof SessionIdSchema.Type;
 
 // ============================================================================
 // Branded Type Utilities
@@ -500,27 +521,18 @@ export const PasswordSchema = Schema.Trimmed.pipe(
 /**
  * Schema for KYC status
  */
-export const KycStatusEnum = {
-  PENDING: "pending",
-  APPROVED: "approved",
-  REJECTED: "rejected",
-  UNDER_REVIEW: "under_review",
-} as const;
-
-export const KycStatusSchema = Schema.Literal(...Object.values(KycStatusEnum));
+export const KycStatusSchema = Schema.Literal(...Object.values(KycStatusEnum))
+  .pipe(Schema.brand("KycStatus"))
+  .annotations({
+    message: () => "Invalid KYC status",
+    description: "KYC status",
+  });
 
 export type KycStatus = typeof KycStatusSchema.Type;
 
 /**
  * Schema for KYC ID type
  */
-export const KycIdTypeEnum = {
-  DRIVERS_LICENSE: "drivers_license",
-  NATIONAL_ID: "national_id",
-  VOTERS_CARD: "voters_card",
-  PASSPORT: "passport",
-} as const;
-
 export const KycIdTypeSchema = Schema.Literal(...Object.values(KycIdTypeEnum))
   .pipe(Schema.brand("KycIdType"))
   .annotations({
@@ -533,27 +545,12 @@ export type KycIdType = typeof KycIdTypeSchema.Type;
 /**
  * KYC Tier Schemas
  */
-
-export const KycTierEnum = {
-  UNVERIFIED: 0,
-  BASIC: 1,
-  FULL: 2,
-} as const;
-
 export const KycTierSchema = Schema.Literal(...Object.values(KycTierEnum))
   .pipe(Schema.brand("KycTier"))
   .annotations({
     message: () => "Invalid KYC tier. KYC tier must be between 0 and 2",
     description: "KYC tier level",
   });
-
-export const KycGovernmentIdTypeEnum = {
-  DRIVERS_LICENSE: "DriversLicense",
-  VOTERS_CARD: "VotersCard",
-  PASSPORT: "Passport",
-  BVN: "BVN",
-  NIN: "NIN",
-} as const;
 
 export const KycGovernmentIdTypeSchema = Schema.Literal(
   ...Object.values(KycGovernmentIdTypeEnum)
@@ -588,12 +585,6 @@ export const KycIdNumberSchema = Schema.String.pipe(
 /**
  * Biometric authentication types & schemas
  */
-export const BiometricTypeEnum = {
-  FINGERPRINT: "fingerprint",
-  FACE: "face_id",
-  IRIS: "iris",
-};
-
 export const BiometricTypeSchema = Schema.Literal(
   ...Object.values(BiometricTypeEnum)
 )
@@ -612,13 +603,6 @@ export type BiometricType = typeof BiometricTypeSchema.Type;
 /**
  * Schema for transaction status
  */
-export const TransactionStatusEnum = {
-  PENDING: "pending",
-  COMPLETED: "completed",
-  FAILED: "failed",
-  CANCELLED: "cancelled",
-} as const;
-
 export const TransactionStatusSchema = Schema.Literal(
   ...Object.values(TransactionStatusEnum)
 )
@@ -631,30 +615,159 @@ export const TransactionStatusSchema = Schema.Literal(
 export type TransactionStatus = typeof TransactionStatusSchema.Type;
 
 /**
+ * Schema for Transaction type
+ */
+export const TransactionTypeSchema = Schema.Literal(
+  ...Object.values(TransactionTypeEnum)
+)
+  .pipe(Schema.brand("TransactionType"))
+  .annotations({
+    message: () => "Invalid transaction type",
+    description: "Type of a transaction",
+  });
+
+export type TransactionType = typeof TransactionTypeSchema.Type;
+
+/**
+ * Schema for Transaction Reference
+ */
+export const TransactionReferenceSchema = Schema.String.pipe(
+  Schema.minLength(5, { message: () => "Reference is required" }),
+  Schema.maxLength(100, {
+    message: () => "Reference must not exceed 50 characters",
+  })
+).annotations({ description: "Transaction Reference" });
+
+export type TransactionReference = typeof TransactionReferenceSchema.Type;
+
+/**
+ * Schema for Transaction Description
+ */
+export const TransactionDescriptionSchema = Schema.String.pipe(
+  Schema.minLength(5, { message: () => "Description is required" }),
+  Schema.maxLength(100, {
+    message: () => "Description must not exceed 100 characters",
+  })
+).annotations({ description: "Transaction Description" });
+
+export type TransactionDescription = typeof TransactionDescriptionSchema.Type;
+
+/**
+ * Schema for Payment Source
+ */
+export const PaymentSourceSchema = Schema.Literal(
+  ...Object.values(PaymentSourceEnum)
+)
+  .pipe(Schema.brand("PaymentSource"))
+  .annotations({
+    message: () => "Invalid payment source",
+    description: "Source of payment",
+  });
+
+export type PaymentSource = typeof PaymentSourceSchema.Type;
+
+/**
  * Schema for plan status
  */
-export const PlanStatusEnum = {
-  ACTIVE: "active",
-  PAUSED: "paused",
-  COMPLETED: "completed",
-  CANCELLED: "cancelled",
-} as const;
-
-export const PlanStatusSchema = Schema.Literal(
-  ...Object.values(PlanStatusEnum)
-);
+export const PlanStatusSchema = Schema.Literal(...Object.values(PlanStatusEnum))
+  .pipe(Schema.brand("PlanStatus"))
+  .annotations({
+    message: () => "Invalid plan status",
+    description: "Status of a plan",
+  });
 
 export type PlanStatus = typeof PlanStatusSchema.Type;
+
+/**
+ * Plan name schema
+ */
+export const PlanNameSchema = Schema.Trimmed.pipe(
+  Schema.minLength(1, {
+    message: () => "Plan name must be at least 1 character long",
+  }),
+  Schema.maxLength(100, {
+    message: () => "Plan name must be at most 100 characters long",
+  })
+).annotations({ description: "Plan name" });
+
+export type PlanName = typeof PlanNameSchema.Type;
+
+/**
+ * Interest rate schema
+ */
+export const InterestRateSchema = Schema.Number.pipe(
+  Schema.between(0, 1)
+).annotations({
+  description: "Interest rate in percentage",
+  message: () => "Interest rate must be between 0 and 1",
+});
+
+export type InterestRate = typeof InterestRateSchema.Type;
+
+/**
+ * Cycle duration schema
+ */
+export const CycleDurationSchema = Schema.Number.pipe(
+  Schema.int(),
+  Schema.between(7, 365)
+).annotations({
+  description: "Cycle duration in days",
+  message: () => "Cycle duration must be between 7 and 365 days",
+});
+
+export type CycleDuration = typeof CycleDurationSchema.Type;
+
+/**
+ * Auto-save time schema
+ */
+export const AutoSaveTimeSchema = Schema.Trimmed.pipe(
+  Schema.pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
+).annotations({
+  description: "Auto-save time in HH:mm format",
+  message: () => "Invalid auto-save time format",
+  default: DEFAULT_AUTO_SAVE_TIME,
+});
+
+export type AutoSaveTime = typeof AutoSaveTimeSchema.Type;
+export type AutoSaveEnabled = boolean;
+
+/**
+ * Contribution streak schema
+ */
+export const ContributionStreakSchema = Schema.Number.pipe(
+  Schema.int(),
+  Schema.between(0, 365)
+).annotations({
+  description: "Contribution streak in days",
+  message: () => "Contribution streak must be between 0 and 365 days",
+});
+
+export type ContributionStreak = typeof ContributionStreakSchema.Type;
+
+/**
+ * Total contributions schema
+ */
+export const TotalContributionsSchema = Schema.Number.pipe(
+  Schema.int(),
+  Schema.between(0, 365)
+).annotations({
+  description: "Total contributions in days",
+  message: () => "Total contributions must be between 0 and 365 days",
+});
+
+export type TotalContributions = typeof TotalContributionsSchema.Type;
 
 /**
  * Schema for notification channel
  */
 export const NotificationChannelSchema = Schema.Literal(
-  "sms",
-  "push",
-  "email",
-  "in_app"
-);
+  ...Object.values(NotificationChannelEnum)
+)
+  .pipe(Schema.brand("NotificationChannel"))
+  .annotations({
+    message: () => "Invalid notification channel",
+    description: "Notification channel",
+  });
 
 export type NotificationChannel = typeof NotificationChannelSchema.Type;
 
@@ -662,11 +775,13 @@ export type NotificationChannel = typeof NotificationChannelSchema.Type;
  * Schema for payment method
  */
 export const PaymentMethodSchema = Schema.Literal(
-  "bank_transfer",
-  "debit_card",
-  "ussd",
-  "wallet"
-);
+  ...Object.values(PaymentMethodEnum)
+)
+  .pipe(Schema.brand("PaymentMethod"))
+  .annotations({
+    message: () => "Invalid payment method",
+    description: "Payment method",
+  });
 
 export type PaymentMethod = typeof PaymentMethodSchema.Type;
 

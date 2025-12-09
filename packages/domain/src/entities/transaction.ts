@@ -1,96 +1,26 @@
 import {
+  type PaymentSource,
+  type TransactionType,
+  type TransactionStatus,
+  type TransactionReference,
+  type TransactionDescription,
+  TransactionReferenceSchema,
+  TransactionStatusSchema,
+  TransactionStatusEnum,
+  TransactionTypeSchema,
+  TransactionTypeEnum,
+  PaymentSourceSchema,
+  PaymentSourceEnum,
+} from "@host/shared";
+
+import {
   type UserId,
   type PlanId,
   type Money,
   TransactionId,
 } from "../value-objects";
 
-import { Schema } from "@effect/schema";
-
-/**
- * Transaction type enumeration
- */
-export const TransactionTypeEnum = {
-  CONTRIBUTION: "contribution",
-  WITHDRAWAL: "withdrawal",
-  INTEREST: "interest",
-  PENALTY: "penalty",
-  WALLET_FUNDING: "wallet_funding",
-  WALLET_WITHDRAWAL: "wallet_withdrawal",
-  AUTO_SAVE: "auto_save",
-} as const;
-
-export const TransactionType = Schema.Literal(
-  TransactionTypeEnum.CONTRIBUTION,
-  TransactionTypeEnum.WITHDRAWAL,
-  TransactionTypeEnum.INTEREST,
-  TransactionTypeEnum.PENALTY,
-  TransactionTypeEnum.WALLET_FUNDING,
-  TransactionTypeEnum.WALLET_WITHDRAWAL,
-  TransactionTypeEnum.AUTO_SAVE
-);
-
-/**
- * Transaction status enumeration
- */
-export const TransactionStatusEnum = {
-  PENDING: "pending",
-  COMPLETED: "completed",
-  FAILED: "failed",
-  CANCELLED: "cancelled",
-} as const;
-
-export const TransactionStatus = Schema.Literal(
-  TransactionStatusEnum.PENDING,
-  TransactionStatusEnum.COMPLETED,
-  TransactionStatusEnum.FAILED,
-  TransactionStatusEnum.CANCELLED
-);
-
-/**
- * Payment source enumeration
- */
-export const PaymentSourceEnum = {
-  WALLET: "wallet",
-  BANK_TRANSFER: "bank_transfer",
-  DEBIT_CARD: "debit_card",
-} as const;
-
-export const PaymentSource = Schema.Literal(
-  PaymentSourceEnum.WALLET,
-  PaymentSourceEnum.BANK_TRANSFER,
-  PaymentSourceEnum.DEBIT_CARD
-);
-
-/**
- * Reference schema
- */
-export const ReferenceSchema = Schema.Trimmed.pipe(
-  Schema.minLength(1, {
-    message: () => "Reference must be at least 1 character long",
-  }),
-  Schema.maxLength(100, {
-    message: () => "Reference must be at most 100 characters long",
-  })
-).annotations({ description: "Transaction reference" });
-
-/**
- * Description schema
- */
-export const DescriptionSchema = Schema.Trimmed.pipe(
-  Schema.minLength(1, {
-    message: () => "Description must be at least 1 character long",
-  }),
-  Schema.maxLength(100, {
-    message: () => "Description must be at most 100 characters long",
-  })
-).annotations({ description: "Transaction description" });
-
-export type Reference = typeof ReferenceSchema.Type;
-export type PaymentSource = typeof PaymentSource.Type;
-export type Description = typeof DescriptionSchema.Type;
-export type TransactionType = typeof TransactionType.Type;
-export type TransactionStatus = typeof TransactionStatus.Type;
+import { Schema } from "effect";
 
 /**
  * Transaction entity representing financial transactions in the system
@@ -104,8 +34,8 @@ export class Transaction {
     public readonly type: TransactionType,
     public readonly status: TransactionStatus,
     public readonly source: PaymentSource | null,
-    public readonly reference: Reference,
-    public readonly description: Description | null,
+    public readonly reference: TransactionReference,
+    public readonly description: TransactionDescription | null,
     public readonly metadata: Record<string, unknown> | null,
     public readonly createdAt: Date,
     public readonly completedAt: Date | null,
@@ -113,7 +43,7 @@ export class Transaction {
     public readonly failureReason: string | null
   ) {
     // Basic validation
-    if (!Schema.decodeUnknownSync(ReferenceSchema)(reference)) {
+    if (!Schema.decodeUnknownSync(TransactionReferenceSchema)(reference)) {
       throw new Error("Invalid transaction reference");
     }
   }
@@ -124,10 +54,10 @@ export class Transaction {
     userId: UserId,
     amount: Money,
     type: TransactionType,
-    reference: Reference,
+    reference: TransactionReference,
     planId?: PlanId,
     source?: PaymentSource,
-    description?: Description,
+    description?: TransactionDescription,
     metadata?: Record<string, unknown>
   ): Transaction {
     return new Transaction(
@@ -136,7 +66,7 @@ export class Transaction {
       planId || null,
       amount,
       type,
-      TransactionStatusEnum.PENDING,
+      TransactionStatusSchema.make(TransactionStatusEnum.PENDING),
       source || null,
       reference,
       description || null,
@@ -156,12 +86,12 @@ export class Transaction {
     planId: PlanId,
     amount: Money,
     source: PaymentSource,
-    reference: Reference
+    reference: TransactionReference
   ): Transaction {
     return Transaction.create(
       userId,
       amount,
-      TransactionTypeEnum.CONTRIBUTION,
+      TransactionTypeSchema.make(TransactionTypeEnum.CONTRIBUTION),
       reference,
       planId,
       source,
@@ -176,14 +106,14 @@ export class Transaction {
   static createWithdrawal(
     userId: UserId,
     amount: Money,
-    reference: Reference,
+    reference: TransactionReference,
     planId?: PlanId,
-    description?: Description
+    description?: TransactionDescription
   ): Transaction {
     return Transaction.create(
       userId,
       amount,
-      TransactionTypeEnum.WITHDRAWAL,
+      TransactionTypeSchema.make(TransactionTypeEnum.WITHDRAWAL),
       reference,
       planId,
       undefined,
@@ -199,12 +129,12 @@ export class Transaction {
     userId: UserId,
     amount: Money,
     source: PaymentSource,
-    reference: Reference
+    reference: TransactionReference
   ): Transaction {
     return Transaction.create(
       userId,
       amount,
-      TransactionTypeEnum.WALLET_FUNDING,
+      TransactionTypeSchema.make(TransactionTypeEnum.WALLET_FUNDING),
       reference,
       undefined,
       source,
@@ -220,15 +150,15 @@ export class Transaction {
     userId: UserId,
     planId: PlanId,
     amount: Money,
-    reference: Reference
+    reference: TransactionReference
   ): Transaction {
     return Transaction.create(
       userId,
       amount,
-      TransactionTypeEnum.AUTO_SAVE,
+      TransactionTypeSchema.make(TransactionTypeEnum.AUTO_SAVE),
       reference,
       planId,
-      PaymentSourceEnum.WALLET,
+      PaymentSourceSchema.make(PaymentSourceEnum.WALLET),
       "Automated savings contribution",
       { planId: planId.value, automated: true }
     );
@@ -283,7 +213,7 @@ export class Transaction {
       this.planId,
       this.amount,
       this.type,
-      TransactionStatusEnum.COMPLETED,
+      TransactionStatusSchema.make(TransactionStatusEnum.COMPLETED),
       this.source,
       this.reference,
       this.description,
@@ -309,7 +239,7 @@ export class Transaction {
       this.planId,
       this.amount,
       this.type,
-      TransactionStatusEnum.FAILED,
+      TransactionStatusSchema.make(TransactionStatusEnum.FAILED),
       this.source,
       this.reference,
       this.description,
@@ -335,7 +265,7 @@ export class Transaction {
       this.planId,
       this.amount,
       this.type,
-      TransactionStatusEnum.CANCELLED,
+      TransactionStatusSchema.make(TransactionStatusEnum.CANCELLED),
       this.source,
       this.reference,
       this.description,
