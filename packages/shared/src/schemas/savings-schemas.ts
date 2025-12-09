@@ -1,6 +1,12 @@
 // Savings Plan Validation Schemas using Effect Schema
 // Input/output schemas for all savings-related API operations
 
+import {
+  DEFAULT_AUTO_SAVE_TIME,
+  PlanActionEnum,
+  PlanStatusEnum,
+} from "../constant";
+
 import { Schema } from "effect";
 
 // ============================================================================
@@ -287,3 +293,53 @@ export class ListPlansOutputSchema extends Schema.Class<ListPlansOutputSchema>(
 }) {}
 
 export type ListPlansOutput = typeof ListPlansOutputSchema.Type;
+
+/**
+ * Schema for plan status
+ */
+export const PlanStatusSchema = Schema.Literal(...Object.values(PlanStatusEnum))
+  .pipe(Schema.brand("PlanStatus"))
+  .annotations({
+    message: () => "Invalid plan status",
+    description: "Status of a plan",
+  });
+
+export type PlanStatus = typeof PlanStatusSchema.Type;
+
+/**
+ * Plan name schema
+ */
+export const PlanNameSchema = Schema.Trimmed.pipe(
+  Schema.minLength(1, {
+    message: () => "Plan name must be at least 1 character long",
+  }),
+  Schema.maxLength(100, {
+    message: () => "Plan name must be at most 100 characters long",
+  })
+).annotations({ description: "Plan name" });
+
+export type PlanName = typeof PlanNameSchema.Type;
+
+export const UpdatePlansActionSchema = Schema.Literal(
+  ...Object.values(PlanActionEnum)
+)
+  .pipe(Schema.brand("UpdatePlansAction"))
+  .annotations({
+    message: () => "Invalid plan action",
+    description: "Update action to perform on the plan",
+  });
+export type UpdatePlansAction = typeof UpdatePlansActionSchema.Type;
+
+/**
+ * Auto-save time schema
+ */
+export const AutoSaveTimeSchema = Schema.Trimmed.pipe(
+  Schema.pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
+).annotations({
+  description: "Auto-save time in HH:mm format",
+  message: () => "Invalid auto-save time format",
+  default: DEFAULT_AUTO_SAVE_TIME,
+});
+
+export type AutoSaveTime = typeof AutoSaveTimeSchema.Type;
+export type AutoSaveEnabled = boolean;

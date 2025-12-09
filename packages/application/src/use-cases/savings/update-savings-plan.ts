@@ -1,19 +1,18 @@
-import type {
-  SavingsRepository,
-  AutoSaveTime,
-  SavingsPlan,
-} from "@host/domain";
+import type { SavingsRepository, SavingsPlan } from "@host/domain";
+import type { AutoSaveTime } from "@host/shared";
 
-import { Effect, Context, Layer } from "effect";
+import { Effect, Context, Layer, Schema } from "effect";
 import { PlanId, UserId } from "@host/domain";
-import { Schema } from "@effect/schema";
 
 import {
   type FinancialError,
+  UpdatePlansActionSchema,
   InvalidPlanStateError,
+  AutoSaveTimeSchema,
   AuthorizationError,
   PlanNotFoundError,
   ValidationError,
+  PlanActionEnum,
   DatabaseError,
 } from "@host/shared";
 
@@ -23,11 +22,9 @@ import {
 export const UpdateSavingsPlanInput = Schema.Struct({
   planId: Schema.UUID,
   userId: Schema.UUID,
-  action: Schema.Literal("pause", "resume", "cancel", "update_autosave"),
+  action: UpdatePlansActionSchema,
   autoSaveEnabled: Schema.optional(Schema.Boolean),
-  autoSaveTime: Schema.optional(
-    Schema.String.pipe(Schema.pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/))
-  ),
+  autoSaveTime: Schema.optional(AutoSaveTimeSchema),
 });
 
 export type UpdateSavingsPlanInput = typeof UpdateSavingsPlanInput.Type;
@@ -128,16 +125,16 @@ export const UpdateSavingsPlanUseCaseLive = Layer.effect(
 
           try {
             switch (validatedInput.action) {
-              case "pause":
+              case PlanActionEnum.PAUSE:
                 updatedPlan = plan.pause();
                 break;
-              case "resume":
+              case PlanActionEnum.RESUME:
                 updatedPlan = plan.resume();
                 break;
-              case "cancel":
+              case PlanActionEnum.CANCEL:
                 updatedPlan = plan.cancel();
                 break;
-              case "update_autosave":
+              case PlanActionEnum.UPDATE_AUTOSAVE:
                 if (validatedInput.autoSaveEnabled === undefined) {
                   return yield* Effect.fail(
                     new ValidationError({

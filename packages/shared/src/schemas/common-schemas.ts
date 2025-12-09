@@ -667,32 +667,6 @@ export const PaymentSourceSchema = Schema.Literal(
 export type PaymentSource = typeof PaymentSourceSchema.Type;
 
 /**
- * Schema for plan status
- */
-export const PlanStatusSchema = Schema.Literal(...Object.values(PlanStatusEnum))
-  .pipe(Schema.brand("PlanStatus"))
-  .annotations({
-    message: () => "Invalid plan status",
-    description: "Status of a plan",
-  });
-
-export type PlanStatus = typeof PlanStatusSchema.Type;
-
-/**
- * Plan name schema
- */
-export const PlanNameSchema = Schema.Trimmed.pipe(
-  Schema.minLength(1, {
-    message: () => "Plan name must be at least 1 character long",
-  }),
-  Schema.maxLength(100, {
-    message: () => "Plan name must be at most 100 characters long",
-  })
-).annotations({ description: "Plan name" });
-
-export type PlanName = typeof PlanNameSchema.Type;
-
-/**
  * Interest rate schema
  */
 export const InterestRateSchema = Schema.Number.pipe(

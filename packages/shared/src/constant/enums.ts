@@ -112,6 +112,13 @@ export const PlanStatusEnum = {
   CANCELLED: "cancelled",
 } as const;
 
+export const PlanActionEnum = {
+  PAUSE: "pause",
+  RESUME: "resume",
+  CANCEL: "cancel",
+  UPDATE_AUTOSAVE: "update_autosave",
+} as const;
+
 // ==============================
 // Notification Enumerations
 // ==============================
