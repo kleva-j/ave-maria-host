@@ -30,6 +30,7 @@ import {
   ProcessContributionUseCase,
   CreateSavingsPlanUseCase,
   UpdateSavingsPlanUseCase,
+  ListSavingsPlanUseCase,
   GetSavingsPlanUseCase,
 } from "@host/application";
 
@@ -43,7 +44,10 @@ import {
   CreatePlanOutputSchema,
   UpdatePlanOutputSchema,
   GetPlanProgressSchema,
+  TransactionStatusEnum,
   ListPlansOutputSchema,
+  PaymentSourceSchema,
+  PaymentSourceEnum,
   SavingsPlanSchema,
   UpdatePlanSchema,
   CreatePlanSchema,
@@ -52,7 +56,8 @@ import {
   DEFAULT_CURRENCY,
 } from "@host/shared";
 
-import { AuthMiddleware } from "./auth-rpc";
+import { AuthMiddleware, CurrentUser } from "./auth-rpc";
+import { PlanId, UserId } from "@host/domain";
 
 // ============================================================================
 // Payload Classes
@@ -258,7 +263,9 @@ export const SavingsHandlersLive: Layer.Layer<
   | ProcessContributionUseCase
   | CreateSavingsPlanUseCase
   | UpdateSavingsPlanUseCase
+  | ListSavingsPlanUseCase
   | GetSavingsPlanUseCase
+  | AuthMiddleware
 > = SavingsRpcs.toLayer({
   /**
    * Create a new savings plan
@@ -305,18 +312,27 @@ export const SavingsHandlersLive: Layer.Layer<
    * Get a specific savings plan by ID
    * Validates user ownership and returns plan details
    */
-  GetPlan: (payload) =>
+  GetPlan: (_payload) =>
     Effect.gen(function* () {
       const getPlanUseCase = yield* GetSavingsPlanUseCase;
 
-      // Get user ID from auth context (placeholder)
-      const userId = crypto.randomUUID();
+      // Get authenticated user from context
+      const currentUser = yield* CurrentUser;
+
+      const payload = yield* Schema.decodeUnknown(GetPlanSchema)(_payload).pipe(
+        Effect.mapError((error) => {
+          return new SavingsError({
+            operation: "GetPlan",
+            message: error._tag || "Failed to decode get plan payload",
+            cause: error,
+          });
+        })
+      );
+
+      const planId = PlanId.fromString(payload.planId);
 
       const result = yield* getPlanUseCase
-        .execute({
-          planId: payload.planId,
-          userId,
-        })
+        .execute({ planId: planId.value, userId: currentUser.id })
         .pipe(
           Effect.mapError(
             (error) =>
@@ -352,12 +368,33 @@ export const SavingsHandlersLive: Layer.Layer<
    * List all user's savings plans with optional filters
    * Supports pagination and status filtering
    */
-  ListPlans: (payload) =>
+  ListPlans: (_payload) =>
     Effect.gen(function* () {
-      const getPlanUseCase = yield* GetSavingsPlanUseCase;
+      const listPlanUseCase = yield* ListSavingsPlanUseCase;
 
-      // Get user ID from auth context (placeholder)
-      const userId = crypto.randomUUID();
+      // Get authenticated user from context
+      const currentUser = yield* CurrentUser;
+
+      yield* Schema.decodeUnknown(ListPlansSchema)(_payload).pipe(
+        Effect.mapError((error) => {
+          return new SavingsError({
+            operation: "ListPlans",
+            message: error._tag || "Failed to decode list plans payload",
+            cause: error,
+          });
+        })
+      );
+
+      yield* listPlanUseCase.execute({ userId: currentUser.id }).pipe(
+        Effect.mapError(
+          (error) =>
+            new SavingsError({
+              operation: "ListPlans",
+              message: error._tag || "Failed to list savings plans",
+              cause: error,
+            })
+        )
+      );
 
       // TODO: Implement list functionality in use case
       // For now, return empty list
@@ -447,15 +484,19 @@ export const SavingsHandlersLive: Layer.Layer<
       const processContributionUseCase = yield* ProcessContributionUseCase;
 
       // Get user ID from auth context (placeholder)
-      const userId = crypto.randomUUID();
+      const userId = UserId.generate().value;
+
+      const { amount } = payload;
+      const source = PaymentSourceSchema.make(
+        payload.source === PaymentSourceEnum.WALLET
+          ? PaymentSourceEnum.WALLET
+          : PaymentSourceEnum.BANK_TRANSFER
+      );
+
+      const planId = PlanId.fromString(payload.planId).value;
 
       const result = yield* processContributionUseCase
-        .execute({
-          userId,
-          planId: payload.planId,
-          amount: payload.amount,
-          source: payload.source === "wallet" ? "wallet" : "bank_transfer",
-        })
+        .execute({ userId, planId, amount, source })
         .pipe(
           Effect.mapError(
             (error) =>
@@ -469,11 +510,11 @@ export const SavingsHandlersLive: Layer.Layer<
 
       // Map transaction status to response status
       const responseStatus =
-        result.transaction.status === "completed"
+        result.transaction.status === TransactionStatusEnum.COMPLETED
           ? "success"
-          : result.transaction.status === "failed"
-            ? "failed"
-            : "pending";
+          : result.transaction.status === TransactionStatusEnum.FAILED
+            ? TransactionStatusEnum.FAILED
+            : TransactionStatusEnum.PENDING;
 
       return new MakeContributionResponse({
         transactionId: result.transaction.id.value,
@@ -492,13 +533,10 @@ export const SavingsHandlersLive: Layer.Layer<
       const getPlanUseCase = yield* GetSavingsPlanUseCase;
 
       // Get user ID from auth context (placeholder)
-      const userId = crypto.randomUUID();
+      const userId = UserId.generate().value;
 
       const result = yield* getPlanUseCase
-        .execute({
-          planId: payload.planId,
-          userId,
-        })
+        .execute({ planId: PlanId.generate().value, userId })
         .pipe(
           Effect.mapError(
             (error) =>
@@ -528,18 +566,30 @@ export const SavingsHandlersLive: Layer.Layer<
    * Withdraw funds from a completed savings plan
    * Validates plan completion and processes withdrawal
    */
-  WithdrawFromPlan: (payload) =>
+  WithdrawFromPlan: (_payload) =>
     Effect.gen(function* () {
       const getPlanUseCase = yield* GetSavingsPlanUseCase;
 
-      // Get user ID from auth context (placeholder)
-      const userId = crypto.randomUUID();
+      // Get authenticated user from context
+      const currentUser = yield* CurrentUser;
+
+      const payload = yield* Schema.decodeUnknown(WithdrawFromPlanSchema)(
+        _payload
+      ).pipe(
+        Effect.mapError((error) => {
+          return new SavingsError({
+            operation: "WithdrawFromPlan",
+            message:
+              error._tag || "Failed to decode withdraw from plan payload",
+            cause: error,
+          });
+        })
+      );
+
+      const planId = PlanId.fromString(payload.planId).value;
 
       const result = yield* getPlanUseCase
-        .execute({
-          planId: payload.planId,
-          userId,
-        })
+        .execute({ planId, userId: currentUser.id })
         .pipe(
           Effect.mapError(
             (error) =>

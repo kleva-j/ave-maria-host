@@ -21,11 +21,13 @@ import type {
   GenerateProgressReportUseCase,
   ValidateContributionUseCase,
   ProcessContributionUseCase,
+  GetSpendingInsightsUseCase,
   GetSavingsAnalyticsUseCase,
   CreateSavingsPlanUseCase,
   UpdateSavingsPlanUseCase,
   CalculateRewardsUseCase,
   GetWalletBalanceUseCase,
+  ListSavingsPlanUseCase,
   WithdrawFundsUseCase,
   FundWalletUseCase,
 } from "@host/application";
@@ -61,10 +63,12 @@ export type AppUseCaseGroup =
   | ValidateContributionUseCase
   | ProcessContributionUseCase
   | GetSavingsAnalyticsUseCase
+  | GetSpendingInsightsUseCase
   | CreateSavingsPlanUseCase
   | UpdateSavingsPlanUseCase
   | GetWalletBalanceUseCase
   | CalculateRewardsUseCase
+  | ListSavingsPlanUseCase
   | WithdrawFundsUseCase
   | FundWalletUseCase;
 
@@ -214,11 +218,11 @@ export const createRpcWebHandler = (
  */
 
 type RpcServerDeps =
-  | AuthService
-  | DatabaseService
   | RedisRateLimiterService
   | RpcServer.Protocol
-  | AppUseCaseGroup;
+  | DatabaseService
+  | AppUseCaseGroup
+  | AuthService;
 
 export const RpcServerLive: Layer.Layer<never, never, RpcServerDeps> =
   RpcServer.layer(AppRpcs).pipe(

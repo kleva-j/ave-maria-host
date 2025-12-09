@@ -21,6 +21,7 @@ import {
   CreateSavingsPlanUseCaseLive,
   UpdateSavingsPlanUseCaseLive,
   GetSavingsPlanUseCaseLive,
+  ListSavingsPlanUseCaseLive,
 
   // Import contribution use cases
   ValidateContributionUseCaseLive,
@@ -35,6 +36,7 @@ import {
   // Import analytics use cases
   GenerateProgressReportUseCaseLive,
   GetSavingsAnalyticsUseCaseLive,
+  GetSpendingInsightsUseCaseLive,
   CalculateRewardsUseCaseLive,
 } from "@host/application";
 
@@ -57,7 +59,8 @@ import { InfrastructureLayer } from "./infrastructure-layer";
 export const SavingsUseCasesLayer = Layer.mergeAll(
   CreateSavingsPlanUseCaseLive,
   UpdateSavingsPlanUseCaseLive,
-  GetSavingsPlanUseCaseLive
+  GetSavingsPlanUseCaseLive,
+  ListSavingsPlanUseCaseLive
 );
 
 /**
@@ -105,7 +108,8 @@ export const WalletUseCasesLayer = Layer.mergeAll(
 export const AnalyticsUseCasesLayer = Layer.mergeAll(
   GetSavingsAnalyticsUseCaseLive,
   GenerateProgressReportUseCaseLive,
-  CalculateRewardsUseCaseLive
+  CalculateRewardsUseCaseLive,
+  GetSpendingInsightsUseCaseLive
 );
 
 /**
