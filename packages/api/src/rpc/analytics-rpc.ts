@@ -25,6 +25,7 @@ import { Rpc, RpcGroup } from "@effect/rpc";
 import {
   GenerateProgressReportUseCase,
   GetSavingsAnalyticsUseCase,
+  GetSpendingInsightsUseCase,
   CalculateRewardsUseCase,
 } from "@host/application";
 
@@ -207,6 +208,7 @@ export const AnalyticsHandlersLive: Layer.Layer<
   never,
   | GenerateProgressReportUseCase
   | GetSavingsAnalyticsUseCase
+  | GetSpendingInsightsUseCase
   | CalculateRewardsUseCase
   | AuthMiddleware
 > = AnalyticsRpcs.toLayer({
@@ -422,16 +424,53 @@ export const AnalyticsHandlersLive: Layer.Layer<
   /**
    * Get spending insights and recommendations
    * Analyzes spending patterns and provides actionable insights
-   *
-   * NOTE: This feature is not yet implemented. Returns error until use case is available.
    */
   GetSpendingInsights: (_payload) =>
-    Effect.fail(
-      new AnalyticsError({
-        operation: "GetSpendingInsights",
-        message: "Spending insights feature is not yet implemented",
-      })
-    ),
+    Effect.gen(function* () {
+      const currentUser = yield* CurrentUser;
+      const getSpendingInsightsUseCase = yield* GetSpendingInsightsUseCase;
+
+      // Validate payload
+      const payload = yield* Schema.decodeUnknown(GetSpendingInsightsSchema)(
+        _payload
+      ).pipe(
+        Effect.mapError(
+          mapToAnalyticsError("GetSpendingInsights", "Invalid request payload")
+        )
+      );
+
+      const result = yield* getSpendingInsightsUseCase
+        .execute({
+          userId: currentUser.id,
+          startDate: new Date(
+            payload.startDate as unknown as string | number | Date
+          ),
+          endDate: new Date(
+            payload.endDate as unknown as string | number | Date
+          ),
+          categories: payload.categories,
+        })
+        .pipe(
+          Effect.mapError(
+            mapToAnalyticsError(
+              "GetSpendingInsights",
+              "Failed to get spending insights"
+            )
+          )
+        );
+
+      return new GetSpendingInsightsResponse({
+        totalSpent: result.totalSpent,
+        categoryBreakdown: result.categoryBreakdown,
+        averageDailySpending: result.averageDailySpending,
+        comparisonToPreviousPeriod: new ComparisonToPreviousPeriod({
+          percentageChange: result.comparisonToPreviousPeriod.percentageChange,
+          trend: result.comparisonToPreviousPeriod.trend,
+        }),
+        insights: result.insights,
+        recommendations: result.recommendations,
+      });
+    }),
 
   /**
    * Get user achievements and badges
