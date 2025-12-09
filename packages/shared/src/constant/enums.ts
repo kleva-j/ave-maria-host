@@ -88,6 +88,14 @@ export const PaymentSourceEnum = {
 } as const;
 
 /**
+ * Payment Destination Enum
+ */
+export const PaymentDestinationEnum = {
+  WALLET: "wallet",
+  BANK: "bank",
+} as const;
+
+/**
  * Payment Method Enum
  */
 export const PaymentMethodEnum = {

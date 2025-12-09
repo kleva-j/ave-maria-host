@@ -4,15 +4,14 @@
 import { pipe, Schema } from "effect";
 
 import {
-  DEFAULT_AUTO_SAVE_TIME,
   NotificationChannelEnum,
   KycGovernmentIdTypeEnum,
+  PaymentDestinationEnum,
   TransactionStatusEnum,
   TransactionTypeEnum,
   PaymentMethodEnum,
   BiometricTypeEnum,
   PaymentSourceEnum,
-  PlanStatusEnum,
   KycIdTypeEnum,
   KycStatusEnum,
   KycTierEnum,
@@ -33,7 +32,6 @@ export const CURRENCY_CODES = ["NGN", "USD", "EUR", "GBP"] as const;
 /**
  * Default values for common schemas
  */
-
 export const CurrencyCodeSchema = Schema.Literal(...CURRENCY_CODES).pipe(
   Schema.brand("CurrencyCode")
 );
@@ -667,6 +665,20 @@ export const PaymentSourceSchema = Schema.Literal(
 export type PaymentSource = typeof PaymentSourceSchema.Type;
 
 /**
+ * Schema for Payment Destination
+ */
+export const PaymentDestinationSchema = Schema.Literal(
+  ...Object.values(PaymentDestinationEnum)
+)
+  .pipe(Schema.brand("PaymentDestination"))
+  .annotations({
+    message: () => "Invalid payment destination",
+    description: "Destination of payment",
+  });
+
+export type PaymentDestination = typeof PaymentDestinationSchema.Type;
+
+/**
  * Interest rate schema
  */
 export const InterestRateSchema = Schema.Number.pipe(
@@ -677,33 +689,6 @@ export const InterestRateSchema = Schema.Number.pipe(
 });
 
 export type InterestRate = typeof InterestRateSchema.Type;
-
-/**
- * Cycle duration schema
- */
-export const CycleDurationSchema = Schema.Number.pipe(
-  Schema.int(),
-  Schema.between(7, 365)
-).annotations({
-  description: "Cycle duration in days",
-  message: () => "Cycle duration must be between 7 and 365 days",
-});
-
-export type CycleDuration = typeof CycleDurationSchema.Type;
-
-/**
- * Auto-save time schema
- */
-export const AutoSaveTimeSchema = Schema.Trimmed.pipe(
-  Schema.pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
-).annotations({
-  description: "Auto-save time in HH:mm format",
-  message: () => "Invalid auto-save time format",
-  default: DEFAULT_AUTO_SAVE_TIME,
-});
-
-export type AutoSaveTime = typeof AutoSaveTimeSchema.Type;
-export type AutoSaveEnabled = boolean;
 
 /**
  * Contribution streak schema

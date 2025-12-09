@@ -24,10 +24,10 @@ Represents the outcome of a validation operation.
 
 **Properties:**
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `isValid` | `boolean` | `true` if validation passed, `false` if validation failed |
-| `errors` | `string[]` | Array of error messages describing validation failures |
+| Property  | Type       | Description                                               |
+| --------- | ---------- | --------------------------------------------------------- |
+| `isValid` | `boolean`  | `true` if validation passed, `false` if validation failed |
+| `errors`  | `string[]` | Array of error messages describing validation failures    |
 
 **Example:**
 
@@ -36,12 +36,10 @@ const result: ValidationResult = {
   isValid: false,
   errors: [
     "Insufficient wallet balance",
-    "Minimum contribution amount is ₦10.00"
-  ]
+    "Minimum contribution amount is ₦10.00",
+  ],
 };
 ```
-
-
 
 ## Core Functions
 
@@ -59,7 +57,7 @@ function validateContribution(
   source: PaymentSource,
   plan: SavingsPlan,
   walletBalance?: Money
-): ValidationResult
+): ValidationResult;
 ```
 
 **Parameters:**
@@ -99,8 +97,6 @@ if (!result.isValid) {
 }
 ```
 
-
-
 ### validateWithdrawal
 
 Validates a withdrawal transaction before processing.
@@ -112,7 +108,7 @@ function validateWithdrawal(
   userId: UserId,
   amount: Money,
   plan?: SavingsPlan
-): ValidationResult
+): ValidationResult;
 ```
 
 **Parameters:**
@@ -146,8 +142,6 @@ if (!result.isValid) {
 }
 ```
 
-
-
 ### validateWalletFunding
 
 Validates a wallet funding transaction before processing.
@@ -159,7 +153,7 @@ function validateWalletFunding(
   userId: UserId,
   amount: Money,
   source: PaymentSource
-): ValidationResult
+): ValidationResult;
 ```
 
 **Parameters:**
@@ -191,8 +185,6 @@ if (!result.isValid) {
 }
 ```
 
-
-
 ### validateTransactionLimits
 
 Validates transaction against user's KYC tier limits.
@@ -207,7 +199,7 @@ function validateTransactionLimits(
   userKycTier: number,
   dailyTransactionTotal: Money,
   monthlyTransactionTotal: Money
-): ValidationResult
+): ValidationResult;
 ```
 
 **Parameters:**
@@ -245,8 +237,6 @@ if (!result.isValid) {
 }
 ```
 
-
-
 ## KYC Tiers and Limits
 
 The platform enforces transaction limits based on user KYC (Know Your Customer) verification levels.
@@ -255,109 +245,106 @@ The platform enforces transaction limits based on user KYC (Know Your Customer) 
 
 **Requirements:** None (default tier for new users)
 
-| Limit Type | Amount (NGN) |
-|------------|--------------|
-| Daily Limit | ₦5,000 |
-| Monthly Limit | ₦50,000 |
-| Single Transaction | ₦2,000 |
+| Limit Type         | Amount (NGN) |
+| ------------------ | ------------ |
+| Daily Limit        | ₦5,000       |
+| Monthly Limit      | ₦50,000      |
+| Single Transaction | ₦2,000       |
 
 **Use Case:** Trial users, minimal verification required
 
 ### Tier 1: Basic KYC
 
-**Requirements:** 
+**Requirements:**
+
 - Phone number verification
 - Email verification
 - Basic identity information
 
-| Limit Type | Amount (NGN) |
-|------------|--------------|
-| Daily Limit | ₦50,000 |
-| Monthly Limit | ₦500,000 |
-| Single Transaction | ₦20,000 |
+| Limit Type         | Amount (NGN) |
+| ------------------ | ------------ |
+| Daily Limit        | ₦50,000      |
+| Monthly Limit      | ₦500,000     |
+| Single Transaction | ₦20,000      |
 
 **Use Case:** Regular users with basic verification
 
 ### Tier 2: Full KYC
 
 **Requirements:**
+
 - All Tier 1 requirements
 - Government-issued ID verification
 - Address verification
 - Selfie verification
 
-| Limit Type | Amount (NGN) |
-|------------|--------------|
-| Daily Limit | ₦500,000 |
-| Monthly Limit | ₦5,000,000 |
-| Single Transaction | ₦200,000 |
+| Limit Type         | Amount (NGN) |
+| ------------------ | ------------ |
+| Daily Limit        | ₦500,000     |
+| Monthly Limit      | ₦5,000,000   |
+| Single Transaction | ₦200,000     |
 
 **Use Case:** Power users, high-value transactions
 
 ### Upgrading KYC Tier
 
 Users can upgrade their KYC tier by:
+
 1. Completing additional verification steps
 2. Submitting required documents
 3. Passing automated verification checks
 
 **Benefits of Higher Tiers:**
+
 - Higher transaction limits
 - Access to premium features
 - Lower transaction fees (future feature)
 - Priority customer support
 
-
-
 ## Validation Rules
 
 ### Contribution Validation Rules
 
-| Rule | Description | Error Message |
-|------|-------------|---------------|
-| Plan Ownership | Plan must belong to the user | "Plan does not belong to the user" |
-| Plan Status | Plan must accept contributions | "Plan cannot accept this contribution amount or is not active" |
-| Wallet Balance | Sufficient funds if using wallet | "Insufficient wallet balance" |
-| Minimum Amount | At least ₦10 | "Minimum contribution amount is ₦10.00" |
-| Maximum Amount | At most ₦50,000 | "Maximum contribution amount is ₦50,000.00" |
+| Rule           | Description                      | Error Message                                                  |
+| -------------- | -------------------------------- | -------------------------------------------------------------- |
+| Plan Ownership | Plan must belong to the user     | "Plan does not belong to the user"                             |
+| Plan Status    | Plan must accept contributions   | "Plan cannot accept this contribution amount or is not active" |
+| Wallet Balance | Sufficient funds if using wallet | "Insufficient wallet balance"                                  |
+| Minimum Amount | At least ₦10                     | "Minimum contribution amount is ₦10.00"                        |
+| Maximum Amount | At most ₦50,000                  | "Maximum contribution amount is ₦50,000.00"                    |
 
 ### Withdrawal Validation Rules
 
-| Rule | Description | Error Message |
-|------|-------------|---------------|
-| Plan Ownership | Plan must belong to the user | "Plan does not belong to the user" |
-| Withdrawal Eligibility | Plan must allow withdrawals | "Withdrawal not allowed for this plan" |
-| Balance Check | Amount ≤ available balance | "Withdrawal amount exceeds available balance" |
-| Early Withdrawal | Warning if penalty applies | "Early withdrawal penalty of ₦X.XX will be applied" |
-| Minimum Amount | At least ₦100 | "Minimum withdrawal amount is ₦100.00" |
+| Rule                   | Description                  | Error Message                                       |
+| ---------------------- | ---------------------------- | --------------------------------------------------- |
+| Plan Ownership         | Plan must belong to the user | "Plan does not belong to the user"                  |
+| Withdrawal Eligibility | Plan must allow withdrawals  | "Withdrawal not allowed for this plan"              |
+| Balance Check          | Amount ≤ available balance   | "Withdrawal amount exceeds available balance"       |
+| Early Withdrawal       | Warning if penalty applies   | "Early withdrawal penalty of ₦X.XX will be applied" |
+| Minimum Amount         | At least ₦100                | "Minimum withdrawal amount is ₦100.00"              |
 
 ### Wallet Funding Validation Rules
 
-| Rule | Description | Error Message |
-|------|-------------|---------------|
-| Minimum Amount | At least ₦100 | "Minimum funding amount is ₦100.00" |
-| Maximum Amount | At most ₦1,000,000 | "Maximum funding amount per transaction is ₦1,000,000.00" |
-| Valid Source | Must be bank_transfer or debit_card | "Invalid payment source for wallet funding" |
+| Rule           | Description                         | Error Message                                             |
+| -------------- | ----------------------------------- | --------------------------------------------------------- |
+| Minimum Amount | At least ₦100                       | "Minimum funding amount is ₦100.00"                       |
+| Maximum Amount | At most ₦1,000,000                  | "Maximum funding amount per transaction is ₦1,000,000.00" |
+| Valid Source   | Must be bank_transfer or debit_card | "Invalid payment source for wallet funding"               |
 
 ### Transaction Limit Validation Rules
 
-| Rule | Description | Error Message |
-|------|-------------|---------------|
-| Daily Limit | Daily total + amount ≤ tier limit | "Daily transaction limit of ₦X.XX exceeded" |
-| Monthly Limit | Monthly total + amount ≤ tier limit | "Monthly transaction limit of ₦X.XX exceeded" |
-| Single Transaction | Amount ≤ tier single transaction limit | "Single transaction limit of ₦X.XX exceeded" |
-
-
+| Rule               | Description                            | Error Message                                 |
+| ------------------ | -------------------------------------- | --------------------------------------------- |
+| Daily Limit        | Daily total + amount ≤ tier limit      | "Daily transaction limit of ₦X.XX exceeded"   |
+| Monthly Limit      | Monthly total + amount ≤ tier limit    | "Monthly transaction limit of ₦X.XX exceeded" |
+| Single Transaction | Amount ≤ tier single transaction limit | "Single transaction limit of ₦X.XX exceeded"  |
 
 ## Examples
 
 ### Complete Contribution Validation
 
 ```typescript
-import { 
-  validateContribution,
-  validateTransactionLimits 
-} from "@host/domain";
+import { validateContribution, validateTransactionLimits } from "@host/domain";
 
 async function validateAndProcessContribution(
   userId: UserId,
@@ -367,10 +354,11 @@ async function validateAndProcessContribution(
 ) {
   // 1. Get required data
   const plan = await savingsRepository.findById(planId);
-  const walletBalance = source === "wallet" 
-    ? await walletRepository.getBalance(userId)
-    : undefined;
-  
+  const walletBalance =
+    source === PaymentSourceEnum.WALLET
+      ? await walletRepository.getBalance(userId)
+      : undefined;
+
   // 2. Validate contribution
   const contributionValidation = validateContribution(
     userId,
@@ -380,14 +368,14 @@ async function validateAndProcessContribution(
     plan,
     walletBalance
   );
-  
+
   if (!contributionValidation.isValid) {
     return {
       success: false,
-      errors: contributionValidation.errors
+      errors: contributionValidation.errors,
     };
   }
-  
+
   // 3. Get user's KYC tier and transaction totals
   const user = await userRepository.findById(userId);
   const dailyTotal = await transactionRepository.getDailyTransactionTotal(
@@ -399,7 +387,7 @@ async function validateAndProcessContribution(
     new Date().getFullYear(),
     new Date().getMonth() + 1
   );
-  
+
   // 4. Validate transaction limits
   const limitsValidation = validateTransactionLimits(
     userId,
@@ -409,18 +397,18 @@ async function validateAndProcessContribution(
     dailyTotal,
     monthlyTotal
   );
-  
+
   if (!limitsValidation.isValid) {
     return {
       success: false,
-      errors: limitsValidation.errors
+      errors: limitsValidation.errors,
     };
   }
-  
+
   // 5. All validations passed
   return {
     success: true,
-    errors: []
+    errors: [],
   };
 }
 ```
@@ -433,42 +421,36 @@ async function validateWithdrawalWithFeedback(
   amount: Money,
   planId?: PlanId
 ) {
-  const plan = planId 
-    ? await savingsRepository.findById(planId)
-    : undefined;
-  
+  const plan = planId ? await savingsRepository.findById(planId) : undefined;
+
   const validation = validateWithdrawal(userId, amount, plan);
-  
+
   if (!validation.isValid) {
     // Separate errors and warnings
-    const errors = validation.errors.filter(
-      e => !e.includes("penalty")
-    );
-    const warnings = validation.errors.filter(
-      e => e.includes("penalty")
-    );
-    
+    const errors = validation.errors.filter((e) => !e.includes("penalty"));
+    const warnings = validation.errors.filter((e) => e.includes("penalty"));
+
     if (errors.length > 0) {
       // Show errors - block withdrawal
       showErrorDialog({
         title: "Withdrawal Not Allowed",
-        message: errors.join("\n")
+        message: errors.join("\n"),
       });
       return false;
     }
-    
+
     if (warnings.length > 0) {
       // Show warnings - allow with confirmation
       const confirmed = await showConfirmDialog({
         title: "Early Withdrawal Penalty",
         message: warnings.join("\n"),
         confirmText: "Proceed with Penalty",
-        cancelText: "Cancel"
+        cancelText: "Cancel",
       });
       return confirmed;
     }
   }
-  
+
   return true;
 }
 ```
@@ -483,25 +465,25 @@ async function validateWalletFundingRequest(
 ) {
   // 1. Validate funding parameters
   const validation = validateWalletFunding(userId, amount, source);
-  
+
   if (!validation.isValid) {
     throw new ValidationError(validation.errors);
   }
-  
+
   // 2. Additional checks (external to validation service)
-  
+
   // Check if payment source is verified
   const paymentMethods = await paymentService.getPaymentMethods(userId);
-  const selectedMethod = paymentMethods.find(m => m.type === source);
-  
+  const selectedMethod = paymentMethods.find((m) => m.type === source);
+
   if (!selectedMethod || !selectedMethod.isActive) {
     throw new Error("Payment method not found or inactive");
   }
-  
+
   // 3. Proceed with funding
   return {
     isValid: true,
-    paymentMethod: selectedMethod
+    paymentMethod: selectedMethod,
   };
 }
 ```
@@ -512,7 +494,7 @@ async function validateWalletFundingRequest(
 async function checkUserLimits(userId: UserId) {
   const user = await userRepository.findById(userId);
   const today = new Date();
-  
+
   // Get current usage
   const dailyTotal = await transactionRepository.getDailyTransactionTotal(
     userId,
@@ -523,30 +505,30 @@ async function checkUserLimits(userId: UserId) {
     today.getFullYear(),
     today.getMonth() + 1
   );
-  
+
   // Get limits for user's tier
   const limits = getTransactionLimitsForTier(user.kycTier);
-  
+
   // Calculate remaining limits
   const dailyRemaining = limits.dailyLimit.subtract(dailyTotal);
   const monthlyRemaining = limits.monthlyLimit.subtract(monthlyTotal);
-  
+
   return {
     tier: user.kycTier,
     limits: {
       daily: {
         limit: limits.dailyLimit,
         used: dailyTotal,
-        remaining: dailyRemaining
+        remaining: dailyRemaining,
       },
       monthly: {
         limit: limits.monthlyLimit,
         used: monthlyTotal,
-        remaining: monthlyRemaining
+        remaining: monthlyRemaining,
       },
-      singleTransaction: limits.singleTransactionLimit
+      singleTransaction: limits.singleTransactionLimit,
     },
-    canUpgrade: user.kycTier < 2
+    canUpgrade: user.kycTier < 2,
   };
 }
 
@@ -556,25 +538,25 @@ function getTransactionLimitsForTier(tier: number) {
       return {
         dailyLimit: Money.fromNumber(5000, "NGN"),
         monthlyLimit: Money.fromNumber(50000, "NGN"),
-        singleTransactionLimit: Money.fromNumber(2000, "NGN")
+        singleTransactionLimit: Money.fromNumber(2000, "NGN"),
       };
     case 1:
       return {
         dailyLimit: Money.fromNumber(50000, "NGN"),
         monthlyLimit: Money.fromNumber(500000, "NGN"),
-        singleTransactionLimit: Money.fromNumber(20000, "NGN")
+        singleTransactionLimit: Money.fromNumber(20000, "NGN"),
       };
     case 2:
       return {
         dailyLimit: Money.fromNumber(500000, "NGN"),
         monthlyLimit: Money.fromNumber(5000000, "NGN"),
-        singleTransactionLimit: Money.fromNumber(200000, "NGN")
+        singleTransactionLimit: Money.fromNumber(200000, "NGN"),
       };
     default:
       return {
         dailyLimit: Money.fromNumber(1000, "NGN"),
         monthlyLimit: Money.fromNumber(10000, "NGN"),
-        singleTransactionLimit: Money.fromNumber(500, "NGN")
+        singleTransactionLimit: Money.fromNumber(500, "NGN"),
       };
   }
 }
@@ -590,7 +572,7 @@ async function preTransactionValidation(
   additionalParams: any
 ) {
   const validations: ValidationResult[] = [];
-  
+
   // 1. Type-specific validation
   switch (transactionType) {
     case "contribution":
@@ -605,28 +587,20 @@ async function preTransactionValidation(
         )
       );
       break;
-      
+
     case "withdrawal":
       validations.push(
-        validateWithdrawal(
-          userId,
-          amount,
-          additionalParams.plan
-        )
+        validateWithdrawal(userId, amount, additionalParams.plan)
       );
       break;
-      
+
     case "wallet_funding":
       validations.push(
-        validateWalletFunding(
-          userId,
-          amount,
-          additionalParams.source
-        )
+        validateWalletFunding(userId, amount, additionalParams.source)
       );
       break;
   }
-  
+
   // 2. Transaction limits validation (for all types)
   const user = await userRepository.findById(userId);
   const dailyTotal = await transactionRepository.getDailyTransactionTotal(
@@ -638,7 +612,7 @@ async function preTransactionValidation(
     new Date().getFullYear(),
     new Date().getMonth() + 1
   );
-  
+
   validations.push(
     validateTransactionLimits(
       userId,
@@ -649,13 +623,13 @@ async function preTransactionValidation(
       monthlyTotal
     )
   );
-  
+
   // 3. Combine all validation results
-  const allErrors = validations.flatMap(v => v.errors);
-  
+  const allErrors = validations.flatMap((v) => v.errors);
+
   return {
     isValid: allErrors.length === 0,
-    errors: allErrors
+    errors: allErrors,
   };
 }
 ```

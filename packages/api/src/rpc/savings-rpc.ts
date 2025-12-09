@@ -38,6 +38,7 @@ import {
   MakeContributionOutputSchema,
   WithdrawFromPlanOutputSchema,
   GetPlanProgressOutputSchema,
+  UpdatePlansActionSchema,
   ChangePlanStatusSchema,
   MakeContributionSchema,
   WithdrawFromPlanSchema,
@@ -52,6 +53,7 @@ import {
   UpdatePlanSchema,
   CreatePlanSchema,
   ListPlansSchema,
+  PlanActionEnum,
   GetPlanSchema,
   DEFAULT_CURRENCY,
 } from "@host/shared";
@@ -420,7 +422,7 @@ export const SavingsHandlersLive: Layer.Layer<
         .execute({
           planId: payload.planId,
           userId,
-          action: "update_autosave",
+          action: UpdatePlansActionSchema.make(PlanActionEnum.UPDATE_AUTOSAVE),
           autoSaveEnabled: payload.autoSaveEnabled,
           autoSaveTime: payload.autoSaveTime,
         })

@@ -144,6 +144,7 @@ The application layer provides use cases that orchestrate domain logic:
   - `CreateSavingsPlanUseCase`
   - `UpdateSavingsPlanUseCase`
   - `GetSavingsPlanUseCase`
+  - `ListSavingsPlanUseCase`
 
 - **Contribution Use Cases**
   - `ProcessContributionUseCase`
