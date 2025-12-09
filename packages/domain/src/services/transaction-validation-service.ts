@@ -1,9 +1,8 @@
-import type { TransactionType, PaymentSource } from "../entities/transaction";
+import type { PaymentSource, TransactionType } from "@host/shared";
 import type { SavingsPlan } from "../entities/savings-plan";
 import type { UserId, PlanId } from "../value-objects";
 
-import { DEFAULT_CURRENCY } from "@host/shared";
-
+import { DEFAULT_CURRENCY, PaymentSourceEnum } from "@host/shared";
 import { Money } from "../value-objects";
 /**
  * Validation result interface
@@ -111,7 +110,7 @@ export function validateContribution(
   }
 
   // Check wallet balance if using wallet as source
-  if (source === "wallet" && walletBalance) {
+  if (source === PaymentSourceEnum.WALLET && walletBalance) {
     if (walletBalance.isLessThan(amount)) {
       errors.push("Insufficient wallet balance");
     }

@@ -1,5 +1,6 @@
 import type { SavingsPlan } from "../entities/savings-plan";
 import type { PlanId, UserId } from "../value-objects";
+import type { PlanStatus } from "@host/shared";
 import type { RepositoryError } from ".";
 import type { Effect } from "effect";
 
@@ -70,6 +71,6 @@ export interface SavingsRepository {
    * Find plans by status
    */
   readonly findByStatus: (
-    status: "active" | "paused" | "completed" | "cancelled"
+    status: PlanStatus
   ) => Effect.Effect<SavingsPlan[], RepositoryError>;
 }

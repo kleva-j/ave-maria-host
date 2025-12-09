@@ -1,14 +1,17 @@
 import type { SavingsRepository, WalletRepository } from "@host/domain";
 
+import { Effect, Context, Layer, Schema } from "effect";
 import { PlanId, UserId, Money } from "@host/domain";
-import { Effect, Context, Layer } from "effect";
-import { Schema } from "@effect/schema";
+
 import {
   type FinancialError,
+  PaymentSourceSchema,
   AuthorizationError,
+  PaymentSourceEnum,
   PlanNotFoundError,
   DEFAULT_CURRENCY,
   ValidationError,
+  PlanStatusEnum,
   DatabaseError,
 } from "@host/shared";
 
@@ -16,10 +19,10 @@ import {
  * Input for validating a contribution
  */
 export const ValidateContributionInput = Schema.Struct({
-  userId: Schema.UUID,
-  planId: Schema.UUID,
+  userId: UserId,
+  planId: PlanId,
   amount: Schema.Number.pipe(Schema.positive()),
-  source: Schema.Literal("wallet", "bank_transfer", "debit_card"),
+  source: PaymentSourceSchema,
 });
 
 export type ValidateContributionInput = typeof ValidateContributionInput.Type;
@@ -98,7 +101,10 @@ export const ValidateContributionUseCaseLive = Layer.effect(
           // Create value objects
           const userId = UserId.fromString(validatedInput.userId);
           const planId = PlanId.fromString(validatedInput.planId);
-          const amount = Money.fromNumber(validatedInput.amount, DEFAULT_CURRENCY);
+          const amount = Money.fromNumber(
+            validatedInput.amount,
+            DEFAULT_CURRENCY
+          );
 
           // Retrieve the savings plan
           const plan = yield* savingsRepository.findById(planId).pipe(
@@ -114,9 +120,7 @@ export const ValidateContributionUseCaseLive = Layer.effect(
 
           if (!plan) {
             return yield* Effect.fail(
-              new PlanNotFoundError({
-                planId: validatedInput.planId,
-              })
+              new PlanNotFoundError({ planId: validatedInput.planId })
             );
           }
 
@@ -132,7 +136,7 @@ export const ValidateContributionUseCaseLive = Layer.effect(
           }
 
           // Check plan status
-          if (plan.status !== "active") {
+          if (plan.status !== PlanStatusEnum.ACTIVE) {
             errors.push(`Plan is not active. Current status: ${plan.status}`);
           }
 
@@ -155,14 +159,15 @@ export const ValidateContributionUseCaseLive = Layer.effect(
 
           // Check wallet balance if source is wallet
           let availableBalance: number | undefined;
-          if (validatedInput.source === "wallet") {
+          if (validatedInput.source === PaymentSourceEnum.WALLET) {
             const balance = yield* walletRepository.getBalance(userId).pipe(
-              Effect.mapError((error) =>
-                new DatabaseError({
-                  operation: "getBalance",
-                  table: "wallets",
-                  message: error.message || "Failed to get wallet balance",
-                })
+              Effect.mapError(
+                (error) =>
+                  new DatabaseError({
+                    operation: "getBalance",
+                    table: "wallets",
+                    message: error.message || "Failed to get wallet balance",
+                  })
               )
             );
             availableBalance = balance.value;

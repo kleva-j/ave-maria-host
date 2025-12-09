@@ -1,15 +1,16 @@
 import type { TransactionRepository, WalletRepository } from "@host/domain";
 
 import { Transaction, UserId, Money } from "@host/domain";
-import { Effect, Context, Layer } from "effect";
-import { Schema } from "effect";
+import { Effect, Context, Layer, Schema } from "effect";
 
 import {
   type PaymentGatewayError,
   type FinancialError,
+  PaymentMethodSchema,
   CurrencyCodeSchema,
   ValidationError,
   DatabaseError,
+  PaymentSourceSchema,
 } from "@host/shared";
 
 /**
@@ -19,7 +20,7 @@ export const FundWalletInput = Schema.Struct({
   userId: Schema.UUID,
   amount: Schema.Number.pipe(Schema.positive()),
   currency: CurrencyCodeSchema,
-  paymentMethod: Schema.Literal("bank_transfer", "debit_card"),
+  paymentSource: PaymentSourceSchema,
   paymentReference: Schema.optional(Schema.String),
   metadata: Schema.optional(
     Schema.Record({ key: Schema.String, value: Schema.Unknown })
@@ -99,8 +100,8 @@ export const FundWalletUseCaseLive = Layer.effect(
     }
 
     const transactionRepository = transactionRepo.value;
-    const walletRepository = walletRepo.value;
     const paymentGatewayService = paymentGateway.value;
+    const walletRepository = walletRepo.value;
 
     return {
       execute: (input: FundWalletInput) =>
@@ -131,7 +132,7 @@ export const FundWalletUseCaseLive = Layer.effect(
             validatedInput.userId,
             validatedInput.amount,
             validatedInput.currency,
-            validatedInput.paymentMethod,
+            validatedInput.paymentSource,
             validatedInput.paymentReference
           );
 
@@ -139,7 +140,7 @@ export const FundWalletUseCaseLive = Layer.effect(
           const transaction = Transaction.createWalletFunding(
             userId,
             amount,
-            validatedInput.paymentMethod as "bank_transfer" | "debit_card",
+            validatedInput.paymentSource,
             paymentResult.reference
           );
 

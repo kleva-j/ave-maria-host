@@ -1,11 +1,11 @@
+import type { FinancialError } from "@host/shared";
 import type {
   TransactionRepository,
   SavingsRepository,
   WalletRepository,
 } from "@host/domain";
 
-import { Effect, Context, Layer } from "effect";
-import { Schema } from "@effect/schema";
+import { Effect, Context, Layer, Schema } from "effect";
 import {
   TransactionId,
   Transaction,
@@ -15,10 +15,12 @@ import {
 } from "@host/domain";
 
 import {
-  type FinancialError,
+  TransactionReferenceSchema,
   InvalidContributionError,
   InsufficientFundsError,
+  PaymentSourceSchema,
   AuthorizationError,
+  PaymentSourceEnum,
   PlanNotFoundError,
   DEFAULT_CURRENCY,
   ValidationError,
@@ -29,11 +31,11 @@ import {
  * Input for processing a contribution
  */
 export const ProcessContributionInput = Schema.Struct({
-  userId: Schema.UUID,
-  planId: Schema.UUID,
+  userId: UserId,
+  planId: PlanId,
   amount: Schema.Number.pipe(Schema.positive()),
-  source: Schema.Literal("wallet", "bank_transfer", "debit_card"),
-  reference: Schema.optional(Schema.String),
+  source: PaymentSourceSchema,
+  reference: Schema.optional(TransactionReferenceSchema),
 });
 
 export type ProcessContributionInput = typeof ProcessContributionInput.Type;
@@ -113,9 +115,12 @@ export const ProcessContributionUseCaseLive = Layer.effect(
           );
 
           // Create value objects
-          const userId = UserId.fromString(validatedInput.userId);
           const planId = PlanId.fromString(validatedInput.planId);
-          const amount = Money.fromNumber(validatedInput.amount, DEFAULT_CURRENCY);
+          const userId = UserId.fromString(validatedInput.userId);
+          const amount = Money.fromNumber(
+            validatedInput.amount,
+            DEFAULT_CURRENCY
+          );
 
           // Retrieve the savings plan
           const plan = yield* savingsRepository.findById(planId).pipe(
@@ -161,7 +166,7 @@ export const ProcessContributionUseCaseLive = Layer.effect(
           }
 
           // Check wallet balance if source is wallet
-          if (validatedInput.source === "wallet") {
+          if (validatedInput.source === PaymentSourceEnum.WALLET) {
             const hasSufficientBalance = yield* walletRepository
               .hasSufficientBalance(userId, amount)
               .pipe(
@@ -210,7 +215,7 @@ export const ProcessContributionUseCaseLive = Layer.effect(
             userId,
             planId,
             amount,
-            validatedInput.source as "wallet" | "bank_transfer" | "debit_card",
+            validatedInput.source,
             reference
           );
 
@@ -228,7 +233,7 @@ export const ProcessContributionUseCaseLive = Layer.effect(
 
           // Debit wallet if source is wallet
           let newWalletBalance = 0;
-          if (validatedInput.source === "wallet") {
+          if (validatedInput.source === PaymentSourceEnum.WALLET) {
             const updatedBalance = yield* walletRepository
               .debit(userId, amount)
               .pipe(
