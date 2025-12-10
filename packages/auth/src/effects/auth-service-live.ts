@@ -163,7 +163,7 @@ function createUserFromBetterAuth(betterAuthUser: unknown) {
         ? KycTierSchema.make(validated.kycTier as 0 | 1 | 2)
         : KycTierSchema.make(KycTierEnum.UNVERIFIED),
       kycStatus: validated.kycStatus
-        ? (validated.kycStatus as KycStatus)
+        ? validated.kycStatus
         : KycStatusEnum.PENDING,
       kycData: null,
       kycVerifiedAt: validated.kycVerifiedAt

@@ -153,3 +153,48 @@ export const BiometricTypeEnum = {
   FACE: "face_id",
   IRIS: "iris",
 } as const;
+
+// ==============================
+// Rewards Tier Enumerations
+// ==============================
+
+/**
+ * Rewards Tier Enum
+ */
+export const RewardsTierEnum = {
+  BRONZE: "bronze",
+  SILVER: "silver",
+  GOLD: "gold",
+  PLATINUM: "platinum",
+  DIAMOND: "diamond",
+} as const;
+
+/**
+ * Rewards Tier Threshold Enum
+ */
+export const RewardsTierThresholdEnum = {
+  [RewardsTierEnum.BRONZE]: 0,
+  [RewardsTierEnum.SILVER]: 500,
+  [RewardsTierEnum.GOLD]: 1000,
+  [RewardsTierEnum.PLATINUM]: 2500,
+  [RewardsTierEnum.DIAMOND]: 5000,
+} as const;
+
+/**
+ * Rewards Badge Type Enum
+ */
+export const RewardsBadgeTypeEnum = {
+  FIRST_CONTRIBUTION: "first_contribution",
+  WEEK_STREAK: "week_streak",
+  MONTH_STREAK: "month_streak",
+  QUARTER_STREAK: "quarter_streak",
+  YEAR_STREAK: "year_streak",
+  FIRST_PLAN_COMPLETED: "first_plan_completed",
+  FIVE_PLANS_COMPLETED: "five_plans_completed",
+  TEN_PLANS_COMPLETED: "ten_plans_completed",
+  SAVINGS_CHAMPION: "savings_champion",
+  CONSISTENT_SAVER: "consistent_saver",
+  GOAL_CRUSHER: "goal_crusher",
+  EARLY_BIRD: "early_bird",
+  NIGHT_OWL: "night_owl",
+} as const;

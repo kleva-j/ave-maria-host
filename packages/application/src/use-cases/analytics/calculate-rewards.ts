@@ -1,12 +1,18 @@
 import type { TransactionRepository, SavingsRepository } from "@host/domain";
 
-import { Effect, Context, Layer } from "effect";
+import type { FinancialError, RewardTier, Badge } from "@host/shared";
+import { Effect, Context, Layer, Schema } from "effect";
 import { UserId } from "@host/domain";
-import { Schema } from "effect";
 
 import {
-  type FinancialError,
+  RewardsTierThresholdEnum,
+  RewardsBadgeTypeEnum,
+  TransactionTypeEnum,
+  RewardBadgeSchema,
+  RewardTierSchema,
   ValidationError,
+  RewardsTierEnum,
+  PlanStatusEnum,
   DatabaseError,
 } from "@host/shared";
 
@@ -14,59 +20,10 @@ import {
  * Input for calculating rewards
  */
 export const CalculateRewardsInput = Schema.Struct({
-  userId: Schema.UUID,
+  userId: UserId,
 });
 
 export type CalculateRewardsInput = typeof CalculateRewardsInput.Type;
-
-/**
- * Badge types for gamification
- */
-export type BadgeType =
-  | "first_contribution"
-  | "week_streak"
-  | "month_streak"
-  | "quarter_streak"
-  | "year_streak"
-  | "first_plan_completed"
-  | "five_plans_completed"
-  | "ten_plans_completed"
-  | "savings_champion"
-  | "consistent_saver"
-  | "goal_crusher"
-  | "early_bird"
-  | "night_owl";
-
-/**
- * Badge definition
- */
-export interface Badge {
-  readonly type: BadgeType;
-  readonly name: string;
-  readonly description: string;
-  readonly icon: string;
-  readonly earnedDate?: Date;
-}
-
-/**
- * Reward tier levels
- */
-export const RewardTier = {
-  Bronze: "bronze",
-  Silver: "silver",
-  Gold: "gold",
-  Platinum: "platinum",
-  Diamond: "diamond",
-} as const;
-
-export const RewardTierSchema = Schema.Literal(
-  RewardTier.Bronze,
-  RewardTier.Silver,
-  RewardTier.Gold,
-  RewardTier.Platinum,
-  RewardTier.Diamond
-);
-export type RewardTier = typeof RewardTierSchema.Type;
 
 /**
  * Output from calculating rewards
@@ -76,6 +33,7 @@ export interface CalculateRewardsOutput {
   readonly currentTier: RewardTier;
   readonly nextTier: RewardTier | null;
   readonly pointsToNextTier: number;
+  readonly tierProgress: number; // Percentage progress within the current tier (0-100)
   readonly badges: Badge[];
   readonly newBadges: Badge[]; // Badges earned in this calculation
   readonly achievements: Array<{
@@ -129,81 +87,81 @@ export const CalculateRewardsUseCaseLive = Layer.effect(
     const transactionRepository = transactionRepo.value;
 
     // Badge definitions
-    const allBadges: Record<BadgeType, Omit<Badge, "earnedDate">> = {
-      first_contribution: {
-        type: "first_contribution",
+    const allBadges: Record<string, Omit<Badge, "earnedDate">> = {
+      [RewardsBadgeTypeEnum.FIRST_CONTRIBUTION]: {
+        type: RewardBadgeSchema.make(RewardsBadgeTypeEnum.FIRST_CONTRIBUTION),
         name: "First Step",
         description: "Made your first contribution",
         icon: "🎯",
       },
-      week_streak: {
-        type: "week_streak",
+      [RewardsBadgeTypeEnum.WEEK_STREAK]: {
+        type: RewardBadgeSchema.make(RewardsBadgeTypeEnum.WEEK_STREAK),
         name: "Week Warrior",
         description: "Maintained a 7-day saving streak",
         icon: "🔥",
       },
-      month_streak: {
-        type: "month_streak",
+      [RewardsBadgeTypeEnum.MONTH_STREAK]: {
+        type: RewardBadgeSchema.make(RewardsBadgeTypeEnum.MONTH_STREAK),
         name: "Monthly Master",
         description: "Maintained a 30-day saving streak",
         icon: "⭐",
       },
-      quarter_streak: {
-        type: "quarter_streak",
+      [RewardsBadgeTypeEnum.QUARTER_STREAK]: {
+        type: RewardBadgeSchema.make(RewardsBadgeTypeEnum.QUARTER_STREAK),
         name: "Quarterly Champion",
         description: "Maintained a 90-day saving streak",
         icon: "🏆",
       },
-      year_streak: {
-        type: "year_streak",
+      [RewardsBadgeTypeEnum.YEAR_STREAK]: {
+        type: RewardBadgeSchema.make(RewardsBadgeTypeEnum.YEAR_STREAK),
         name: "Annual Legend",
         description: "Maintained a 365-day saving streak",
         icon: "👑",
       },
-      first_plan_completed: {
-        type: "first_plan_completed",
+      [RewardsBadgeTypeEnum.FIRST_PLAN_COMPLETED]: {
+        type: RewardBadgeSchema.make(RewardsBadgeTypeEnum.FIRST_PLAN_COMPLETED),
         name: "Goal Achiever",
         description: "Completed your first savings plan",
         icon: "✅",
       },
-      five_plans_completed: {
-        type: "five_plans_completed",
+      [RewardsBadgeTypeEnum.FIVE_PLANS_COMPLETED]: {
+        type: RewardBadgeSchema.make(RewardsBadgeTypeEnum.FIVE_PLANS_COMPLETED),
         name: "Savings Pro",
         description: "Completed 5 savings plans",
         icon: "💪",
       },
-      ten_plans_completed: {
-        type: "ten_plans_completed",
+      [RewardsBadgeTypeEnum.TEN_PLANS_COMPLETED]: {
+        type: RewardBadgeSchema.make(RewardsBadgeTypeEnum.TEN_PLANS_COMPLETED),
         name: "Savings Master",
         description: "Completed 10 savings plans",
         icon: "🎖️",
       },
-      savings_champion: {
-        type: "savings_champion",
+      [RewardsBadgeTypeEnum.SAVINGS_CHAMPION]: {
+        type: RewardBadgeSchema.make(RewardsBadgeTypeEnum.SAVINGS_CHAMPION),
         name: "Savings Champion",
         description: "Saved over 100,000 in total",
         icon: "💎",
       },
-      consistent_saver: {
-        type: "consistent_saver",
+      [RewardsBadgeTypeEnum.CONSISTENT_SAVER]: {
+        type: RewardBadgeSchema.make(RewardsBadgeTypeEnum.CONSISTENT_SAVER),
         name: "Consistent Saver",
         description: "Made contributions for 30 consecutive days",
         icon: "📈",
       },
-      goal_crusher: {
-        type: "goal_crusher",
+      [RewardsBadgeTypeEnum.GOAL_CRUSHER]: {
+        type: RewardBadgeSchema.make(RewardsBadgeTypeEnum.GOAL_CRUSHER),
         name: "Goal Crusher",
         description: "Exceeded your savings target by 20%",
         icon: "🚀",
       },
-      early_bird: {
-        type: "early_bird",
+      [RewardsBadgeTypeEnum.EARLY_BIRD]: {
+        type: RewardBadgeSchema.make(RewardsBadgeTypeEnum.EARLY_BIRD),
         name: "Early Bird",
         description: "Made contributions before 9 AM for 7 days",
         icon: "🌅",
       },
-      night_owl: {
-        type: "night_owl",
+      [RewardsBadgeTypeEnum.NIGHT_OWL]: {
+        type: RewardBadgeSchema.make(RewardsBadgeTypeEnum.NIGHT_OWL),
         name: "Night Owl",
         description: "Made contributions after 9 PM for 7 days",
         icon: "🌙",
@@ -262,12 +220,13 @@ export const CalculateRewardsUseCaseLive = Layer.effect(
 
           // Points for contributions (1 point per contribution)
           totalPoints += allTransactions.filter(
-            (tx) => tx.type === "contribution" && tx.isCompleted()
+            (tx) =>
+              tx.type === TransactionTypeEnum.CONTRIBUTION && tx.isCompleted()
           ).length;
 
           // Points for completed plans (100 points per plan)
           const completedPlans = allPlans.filter(
-            (p) => p.status === "completed"
+            (p) => p.status === PlanStatusEnum.COMPLETED
           );
           totalPoints += completedPlans.length * 100;
 
@@ -292,86 +251,130 @@ export const CalculateRewardsUseCaseLive = Layer.effect(
           totalPoints += consistencyBonus;
 
           // Determine tier
-          let currentTier: RewardTier = RewardTier.Bronze;
-          let nextTier: RewardTier | null = RewardTier.Silver;
+          let currentTier: RewardTier = RewardTierSchema.make(
+            RewardsTierEnum.BRONZE
+          );
+          let nextTier: RewardTier | null = RewardTierSchema.make(
+            RewardsTierEnum.SILVER
+          );
           let pointsToNextTier = 500;
+          let tierProgress = 0;
 
-          if (totalPoints >= 5000) {
-            currentTier = RewardTier.Diamond;
+          if (
+            totalPoints >= RewardsTierThresholdEnum[RewardsTierEnum.DIAMOND]
+          ) {
+            currentTier = RewardTierSchema.make(RewardsTierEnum.DIAMOND);
             nextTier = null;
             pointsToNextTier = 0;
-          } else if (totalPoints >= 2500) {
-            currentTier = RewardTier.Platinum;
-            nextTier = RewardTier.Diamond;
-            pointsToNextTier = 5000 - totalPoints;
-          } else if (totalPoints >= 1000) {
-            currentTier = RewardTier.Gold;
-            nextTier = RewardTier.Platinum;
-            pointsToNextTier = 2500 - totalPoints;
-          } else if (totalPoints >= 500) {
-            currentTier = RewardTier.Silver;
-            nextTier = RewardTier.Gold;
-            pointsToNextTier = 1000 - totalPoints;
+            tierProgress = 100;
+          } else if (
+            totalPoints >= RewardsTierThresholdEnum[RewardsTierEnum.PLATINUM]
+          ) {
+            currentTier = RewardTierSchema.make(RewardsTierEnum.PLATINUM);
+            nextTier = RewardTierSchema.make(RewardsTierEnum.DIAMOND);
+            pointsToNextTier =
+              RewardsTierThresholdEnum[RewardsTierEnum.DIAMOND] - totalPoints;
+            tierProgress =
+              ((totalPoints -
+                RewardsTierThresholdEnum[RewardsTierEnum.PLATINUM]) /
+                (RewardsTierThresholdEnum[RewardsTierEnum.DIAMOND] -
+                  RewardsTierThresholdEnum[RewardsTierEnum.PLATINUM])) *
+              100;
+          } else if (
+            totalPoints >= RewardsTierThresholdEnum[RewardsTierEnum.GOLD]
+          ) {
+            currentTier = RewardTierSchema.make(RewardsTierEnum.GOLD);
+            nextTier = RewardTierSchema.make(RewardsTierEnum.PLATINUM);
+            pointsToNextTier =
+              RewardsTierThresholdEnum[RewardsTierEnum.PLATINUM] - totalPoints;
+            tierProgress =
+              ((totalPoints - RewardsTierThresholdEnum[RewardsTierEnum.GOLD]) /
+                (RewardsTierThresholdEnum[RewardsTierEnum.PLATINUM] -
+                  RewardsTierThresholdEnum[RewardsTierEnum.GOLD])) *
+              100;
+          } else if (
+            totalPoints >= RewardsTierThresholdEnum[RewardsTierEnum.SILVER]
+          ) {
+            currentTier = RewardTierSchema.make(RewardsTierEnum.SILVER);
+            nextTier = RewardTierSchema.make(RewardsTierEnum.GOLD);
+            pointsToNextTier =
+              RewardsTierThresholdEnum[RewardsTierEnum.GOLD] - totalPoints;
+            tierProgress =
+              ((totalPoints -
+                RewardsTierThresholdEnum[RewardsTierEnum.SILVER]) /
+                (RewardsTierThresholdEnum[RewardsTierEnum.GOLD] -
+                  RewardsTierThresholdEnum[RewardsTierEnum.SILVER])) *
+              100;
+          } else {
+            // Bronze Tier
+            currentTier = RewardTierSchema.make(RewardsTierEnum.BRONZE);
+            nextTier = RewardTierSchema.make(RewardsTierEnum.SILVER);
+            pointsToNextTier =
+              RewardsTierThresholdEnum[RewardsTierEnum.SILVER] - totalPoints;
+            tierProgress =
+              (totalPoints / RewardsTierThresholdEnum[RewardsTierEnum.SILVER]) *
+              100;
           }
 
           // Calculate earned badges
           const earnedBadges: Badge[] = [];
           const newBadges: Badge[] = [];
+          const earnedDate = new Date();
 
           // Check badge criteria
           if (allTransactions.length > 0 && allTransactions[0]) {
             earnedBadges.push({
-              ...allBadges.first_contribution,
+              ...allBadges[RewardsBadgeTypeEnum.FIRST_CONTRIBUTION]!,
               earnedDate: allTransactions[0].createdAt,
             });
           }
 
           if (currentStreak >= 7) {
             earnedBadges.push({
-              ...allBadges.week_streak,
-              earnedDate: new Date(),
+              ...allBadges[RewardsBadgeTypeEnum.WEEK_STREAK]!,
+              earnedDate,
             });
           }
 
           if (currentStreak >= 30) {
             earnedBadges.push({
-              ...allBadges.month_streak,
-              earnedDate: new Date(),
+              ...allBadges[RewardsBadgeTypeEnum.MONTH_STREAK]!,
+              earnedDate,
             });
           }
 
           if (currentStreak >= 90) {
             earnedBadges.push({
-              ...allBadges.quarter_streak,
-              earnedDate: new Date(),
+              ...allBadges[RewardsBadgeTypeEnum.QUARTER_STREAK]!,
+              earnedDate,
             });
           }
 
           if (currentStreak >= 365) {
             earnedBadges.push({
-              ...allBadges.year_streak,
-              earnedDate: new Date(),
+              ...allBadges[RewardsBadgeTypeEnum.YEAR_STREAK]!,
+              earnedDate,
             });
           }
 
           if (completedPlans.length >= 1 && completedPlans[0]) {
             earnedBadges.push({
-              ...allBadges.first_plan_completed,
+              ...allBadges[RewardsBadgeTypeEnum.FIRST_PLAN_COMPLETED]!,
               earnedDate: completedPlans[0].updatedAt,
             });
           }
 
           if (completedPlans.length >= 5) {
             earnedBadges.push({
-              ...allBadges.five_plans_completed,
-              earnedDate: new Date(),
+              ...allBadges[RewardsBadgeTypeEnum.FIVE_PLANS_COMPLETED]!,
+              earnedDate,
             });
           }
 
           if (completedPlans.length >= 10) {
             earnedBadges.push({
-              ...allBadges.ten_plans_completed,
-              earnedDate: new Date(),
+              ...allBadges[RewardsBadgeTypeEnum.TEN_PLANS_COMPLETED]!,
+              earnedDate,
             });
           }
 
@@ -381,15 +384,15 @@ export const CalculateRewardsUseCaseLive = Layer.effect(
           );
           if (totalSaved >= 100000) {
             earnedBadges.push({
-              ...allBadges.savings_champion,
-              earnedDate: new Date(),
+              ...allBadges[RewardsBadgeTypeEnum.SAVINGS_CHAMPION]!,
+              earnedDate,
             });
           }
 
           if (currentStreak >= 30) {
             earnedBadges.push({
-              ...allBadges.consistent_saver,
-              earnedDate: new Date(),
+              ...allBadges[RewardsBadgeTypeEnum.CONSISTENT_SAVER]!,
+              earnedDate,
             });
           }
 
@@ -433,6 +436,7 @@ export const CalculateRewardsUseCaseLive = Layer.effect(
             currentTier,
             nextTier,
             pointsToNextTier,
+            tierProgress,
             badges: earnedBadges,
             newBadges, // In a real implementation, this would track newly earned badges
             achievements,

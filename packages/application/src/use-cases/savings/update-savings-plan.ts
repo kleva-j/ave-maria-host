@@ -1,12 +1,12 @@
 import type { SavingsRepository, SavingsPlan } from "@host/domain";
-import type { AutoSaveTime } from "@host/shared";
+import type { FinancialError, AutoSaveTime } from "@host/shared";
 
 import { Effect, Context, Layer, Schema } from "effect";
 import { PlanId, UserId } from "@host/domain";
 
 import {
-  type FinancialError,
   UpdatePlansActionSchema,
+  AutoSaveEnabledSchema,
   InvalidPlanStateError,
   AutoSaveTimeSchema,
   AuthorizationError,
@@ -20,10 +20,10 @@ import {
  * Input for updating a savings plan
  */
 export const UpdateSavingsPlanInput = Schema.Struct({
-  planId: Schema.UUID,
-  userId: Schema.UUID,
+  planId: PlanId,
+  userId: UserId,
   action: UpdatePlansActionSchema,
-  autoSaveEnabled: Schema.optional(Schema.Boolean),
+  autoSaveEnabled: Schema.optional(AutoSaveEnabledSchema),
   autoSaveTime: Schema.optional(AutoSaveTimeSchema),
 });
 

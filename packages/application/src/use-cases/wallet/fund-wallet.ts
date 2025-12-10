@@ -6,11 +6,10 @@ import { Effect, Context, Layer, Schema } from "effect";
 import {
   type PaymentGatewayError,
   type FinancialError,
-  PaymentMethodSchema,
+  PaymentSourceSchema,
   CurrencyCodeSchema,
   ValidationError,
   DatabaseError,
-  PaymentSourceSchema,
 } from "@host/shared";
 
 /**

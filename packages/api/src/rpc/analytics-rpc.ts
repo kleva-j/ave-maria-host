@@ -410,10 +410,7 @@ export const AnalyticsHandlersLive: Layer.Layer<
               title: `${result.nextTier} Tier`,
               requiredPoints: nextTierGoal,
               currentPoints: result.totalPoints,
-              progressPercentage:
-                nextTierGoal > 0
-                  ? (result.totalPoints / nextTierGoal) * 100
-                  : 100,
+              progressPercentage: result.tierProgress,
             }
           : null,
         streakBonus: result.streakBonus,

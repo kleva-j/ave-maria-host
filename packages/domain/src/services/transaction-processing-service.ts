@@ -1,11 +1,14 @@
 import type { Money, UserId } from "../value-objects";
+import type { TransactionType } from "@host/shared";
 
-import { PlanStatusEnum, SavingsPlan } from "../entities/savings-plan";
+import { SavingsPlan } from "../entities/savings-plan";
+import { Transaction } from "../entities/transaction";
+
 import {
-  type TransactionType,
+  TransactionTypeSchema,
   TransactionTypeEnum,
-  Transaction,
-} from "../entities/transaction";
+  PlanStatusEnum,
+} from "@host/shared";
 
 /**
  * Processing result interface
@@ -557,7 +560,7 @@ export function calculateAndProcessInterest(
   const interestTransaction = Transaction.create(
     userId,
     interestEarned,
-    TransactionTypeEnum.INTEREST,
+    TransactionTypeSchema.make(TransactionTypeEnum.INTEREST),
     `interest-${plan.id.value}-${Date.now()}`,
     plan.id,
     undefined,
@@ -586,8 +589,8 @@ export function processReversal(
   // Create reversal transaction with opposite amount
   const reversalAmount = originalTransaction.amount;
   const reversalType: TransactionType = originalTransaction.isCredit()
-    ? TransactionTypeEnum.WITHDRAWAL
-    : TransactionTypeEnum.CONTRIBUTION;
+    ? TransactionTypeSchema.make(TransactionTypeEnum.WITHDRAWAL)
+    : TransactionTypeSchema.make(TransactionTypeEnum.CONTRIBUTION);
 
   const reversalTransaction = Transaction.create(
     originalTransaction.userId,

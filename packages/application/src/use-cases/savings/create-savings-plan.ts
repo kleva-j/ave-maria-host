@@ -1,20 +1,25 @@
 import type { SavingsRepository, WalletRepository } from "@host/domain";
 
 import type {
+  FinancialError,
   CycleDuration,
   AutoSaveTime,
   InterestRate,
   PlanName,
-} from "@host/domain";
+} from "@host/shared";
 
 import { SavingsPlan, UserId, Money } from "@host/domain";
 import { Effect, Context, Schema, Layer } from "effect";
 
 import {
-  type FinancialError,
   InsufficientFundsError,
+  AutoSaveEnabledSchema,
+  CycleDurationSchema,
+  AutoSaveTimeSchema,
+  InterestRateSchema,
   CurrencyCodeSchema,
   ValidationError,
+  PlanNameSchema,
   DatabaseError,
 } from "@host/shared";
 
@@ -22,17 +27,15 @@ import {
  * Input for creating a savings plan
  */
 export const CreateSavingsPlanInput = Schema.Struct({
-  userId: Schema.UUID,
-  planName: Schema.String.pipe(Schema.minLength(1), Schema.maxLength(100)),
+  userId: UserId,
+  planName: PlanNameSchema,
   dailyAmount: Schema.Number.pipe(Schema.positive()),
   currency: CurrencyCodeSchema,
-  cycleDuration: Schema.Number.pipe(Schema.int(), Schema.between(7, 365)),
+  cycleDuration: CycleDurationSchema,
   targetAmount: Schema.optional(Schema.Number.pipe(Schema.positive())),
-  autoSaveEnabled: Schema.optional(Schema.Boolean),
-  autoSaveTime: Schema.optional(
-    Schema.String.pipe(Schema.pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/))
-  ),
-  interestRate: Schema.optional(Schema.Number.pipe(Schema.between(0, 1))),
+  autoSaveEnabled: Schema.optional(AutoSaveEnabledSchema),
+  autoSaveTime: Schema.optional(AutoSaveTimeSchema),
+  interestRate: Schema.optional(InterestRateSchema),
 });
 
 export type CreateSavingsPlanInput = typeof CreateSavingsPlanInput.Type;
