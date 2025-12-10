@@ -161,6 +161,37 @@ export class SavingsPlan {
   }
 
   /**
+   * Process a withdrawal from this plan
+   */
+  withdraw(amount: Money): SavingsPlan {
+    if (this.currentAmount.isLessThan(amount)) {
+      throw new Error("Insufficient funds for withdrawal");
+    }
+
+    const newCurrentAmount = this.currentAmount.subtract(amount);
+
+    return new SavingsPlan(
+      this.id,
+      this.userId,
+      this.planName,
+      this.dailyAmount,
+      this.cycleDuration,
+      this.targetAmount,
+      newCurrentAmount,
+      this.autoSaveEnabled,
+      this.autoSaveTime,
+      this.status,
+      this.startDate,
+      this.endDate,
+      this.interestRate,
+      this.contributionStreak,
+      this.totalContributions,
+      this.createdAt,
+      new Date()
+    );
+  }
+
+  /**
    * Calculate current progress of the plan
    */
   calculateProgress(): PlanProgress {

@@ -9,7 +9,9 @@ import { PlanStatusEnum } from "@host/shared";
 import { eq, and, sql } from "drizzle-orm";
 
 /**
- * Map database row to SavingsPlan domain entity
+ * Converts a database row into a SavingsPlan domain entity
+ * @param row - The database row to convert
+ * @returns A new SavingsPlan instance with the data from the database row
  */
 function mapToDomainEntity(row: typeof savingsPlans.$inferSelect): SavingsPlan {
   return new SavingsPlan(
@@ -38,16 +40,27 @@ function mapToDomainEntity(row: typeof savingsPlans.$inferSelect): SavingsPlan {
 /**
  * Drizzle implementation of SavingsRepository
  */
+/** Context tag for the Drizzle implementation of SavingsRepository */
 export const DrizzleSavingsRepository = Context.GenericTag<SavingsRepository>(
   "@infrastructure/DrizzleSavingsRepository"
 );
 
+/**
+ * Layer providing the live implementation of DrizzleSavingsRepository
+ * Handles database operations for SavingsPlan entities using Drizzle ORM
+ */
 export const DrizzleSavingsRepositoryLive = Layer.effect(
   DrizzleSavingsRepository,
   Effect.gen(function* () {
     const db = yield* DatabaseService;
 
     return DrizzleSavingsRepository.of({
+      /**
+       * Saves a new SavingsPlan to the database
+       * @param plan - The SavingsPlan to save
+       * @returns Effect that resolves when the operation completes
+       * @throws RepositoryError if the operation fails
+       */
       save: (plan: SavingsPlan) =>
         Effect.gen(function* () {
           yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
@@ -78,6 +91,12 @@ export const DrizzleSavingsRepositoryLive = Layer.effect(
           )
         ),
 
+      /**
+       * Finds a SavingsPlan by its ID
+       * @param id - The ID of the SavingsPlan to find
+       * @returns Effect that resolves to the found SavingsPlan or null if not found
+       * @throws RepositoryError if the operation fails
+       */
       findById: (id: PlanId) =>
         Effect.gen(function* () {
           const result = yield* db.withDrizzle(
@@ -99,6 +118,12 @@ export const DrizzleSavingsRepositoryLive = Layer.effect(
           )
         ),
 
+      /**
+       * Finds all SavingsPlans for a specific user
+       * @param userId - The ID of the user
+       * @returns Effect that resolves to an array of SavingsPlans
+       * @throws RepositoryError if the operation fails
+       */
       findByUserId: (userId: UserId) =>
         Effect.gen(function* () {
           const result = yield* db.withDrizzle(
@@ -120,6 +145,12 @@ export const DrizzleSavingsRepositoryLive = Layer.effect(
           )
         ),
 
+      /**
+       * Finds all active SavingsPlans for a specific user
+       * @param userId - The ID of the user
+       * @returns Effect that resolves to an array of active SavingsPlans
+       * @throws RepositoryError if the operation fails
+       */
       findActiveByUserId: (userId: UserId) =>
         Effect.gen(function* () {
           const result = yield* db.withDrizzle(
@@ -146,6 +177,12 @@ export const DrizzleSavingsRepositoryLive = Layer.effect(
           )
         ),
 
+      /**
+       * Updates an existing SavingsPlan in the database
+       * @param plan - The updated SavingsPlan
+       * @returns Effect that resolves when the update is complete
+       * @throws RepositoryError if the operation fails
+       */
       update: (plan: SavingsPlan) =>
         Effect.gen(function* () {
           yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
@@ -175,6 +212,12 @@ export const DrizzleSavingsRepositoryLive = Layer.effect(
           )
         ),
 
+      /**
+       * Soft deletes a SavingsPlan by marking it as CANCELLED
+       * @param id - The ID of the SavingsPlan to delete
+       * @returns Effect that resolves when the operation is complete
+       * @throws RepositoryError if the operation fails
+       */
       delete: (id: PlanId) =>
         Effect.gen(function* () {
           yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
@@ -192,6 +235,11 @@ export const DrizzleSavingsRepositoryLive = Layer.effect(
           )
         ),
 
+      /**
+       * Finds all SavingsPlans that are eligible for auto-save at the current time
+       * @returns Effect that resolves to an array of SavingsPlans ready for auto-save
+       * @throws RepositoryError if the operation fails
+       */
       findPlansForAutoSave: () =>
         Effect.gen(function* () {
           const now = new Date();
@@ -225,6 +273,11 @@ export const DrizzleSavingsRepositoryLive = Layer.effect(
           )
         ),
 
+      /**
+       * Finds all completed SavingsPlans that are eligible for interest calculation
+       * @returns Effect that resolves to an array of completed SavingsPlans
+       * @throws RepositoryError if the operation fails
+       */
       findCompletedPlansForInterest: () =>
         Effect.gen(function* () {
           const result = yield* db.withDrizzle(
@@ -249,6 +302,12 @@ export const DrizzleSavingsRepositoryLive = Layer.effect(
           )
         ),
 
+      /**
+       * Calculates the total savings across all active plans for a specific user
+       * @param userId - The ID of the user
+       * @returns Effect that resolves to the total savings amount as a number
+       * @throws RepositoryError if the operation fails
+       */
       getTotalSavingsForUser: (userId: UserId) =>
         Effect.gen(function* () {
           const result = yield* db.withDrizzle(
@@ -282,6 +341,12 @@ export const DrizzleSavingsRepositoryLive = Layer.effect(
           )
         ),
 
+      /**
+       * Finds all SavingsPlans with a specific status
+       * @param status - The status to filter SavingsPlans by
+       * @returns Effect that resolves to an array of SavingsPlans with the specified status
+       * @throws RepositoryError if the operation fails
+       */
       findByStatus: (status: PlanStatus) =>
         Effect.gen(function* () {
           const result = yield* db.withDrizzle(

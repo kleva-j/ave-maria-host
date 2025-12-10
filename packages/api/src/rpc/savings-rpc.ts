@@ -27,6 +27,8 @@ import { Rpc, RpcGroup } from "@effect/rpc";
 
 import {
   type ValidateContributionUseCase,
+  WithdrawFromSavingsPlanUseCase,
+  GetSavingsPlanProgressUseCase,
   ProcessContributionUseCase,
   CreateSavingsPlanUseCase,
   UpdateSavingsPlanUseCase,
@@ -59,7 +61,7 @@ import {
 } from "@host/shared";
 
 import { AuthMiddleware, CurrentUser } from "./auth-rpc";
-import { PlanId, UserId } from "@host/domain";
+import { PlanId } from "@host/domain";
 
 // ============================================================================
 // Payload Classes
@@ -261,6 +263,8 @@ export const SavingsHandlersLive: Layer.Layer<
   | Rpc.Handler<"ListPlans">
   | Rpc.Handler<"GetPlan">,
   never,
+  | WithdrawFromSavingsPlanUseCase
+  | GetSavingsPlanProgressUseCase
   | ValidateContributionUseCase
   | ProcessContributionUseCase
   | CreateSavingsPlanUseCase
@@ -276,13 +280,11 @@ export const SavingsHandlersLive: Layer.Layer<
   CreatePlan: (payload) =>
     Effect.gen(function* () {
       const createPlanUseCase = yield* CreateSavingsPlanUseCase;
-
-      // Get user ID from auth context (placeholder - will be replaced with actual auth)
-      const userId = crypto.randomUUID();
+      const currentUser = yield* CurrentUser;
 
       const result = yield* createPlanUseCase
         .execute({
-          userId,
+          userId: currentUser.id,
           planName: payload.planName,
           dailyAmount: payload.dailyAmount,
           currency: DEFAULT_CURRENCY,
@@ -297,7 +299,7 @@ export const SavingsHandlersLive: Layer.Layer<
             (error) =>
               new SavingsError({
                 operation: "CreatePlan",
-                message: error._tag || "Failed to create savings plan",
+                message: error.message || "Failed to create savings plan",
                 cause: error,
               })
           )
@@ -314,22 +316,10 @@ export const SavingsHandlersLive: Layer.Layer<
    * Get a specific savings plan by ID
    * Validates user ownership and returns plan details
    */
-  GetPlan: (_payload) =>
+  GetPlan: (payload) =>
     Effect.gen(function* () {
       const getPlanUseCase = yield* GetSavingsPlanUseCase;
-
-      // Get authenticated user from context
       const currentUser = yield* CurrentUser;
-
-      const payload = yield* Schema.decodeUnknown(GetPlanSchema)(_payload).pipe(
-        Effect.mapError((error) => {
-          return new SavingsError({
-            operation: "GetPlan",
-            message: error._tag || "Failed to decode get plan payload",
-            cause: error,
-          });
-        })
-      );
 
       const planId = PlanId.fromString(payload.planId);
 
@@ -340,7 +330,7 @@ export const SavingsHandlersLive: Layer.Layer<
             (error) =>
               new SavingsError({
                 operation: "GetPlan",
-                message: error._tag || "Failed to retrieve savings plan",
+                message: error.message || "Failed to retrieve savings plan",
                 cause: error,
               })
           )
@@ -370,40 +360,55 @@ export const SavingsHandlersLive: Layer.Layer<
    * List all user's savings plans with optional filters
    * Supports pagination and status filtering
    */
-  ListPlans: (_payload) =>
+  ListPlans: (payload) =>
     Effect.gen(function* () {
       const listPlanUseCase = yield* ListSavingsPlanUseCase;
-
-      // Get authenticated user from context
       const currentUser = yield* CurrentUser;
 
-      yield* Schema.decodeUnknown(ListPlansSchema)(_payload).pipe(
-        Effect.mapError((error) => {
-          return new SavingsError({
-            operation: "ListPlans",
-            message: error._tag || "Failed to decode list plans payload",
-            cause: error,
-          });
+      const result = yield* listPlanUseCase
+        .execute({
+          userId: currentUser.id,
+          status: payload.status,
+          limit: payload.limit,
+          offset: payload.offset,
         })
+        .pipe(
+          Effect.mapError(
+            (error) =>
+              new SavingsError({
+                operation: "ListPlans",
+                message: error.message || "Failed to list savings plans",
+                cause: error,
+              })
+          )
+        );
+
+      // Map domain entities to DTOs
+      const plans = result.plans.map(
+        (plan) =>
+          new SavingsPlan({
+            id: plan.id.value,
+            userId: plan.userId.value,
+            planName: plan.planName,
+            dailyAmount: plan.dailyAmount.value,
+            cycleDuration: plan.cycleDuration,
+            targetAmount: plan.targetAmount?.value ?? null,
+            currentAmount: plan.currentAmount.value,
+            autoSaveEnabled: plan.autoSaveEnabled,
+            autoSaveTime: plan.autoSaveTime ?? null,
+            status: plan.status,
+            startDate: DateTime.unsafeMake(plan.startDate),
+            endDate: DateTime.unsafeMake(plan.endDate),
+            interestRate: plan.interestRate,
+            createdAt: DateTime.unsafeMake(plan.createdAt),
+            updatedAt: DateTime.unsafeMake(plan.updatedAt),
+          })
       );
 
-      yield* listPlanUseCase.execute({ userId: currentUser.id }).pipe(
-        Effect.mapError(
-          (error) =>
-            new SavingsError({
-              operation: "ListPlans",
-              message: error._tag || "Failed to list savings plans",
-              cause: error,
-            })
-        )
-      );
-
-      // TODO: Implement list functionality in use case
-      // For now, return empty list
       return new ListPlansResponse({
-        plans: [],
-        total: 0,
-        hasMore: false,
+        plans,
+        total: result.total,
+        hasMore: result.hasMore,
       });
     }),
 
@@ -414,14 +419,12 @@ export const SavingsHandlersLive: Layer.Layer<
   UpdatePlan: (payload) =>
     Effect.gen(function* () {
       const updatePlanUseCase = yield* UpdateSavingsPlanUseCase;
-
-      // Get user ID from auth context (placeholder)
-      const userId = crypto.randomUUID();
+      const currentUser = yield* CurrentUser;
 
       yield* updatePlanUseCase
         .execute({
           planId: payload.planId,
-          userId,
+          userId: currentUser.id,
           action: UpdatePlansActionSchema.make(PlanActionEnum.UPDATE_AUTOSAVE),
           autoSaveEnabled: payload.autoSaveEnabled,
           autoSaveTime: payload.autoSaveTime,
@@ -431,7 +434,7 @@ export const SavingsHandlersLive: Layer.Layer<
             (error) =>
               new SavingsError({
                 operation: "UpdatePlan",
-                message: error._tag || "Failed to update savings plan",
+                message: error.message || "Failed to update savings plan",
                 cause: error,
               })
           )
@@ -450,14 +453,12 @@ export const SavingsHandlersLive: Layer.Layer<
   ChangePlanStatus: (payload) =>
     Effect.gen(function* () {
       const updatePlanUseCase = yield* UpdateSavingsPlanUseCase;
-
-      // Get user ID from auth context (placeholder)
-      const userId = crypto.randomUUID();
+      const currentUser = yield* CurrentUser;
 
       yield* updatePlanUseCase
         .execute({
           planId: payload.planId,
-          userId,
+          userId: currentUser.id,
           action: payload.action,
         })
         .pipe(
@@ -465,7 +466,7 @@ export const SavingsHandlersLive: Layer.Layer<
             (error) =>
               new SavingsError({
                 operation: "ChangePlanStatus",
-                message: error._tag || "Failed to change plan status",
+                message: error.message || "Failed to change plan status",
                 cause: error,
               })
           )
@@ -484,9 +485,7 @@ export const SavingsHandlersLive: Layer.Layer<
   MakeContribution: (payload) =>
     Effect.gen(function* () {
       const processContributionUseCase = yield* ProcessContributionUseCase;
-
-      // Get user ID from auth context (placeholder)
-      const userId = UserId.generate().value;
+      const currentUser = yield* CurrentUser;
 
       const { amount } = payload;
       const source = PaymentSourceSchema.make(
@@ -498,13 +497,13 @@ export const SavingsHandlersLive: Layer.Layer<
       const planId = PlanId.fromString(payload.planId).value;
 
       const result = yield* processContributionUseCase
-        .execute({ userId, planId, amount, source })
+        .execute({ userId: currentUser.id, planId, amount, source })
         .pipe(
           Effect.mapError(
             (error) =>
               new SavingsError({
                 operation: "MakeContribution",
-                message: error._tag || "Failed to process contribution",
+                message: error.message || "Failed to process contribution",
                 cause: error,
               })
           )
@@ -532,35 +531,30 @@ export const SavingsHandlersLive: Layer.Layer<
    */
   GetPlanProgress: (payload) =>
     Effect.gen(function* () {
-      const getPlanUseCase = yield* GetSavingsPlanUseCase;
+      const getPlanProgressUseCase = yield* GetSavingsPlanProgressUseCase;
+      const currentUser = yield* CurrentUser;
 
-      // Get user ID from auth context (placeholder)
-      const userId = UserId.generate().value;
-
-      const result = yield* getPlanUseCase
-        .execute({ planId: PlanId.generate().value, userId })
+      const result = yield* getPlanProgressUseCase
+        .execute({ planId: payload.planId, userId: currentUser.id })
         .pipe(
           Effect.mapError(
             (error) =>
               new SavingsError({
                 operation: "GetPlanProgress",
-                message: error._tag || "Failed to get plan progress",
+                message: error.message || "Failed to get plan progress",
                 cause: error,
               })
           )
         );
 
-      const plan = result.plan;
-      const progress = plan.calculateProgress();
-
       return new GetPlanProgressResponse({
-        currentAmount: plan.currentAmount.value,
-        targetAmount: progress.targetAmount.value,
-        daysRemaining: progress.daysRemaining,
-        contributionStreak: progress.contributionStreak,
-        progressPercentage: progress.progressPercentage,
-        totalContributions: plan.totalContributions,
-        lastContributionDate: null, // TODO: Track last contribution date in domain
+        currentAmount: result.currentAmount,
+        targetAmount: result.targetAmount,
+        daysRemaining: result.daysRemaining,
+        contributionStreak: result.contributionStreak,
+        progressPercentage: result.progressPercentage,
+        totalContributions: result.totalContributions,
+        lastContributionDate: result.lastContributionDate,
       });
     }),
 
@@ -568,72 +562,34 @@ export const SavingsHandlersLive: Layer.Layer<
    * Withdraw funds from a completed savings plan
    * Validates plan completion and processes withdrawal
    */
-  WithdrawFromPlan: (_payload) =>
+  WithdrawFromPlan: (payload) =>
     Effect.gen(function* () {
-      const getPlanUseCase = yield* GetSavingsPlanUseCase;
-
-      // Get authenticated user from context
+      const withdrawUseCase = yield* WithdrawFromSavingsPlanUseCase;
       const currentUser = yield* CurrentUser;
 
-      const payload = yield* Schema.decodeUnknown(WithdrawFromPlanSchema)(
-        _payload
-      ).pipe(
-        Effect.mapError((error) => {
-          return new SavingsError({
-            operation: "WithdrawFromPlan",
-            message:
-              error._tag || "Failed to decode withdraw from plan payload",
-            cause: error,
-          });
+      const result = yield* withdrawUseCase
+        .execute({
+          planId: payload.planId,
+          userId: currentUser.id,
+          amount: payload.amount,
+          destination: payload.destination,
+          bankAccountId: payload.bankAccountId,
         })
-      );
-
-      const planId = PlanId.fromString(payload.planId).value;
-
-      const result = yield* getPlanUseCase
-        .execute({ planId, userId: currentUser.id })
         .pipe(
           Effect.mapError(
             (error) =>
               new SavingsError({
                 operation: "WithdrawFromPlan",
-                message: error._tag || "Failed to retrieve plan for withdrawal",
+                message: error.message || "Failed to withdraw from plan",
                 cause: error,
               })
           )
         );
 
-      const plan = result.plan;
-
-      // Validate plan can be withdrawn from
-      if (!plan.canWithdraw()) {
-        return yield* Effect.fail(
-          new SavingsError({
-            operation: "WithdrawFromPlan",
-            message:
-              "Plan is not eligible for withdrawal. Plan must be completed or matured.",
-          })
-        );
-      }
-
-      // Validate withdrawal amount
-      if (payload.amount > plan.currentAmount.value) {
-        return yield* Effect.fail(
-          new SavingsError({
-            operation: "WithdrawFromPlan",
-            message: `Withdrawal amount exceeds plan balance. Available: ${plan.currentAmount.value}`,
-          })
-        );
-      }
-
-      // TODO: Implement actual withdrawal processing with wallet/bank transfer
-      const transactionId = crypto.randomUUID();
-
       return new WithdrawFromPlanResponse({
-        transactionId,
-        status: "pending",
-        message:
-          "Withdrawal initiated successfully. Funds will be transferred shortly.",
+        transactionId: result.transactionId,
+        status: result.status,
+        message: result.message,
       });
     }),
 });
