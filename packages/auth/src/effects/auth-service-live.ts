@@ -22,6 +22,7 @@ import { auth } from "..";
 
 import {
   SessionIdSchema,
+  KycStatusSchema,
   DateTimeSchema,
   KycTierSchema,
   KycStatusEnum,
@@ -74,7 +75,7 @@ const BetterAuthUserSchema = Schema.Struct({
   phoneVerified: Schema.optional(Schema.Boolean),
   dateOfBirth: Schema.optional(Schema.NullOr(DateTimeSchema)),
   kycTier: Schema.optional(Schema.Number),
-  kycStatus: Schema.optional(Schema.String),
+  kycStatus: Schema.optional(KycStatusSchema),
   kycVerifiedAt: Schema.optional(Schema.NullOr(DateTimeSchema)),
   biometricEnabled: Schema.optional(Schema.Boolean),
   isActive: Schema.optional(Schema.Boolean),
@@ -163,8 +164,8 @@ function createUserFromBetterAuth(betterAuthUser: unknown) {
         ? KycTierSchema.make(validated.kycTier as 0 | 1 | 2)
         : KycTierSchema.make(KycTierEnum.UNVERIFIED),
       kycStatus: validated.kycStatus
-        ? validated.kycStatus
-        : KycStatusEnum.PENDING,
+        ? KycStatusSchema.make(validated.kycStatus)
+        : KycStatusSchema.make(KycStatusEnum.PENDING),
       kycData: null,
       kycVerifiedAt: validated.kycVerifiedAt
         ? new Date(validated.kycVerifiedAt.toString())
