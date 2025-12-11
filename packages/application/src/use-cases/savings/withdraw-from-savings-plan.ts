@@ -16,12 +16,12 @@ import {
   InsufficientFundsError,
   TransactionTypeSchema,
   PaymentSourceSchema,
+  WalletNotFoundError,
   TransactionTypeEnum,
   PaymentSourceEnum,
   ValidationError,
   DatabaseError,
   UserIdSchema,
-  WalletNotFoundError,
 } from "@host/shared";
 
 /**

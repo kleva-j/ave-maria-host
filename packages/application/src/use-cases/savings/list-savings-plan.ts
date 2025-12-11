@@ -1,14 +1,19 @@
 import type { SavingsRepository, SavingsPlan } from "@host/domain";
 import type { FinancialError } from "@host/shared";
 
-import { ValidationError, DatabaseError } from "@host/shared";
+import { ValidationError, DatabaseError, PlanStatusSchema } from "@host/shared";
 import { Effect, Context, Layer, Schema } from "effect";
 import { UserId } from "@host/domain";
 
 /**
  * Input for getting a savings plan
  */
-export const ListSavingsPlanInput = Schema.Struct({ userId: UserId });
+export const ListSavingsPlanInput = Schema.Struct({
+  userId: UserId,
+  status: Schema.optional(PlanStatusSchema),
+  limit: Schema.optional(Schema.Number),
+  offset: Schema.optional(Schema.Number),
+});
 
 export type ListSavingsPlanInput = typeof ListSavingsPlanInput.Type;
 
@@ -17,6 +22,8 @@ export type ListSavingsPlanInput = typeof ListSavingsPlanInput.Type;
  */
 export interface ListSavingsPlanOutput {
   readonly plans: SavingsPlan[];
+  readonly total: number;
+  readonly hasMore: boolean;
 }
 
 /**
@@ -73,19 +80,36 @@ export const ListSavingsPlanUseCaseLive = Layer.effect(
           // Create value objects
           const userId = UserId.fromString(validatedInput.userId);
 
-          // Retrieve the plan
-          const plans = yield* savingsRepository.findByUserId(userId).pipe(
+          // Retrieve all plans (Repo doesn't support pagination yet, so in-memory)
+          let plans = yield* savingsRepository.findByUserId(userId).pipe(
             Effect.mapError(
               (error) =>
                 new DatabaseError({
-                  operation: "findById",
+                  operation: "findByUserId",
                   table: "savings_plans",
                   message: error.message || "Failed to fetch all savings plans",
                 })
             )
           );
 
-          return { plans };
+          // Filter by status if provided
+          if (validatedInput.status) {
+            plans = plans.filter((p) => p.status === validatedInput.status);
+          }
+
+          const total = plans.length;
+          const limit = validatedInput.limit ?? 20;
+          const offset = validatedInput.offset ?? 0;
+
+          // Align with typical SQL pagination
+          const paginatedPlans = plans.slice(offset, offset + limit);
+          const hasMore = offset + limit < total;
+
+          return {
+            plans: paginatedPlans,
+            total,
+            hasMore,
+          };
         }),
     };
   })

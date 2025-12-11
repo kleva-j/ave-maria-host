@@ -90,6 +90,17 @@ export class WalletOperationError extends Data.TaggedError(
 }> {}
 
 /**
+ * Error thrown when a user's wallet cannot be found
+ * Used when quering for a user's wallet before crediting or withdrawing
+ */
+export class WalletNotFoundError extends Data.TaggedError(
+  "WalletNotFoundError"
+)<{
+  readonly userId: string;
+  readonly operation: string;
+}> {}
+
+/**
  * Error thrown when an Ajo/Esusu group operation fails
  * Used for group-specific errors like invalid member operations
  */
@@ -229,6 +240,7 @@ export type FinancialError =
   | InvalidKycTierError
   | PaymentGatewayError
   | GroupOperationError
+  | WalletNotFoundError
   | AuthorizationError
   | UserNotFoundError
   | PlanNotFoundError
