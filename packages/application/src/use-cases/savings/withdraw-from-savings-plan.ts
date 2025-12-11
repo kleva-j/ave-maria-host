@@ -21,6 +21,7 @@ import {
   ValidationError,
   DatabaseError,
   UserIdSchema,
+  WalletNotFoundError,
 } from "@host/shared";
 
 /**
@@ -223,9 +224,27 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
                 )
               );
 
+            if (!wallet) {
+              return yield* Effect.fail(
+                new WalletNotFoundError({
+                  userId: plan.userId.value,
+                  operation: "WithdrawFromSavingsPlan",
+                })
+              );
+            }
+
             if (wallet) {
-              // TODO: Credit wallet with the withdrawn amount
-              // wallet.credit(netAmount)
+              // Credit wallet with the net amount
+              yield* walletRepository.credit(plan.userId, netAmount).pipe(
+                Effect.mapError(
+                  (error) =>
+                    new DatabaseError({
+                      operation: "credit",
+                      table: "wallets",
+                      message: error.message || "Failed to credit wallet",
+                    })
+                )
+              );
             }
           }
 

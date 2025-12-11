@@ -198,3 +198,5 @@ export const RewardsBadgeTypeEnum = {
   EARLY_BIRD: "early_bird",
   NIGHT_OWL: "night_owl",
 } as const;
+
+export const TotalRewards = Object.values(RewardsBadgeTypeEnum).length;

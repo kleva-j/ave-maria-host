@@ -19,8 +19,12 @@
  * - getAchievements: Get user achievements and badges
  */
 
-import { type Layer, Effect, Schema } from "effect";
+import type { Badge } from "@host/shared";
+import type { Layer } from "effect";
+
 import { Rpc, RpcGroup } from "@effect/rpc";
+import { TotalRewards } from "@host/shared";
+import { Effect, Schema } from "effect";
 
 import {
   GenerateProgressReportUseCase,
@@ -495,7 +499,7 @@ export const AnalyticsHandlersLive: Layer.Layer<
         );
 
       // Map badges to achievements with safe DateTime
-      const mapBadgeToAchievement = (badge: any) =>
+      const mapBadgeToAchievement = (badge: Badge) =>
         Effect.gen(function* () {
           const earnedAt = yield* safeDateTimeOrNull(badge.earnedDate);
           return {
@@ -521,7 +525,7 @@ export const AnalyticsHandlersLive: Layer.Layer<
       return new GetAchievementsResponse({
         achievements,
         totalUnlocked: result.badges.length,
-        totalAvailable: 13, // Total number of badge types
+        totalAvailable: TotalRewards, // Total number of badge types
         recentlyEarned,
       });
     }),
