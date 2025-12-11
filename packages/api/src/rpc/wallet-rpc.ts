@@ -20,7 +20,11 @@
  * - verifyPayment: Verify a payment transaction
  */
 
-import { type Layer, Effect, Schema, DateTime } from "effect";
+import type { FinancialError } from "@host/shared";
+import type { Layer } from "effect";
+
+import { Effect, Schema, DateTime } from "effect";
+import { Rpc, RpcGroup } from "@effect/rpc";
 
 // Import use cases
 import {
@@ -28,8 +32,6 @@ import {
   WithdrawFundsUseCase,
   FundWalletUseCase,
 } from "@host/application";
-
-import { Rpc, RpcGroup } from "@effect/rpc";
 
 import {
   GetTransactionHistoryOutputSchema,
@@ -39,9 +41,12 @@ import {
   GetBalanceOutputSchema,
   FundWalletOutputSchema,
   LinkBankAccountSchema,
+  TransactionStatusEnum,
   WithdrawOutputSchema,
   VerifyPaymentSchema,
+  PaymentSourceSchema,
   TransactionSchema,
+  PaymentMethodEnum,
   BankAccountSchema,
   FundWalletSchema,
   GetBalanceSchema,
@@ -50,7 +55,7 @@ import {
 } from "@host/shared";
 
 // Import auth middleware for user context
-import { AuthMiddleware } from "./auth-rpc";
+import { AuthMiddleware, CurrentUser } from "./auth-rpc";
 
 // ============================================================================
 // Payload Classes
@@ -142,6 +147,7 @@ export class WalletNotFoundError extends Schema.TaggedError<WalletNotFoundError>
   {
     userId: Schema.String,
     message: Schema.String,
+    cause: Schema.optional(Schema.Unknown),
   }
 ) {}
 
@@ -151,6 +157,7 @@ export class InsufficientBalanceError extends Schema.TaggedError<InsufficientBal
     available: Schema.Number,
     required: Schema.Number,
     message: Schema.String,
+    currency: Schema.optional(Schema.String),
   }
 ) {}
 
@@ -263,23 +270,41 @@ export const WalletHandlersLive: Layer.Layer<
   GetBalance: (_payload) =>
     Effect.gen(function* () {
       const getBalanceUseCase = yield* GetWalletBalanceUseCase;
-
-      // Get user ID from auth context (placeholder)
-      const userId = crypto.randomUUID();
+      const currentUser = yield* CurrentUser;
 
       const result = yield* getBalanceUseCase
         .execute({
-          userId,
+          userId: currentUser.id,
           includeTransactionSummary: false,
         })
         .pipe(
           Effect.mapError(
-            (error) =>
-              new PaymentError({
+            (
+              error
+            ):
+              | WalletNotFoundError
+              | InsufficientBalanceError
+              | PaymentError => {
+              if (error._tag === "UserNotFoundError") {
+                return new WalletNotFoundError({
+                  userId: currentUser.id,
+                  message: "Wallet not found for user",
+                  cause: error,
+                });
+              }
+              if (error._tag === "WalletOperationError") {
+                return new WalletNotFoundError({
+                  userId: currentUser.id,
+                  message: error.reason || "Wallet operation failed",
+                  cause: error,
+                });
+              }
+              return new PaymentError({
                 operation: "GetBalance",
-                message: error._tag || "Failed to get balance",
+                message: error.message || "Failed to get balance",
                 cause: error,
-              })
+              });
+            }
           )
         );
 
@@ -299,43 +324,40 @@ export const WalletHandlersLive: Layer.Layer<
   FundWallet: (payload) =>
     Effect.gen(function* () {
       const fundWalletUseCase = yield* FundWalletUseCase;
-
-      // Get user ID from auth context (placeholder)
-      const userId = crypto.randomUUID();
+      const currentUser = yield* CurrentUser;
 
       // Map payment method to use case expected type
       const paymentMethod =
-        payload.paymentMethod === "ussd"
-          ? "bank_transfer"
+        payload.paymentMethod === PaymentMethodEnum.USSD
+          ? PaymentMethodEnum.BANK_TRANSFER
           : payload.paymentMethod;
 
       const result = yield* fundWalletUseCase
         .execute({
-          userId,
+          userId: currentUser.id,
           amount: payload.amount,
           currency: DEFAULT_CURRENCY,
-          paymentMethod,
+          paymentSource: PaymentSourceSchema.make(paymentMethod),
           paymentReference: payload.paymentReference,
         })
         .pipe(
-          Effect.mapError(
-            (error) =>
-              new PaymentError({
-                operation: "FundWallet",
-                message: error._tag || "Failed to fund wallet",
-                cause: error,
-              })
-          )
+          Effect.mapError((error) => {
+            return new PaymentError({
+              operation: "FundWallet",
+              message: error.message || "Failed to fund wallet",
+              cause: error,
+            });
+          })
         );
 
       return new FundWalletResponse({
         transactionId: result.transaction.id.value,
         status:
-          result.transaction.status === "completed"
+          result.transaction.status === TransactionStatusEnum.COMPLETED
             ? "success"
-            : result.transaction.status === "failed"
-              ? "failed"
-              : "pending",
+            : result.transaction.status === TransactionStatusEnum.FAILED
+              ? TransactionStatusEnum.FAILED
+              : TransactionStatusEnum.PENDING,
         newBalance: result.newBalance,
         reference: result.paymentReference,
         message: "Wallet funded successfully",
@@ -349,37 +371,34 @@ export const WalletHandlersLive: Layer.Layer<
   Withdraw: (payload) =>
     Effect.gen(function* () {
       const withdrawFundsUseCase = yield* WithdrawFundsUseCase;
-
-      // Get user ID from auth context (placeholder)
-      const userId = crypto.randomUUID();
+      const currentUser = yield* CurrentUser;
 
       const result = yield* withdrawFundsUseCase
         .execute({
-          userId,
+          userId: currentUser.id,
           amount: payload.amount,
           currency: DEFAULT_CURRENCY,
           bankAccountId: payload.bankAccountId,
           reason: payload.reason,
         })
         .pipe(
-          Effect.mapError(
-            (error) =>
-              new PaymentError({
-                operation: "Withdraw",
-                message: error._tag || "Failed to process withdrawal",
-                cause: error,
-              })
-          )
+          Effect.mapError((error: FinancialError) => {
+            return new PaymentError({
+              operation: "Withdraw",
+              message: error.message || "Failed to process withdrawal",
+              cause: error,
+            });
+          })
         );
 
       return new WithdrawResponse({
         transactionId: result.transaction.id.value,
         status:
-          result.transaction.status === "completed"
+          result.transaction.status === TransactionStatusEnum.COMPLETED
             ? "success"
-            : result.transaction.status === "failed"
-              ? "failed"
-              : "pending",
+            : result.transaction.status === TransactionStatusEnum.FAILED
+              ? TransactionStatusEnum.FAILED
+              : TransactionStatusEnum.PENDING,
         estimatedArrival: DateTime.unsafeMake(result.estimatedArrival),
         newBalance: result.newBalance,
         message:
@@ -405,22 +424,25 @@ export const WalletHandlersLive: Layer.Layer<
    * Validates account details and stores for future withdrawals
    */
   LinkBankAccount: (payload) =>
-    Effect.succeed(
-      new LinkBankAccountResponse({
+    Effect.gen(function* () {
+      const currentUser = yield* CurrentUser;
+
+      // Placeholder implementation
+      return new LinkBankAccountResponse({
         account: new BankAccount({
           id: crypto.randomUUID(),
-          userId: crypto.randomUUID(),
+          userId: currentUser.id,
           accountNumber: payload.accountNumber,
           accountName: payload.accountName,
           bankCode: payload.bankCode,
-          bankName: "Unknown Bank", // TODO: Resolve bank name from bank code
+          bankName: "Unknown Bank",
           isDefault: false,
           createdAt: DateTime.unsafeMake(new Date()),
         }),
         status: "success",
         message: "Bank account linked successfully",
-      })
-    ),
+      });
+    }),
 
   /**
    * Verify a payment transaction
