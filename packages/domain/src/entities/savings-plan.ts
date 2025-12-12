@@ -31,6 +31,7 @@ export class SavingsPlan {
     public readonly cycleDuration: CycleDuration,
     public readonly targetAmount: Money | null,
     public readonly currentAmount: Money,
+    public readonly minimumBalance: Money,
     public readonly autoSaveEnabled: AutoSaveEnabled,
     public readonly autoSaveTime: AutoSaveTime,
     public readonly status: PlanStatus,
@@ -39,6 +40,7 @@ export class SavingsPlan {
     public readonly interestRate: InterestRate,
     public readonly contributionStreak: ContributionStreak,
     public readonly totalContributions: TotalContributions,
+    public readonly version: number,
     public readonly createdAt: Date,
     public readonly updatedAt: Date
   ) {
@@ -65,6 +67,7 @@ export class SavingsPlan {
     dailyAmount: Money,
     cycleDuration: CycleDuration,
     targetAmount?: Money,
+    minimumBalance?: Money,
     autoSaveEnabled: boolean = DEFAULT_AUTO_SAVE_ENABLED,
     autoSaveTime: AutoSaveTime = DEFAULT_AUTO_SAVE_TIME,
     interestRate: InterestRate = DEFAULT_INTEREST_RATE
@@ -85,6 +88,7 @@ export class SavingsPlan {
       cycleDuration,
       calculatedTargetAmount,
       Money.zero(dailyAmount.currency),
+      minimumBalance || Money.zero(dailyAmount.currency),
       autoSaveEnabled,
       autoSaveTime,
       PlanStatusSchema.make(PlanStatusEnum.ACTIVE),
@@ -93,6 +97,7 @@ export class SavingsPlan {
       interestRate,
       0,
       0,
+      1,
       now,
       now
     );
@@ -145,6 +150,7 @@ export class SavingsPlan {
       this.cycleDuration,
       this.targetAmount,
       newCurrentAmount,
+      this.minimumBalance,
       this.autoSaveEnabled,
       this.autoSaveTime,
       shouldComplete
@@ -155,6 +161,7 @@ export class SavingsPlan {
       this.interestRate,
       newContributionStreak,
       newTotalContributions,
+      this.version + 1,
       this.createdAt,
       new Date()
     );
@@ -178,6 +185,7 @@ export class SavingsPlan {
       this.cycleDuration,
       this.targetAmount,
       newCurrentAmount,
+      this.minimumBalance,
       this.autoSaveEnabled,
       this.autoSaveTime,
       this.status,
@@ -186,6 +194,7 @@ export class SavingsPlan {
       this.interestRate,
       this.contributionStreak,
       this.totalContributions,
+      this.version + 1,
       this.createdAt,
       new Date()
     );
@@ -215,9 +224,46 @@ export class SavingsPlan {
    * Check if the plan can be withdrawn from (completed or matured)
    */
   canWithdraw(): boolean {
+    // Check for locked/frozen status
+    if (this.status === PlanStatusEnum.CANCELLED) {
+      return false;
+    }
+    
     return (
       this.status === PlanStatusEnum.COMPLETED || this.hasReachedMaturity()
     );
+  }
+
+  /**
+   * Check if a specific withdrawal amount is allowed
+   * @param amount - The amount to withdraw
+   * @returns true if the withdrawal would not violate minimum balance
+   */
+  canWithdrawAmount(amount: Money): boolean {
+    const remainingBalance = this.currentAmount.subtract(amount);
+    return remainingBalance.isGreaterThanOrEqual(this.minimumBalance);
+  }
+
+  /**
+   * Get the maximum withdrawable amount (respecting minimum balance)
+   * @returns The amount that can be withdrawn
+   */
+  getWithdrawableAmount(): Money {
+    const withdrawable = this.currentAmount.subtract(this.minimumBalance);
+    return withdrawable.value < 0 
+      ? Money.zero(this.currentAmount.currency) 
+      : withdrawable;
+  }
+
+  /**
+   * Check if a withdrawal is a full withdrawal
+   * @param amount - The amount to withdraw
+   * @returns true if this would withdraw all available funds
+   */
+  isFullWithdrawal(amount: Money): boolean {
+    const remaining = this.currentAmount.subtract(amount);
+    // Full withdrawal if remaining is zero or only minimum balance remains
+    return remaining.isLessThanOrEqual(this.minimumBalance);
   }
 
   /**
@@ -287,6 +333,7 @@ export class SavingsPlan {
       this.cycleDuration,
       this.targetAmount,
       this.currentAmount,
+      this.minimumBalance,
       this.autoSaveEnabled,
       this.autoSaveTime,
       PlanStatusSchema.make(PlanStatusEnum.PAUSED),
@@ -295,6 +342,7 @@ export class SavingsPlan {
       this.interestRate,
       this.contributionStreak,
       this.totalContributions,
+      this.version + 1,
       this.createdAt,
       new Date()
     );
@@ -316,6 +364,7 @@ export class SavingsPlan {
       this.cycleDuration,
       this.targetAmount,
       this.currentAmount,
+      this.minimumBalance,
       this.autoSaveEnabled,
       this.autoSaveTime,
       PlanStatusSchema.make(PlanStatusEnum.ACTIVE),
@@ -324,6 +373,7 @@ export class SavingsPlan {
       this.interestRate,
       this.contributionStreak,
       this.totalContributions,
+      this.version + 1,
       this.createdAt,
       new Date()
     );
@@ -345,6 +395,7 @@ export class SavingsPlan {
       this.cycleDuration,
       this.targetAmount,
       this.currentAmount,
+      this.minimumBalance,
       this.autoSaveEnabled,
       this.autoSaveTime,
       PlanStatusSchema.make(PlanStatusEnum.COMPLETED),
@@ -353,6 +404,7 @@ export class SavingsPlan {
       this.interestRate,
       this.contributionStreak,
       this.totalContributions,
+      this.version + 1,
       this.createdAt,
       new Date()
     );
@@ -377,6 +429,7 @@ export class SavingsPlan {
       this.cycleDuration,
       this.targetAmount,
       this.currentAmount,
+      this.minimumBalance,
       this.autoSaveEnabled,
       this.autoSaveTime,
       PlanStatusSchema.make(PlanStatusEnum.CANCELLED),
@@ -385,6 +438,7 @@ export class SavingsPlan {
       this.interestRate,
       this.contributionStreak,
       this.totalContributions,
+      this.version + 1,
       this.createdAt,
       new Date()
     );
@@ -411,6 +465,7 @@ export class SavingsPlan {
       this.cycleDuration,
       this.targetAmount,
       this.currentAmount,
+      this.minimumBalance,
       enabled,
       time || this.autoSaveTime,
       this.status,
@@ -419,6 +474,7 @@ export class SavingsPlan {
       this.interestRate,
       this.contributionStreak,
       this.totalContributions,
+      this.version + 1,
       this.createdAt,
       new Date()
     );

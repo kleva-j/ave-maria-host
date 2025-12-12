@@ -119,6 +119,18 @@ export class Money {
   }
 
   /**
+   * Check if this Money is less than or equal to another Money
+   */
+  isLessThanOrEqual(other: Money): boolean {
+    if (this.currency !== other.currency) {
+      throw new Error(
+        `Cannot compare money with different currencies: ${this.currency} and ${other.currency}`
+      );
+    }
+    return this.value <= other.value;
+  }
+
+  /**
    * Check if this Money is zero
    */
   isZero(): boolean {
