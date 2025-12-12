@@ -224,11 +224,64 @@ export class BusinessRuleViolationError extends Data.TaggedError(
 }> {}
 
 /**
+ * Error thrown when a withdrawal exceeds configured limits
+ * Used to enforce daily/weekly/monthly withdrawal limits
+ */
+export class WithdrawalLimitExceededError extends Data.TaggedError(
+  "WithdrawalLimitExceededError"
+)<{
+  readonly period: "daily" | "weekly" | "monthly";
+  readonly limit: number;
+  readonly current: number;
+  readonly limitType: "count" | "amount";
+}> {}
+
+/**
+ * Error thrown when a withdrawal would violate minimum balance requirements
+ * Used to ensure plans maintain required minimum balances
+ */
+export class MinimumBalanceViolationError extends Data.TaggedError(
+  "MinimumBalanceViolationError"
+)<{
+  readonly planId: string;
+  readonly requestedAmount: number;
+  readonly currentBalance: number;
+  readonly minimumBalance: number;
+  readonly currency: string;
+}> {}
+
+/**
+ * Error thrown when a concurrent withdrawal is detected
+ * Used to prevent race conditions in withdrawal processing
+ */
+export class ConcurrentWithdrawalError extends Data.TaggedError(
+  "ConcurrentWithdrawalError"
+)<{
+  readonly planId: string;
+  readonly expectedVersion: number;
+  readonly actualVersion: number;
+}> {}
+
+/**
+ * Error thrown when funds are on hold and not yet available for withdrawal
+ * Used to enforce hold periods for recent deposits
+ */
+export class FundsOnHoldError extends Data.TaggedError("FundsOnHoldError")<{
+  readonly heldAmount: number;
+  readonly availableAmount: number;
+  readonly releaseDate: Date;
+  readonly currency: string;
+}> {}
+
+/**
  * Union type representing all possible financial errors in the system
  * Use this type for comprehensive error handling in Effect pipelines
  */
 export type FinancialError =
+  | MinimumBalanceViolationError
+  | WithdrawalLimitExceededError
   | BusinessRuleViolationError
+  | ConcurrentWithdrawalError
   | WithdrawalNotAllowedError
   | TransactionNotFoundError
   | InvalidContributionError
@@ -245,6 +298,7 @@ export type FinancialError =
   | UserNotFoundError
   | PlanNotFoundError
   | NotificationError
+  | FundsOnHoldError
   | ValidationError
   | RateLimitError
   | DatabaseError;

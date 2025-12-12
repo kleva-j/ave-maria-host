@@ -4,6 +4,7 @@
 import { Data } from "effect";
 
 export type { TransactionRepository } from "./transaction-repository";
+export type { WithdrawalRepository } from "./withdrawal-repository";
 export type { SavingsRepository } from "./savings-repository";
 export type { UserRepository } from "./user-repository";
 export type {
