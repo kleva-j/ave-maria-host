@@ -201,11 +201,33 @@ export class ConcurrentWithdrawalRpcError extends Schema.TaggedError<ConcurrentW
   }
 ) {}
 
+/**
+ * Insufficient funds error
+ */
+export class InsufficientFundsRpcError extends Schema.TaggedError<InsufficientFundsRpcError>()(
+  "InsufficientFundsError",
+  {
+    available: Schema.Number,
+    required: Schema.Number,
+    currency: Schema.String,
+  }
+) {}
+
+/**
+ * Withdrawal not allowed error
+ */
+export class WithdrawalNotAllowedRpcError extends Schema.TaggedError<WithdrawalNotAllowedRpcError>()(
+  "WithdrawalNotAllowedError",
+  { planId: Schema.String, reason: Schema.String }
+) {}
+
 export const SavingRpcError = Schema.Union(
-  SavingsError,
+  WithdrawalNotAllowedRpcError,
+  ConcurrentWithdrawalRpcError,
+  InsufficientFundsRpcError,
   WithdrawalLimitError,
   MinimumBalanceError,
-  ConcurrentWithdrawalRpcError
+  SavingsError
 );
 
 // ============================================================================
@@ -645,6 +667,21 @@ export const SavingsHandlersLive: Layer.Layer<
               return new ConcurrentWithdrawalRpcError({
                 planId: error.planId,
                 message: `Concurrent modification detected. Expected version ${error.expectedVersion}, but found ${error.actualVersion}. Please retry.`,
+              });
+            }
+
+            if (error._tag === "InsufficientFundsError") {
+              return new InsufficientFundsRpcError({
+                available: error.available,
+                required: error.required,
+                currency: error.currency,
+              });
+            }
+
+            if (error._tag === "WithdrawalNotAllowedError") {
+              return new WithdrawalNotAllowedRpcError({
+                planId: error.planId,
+                reason: error.reason,
               });
             }
 
