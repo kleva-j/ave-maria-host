@@ -8,33 +8,32 @@ import type {
   RepositoryError,
 } from "@host/domain";
 
+import { WithdrawalLimit, Transaction, PlanId, Money } from "@host/domain";
 import { Effect, Context, Schema, Layer } from "effect";
 
 import {
-  WithdrawalLimitPeriod,
-  WithdrawalLimit,
-  Transaction,
-  PlanId,
-  Money,
-} from "@host/domain";
-
-import {
+  // Errors
   WithdrawalLimitExceededError,
   MinimumBalanceViolationError,
   TransactionOperationError,
   ConcurrentWithdrawalError,
   WithdrawalNotAllowedError,
-  WithdrawFromPlanSchema,
-  PaymentDestinationEnum,
   InsufficientFundsError,
-  TransactionTypeSchema,
-  PaymentSourceSchema,
   WalletNotFoundError,
-  TransactionTypeEnum,
-  PaymentSourceEnum,
   ValidationError,
   DatabaseError,
+  // Enums
+  PaymentDestinationEnum,
+  TransactionTypeEnum,
+  PaymentSourceEnum,
+  // Schemas
+  WithdrawFromPlanSchema,
+  TransactionTypeSchema,
+  PaymentSourceSchema,
   UserIdSchema,
+  // Constants
+  WITHDRAWAL_LIMIT_PERIODS,
+  WITHDRAWAL_LIMITS,
   DEFAULT_CURRENCY,
 } from "@host/shared";
 
@@ -128,18 +127,18 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
     const transactionRepository = transactionRepo.value;
     const withdrawalRepository = withdrawalRepo.value;
 
-    // Configure withdrawal limits (these could come from config)
+    // Configure withdrawal limits from centralized config
     const dailyLimit = WithdrawalLimit.daily(
-      5,
-      Money.fromNumber(100_000, DEFAULT_CURRENCY)
+      WITHDRAWAL_LIMITS.DAILY_COUNT,
+      Money.fromNumber(WITHDRAWAL_LIMITS.DAILY_AMOUNT, DEFAULT_CURRENCY)
     );
     const weeklyLimit = WithdrawalLimit.weekly(
-      15,
-      Money.fromNumber(500_000, DEFAULT_CURRENCY)
+      WITHDRAWAL_LIMITS.WEEKLY_COUNT,
+      Money.fromNumber(WITHDRAWAL_LIMITS.WEEKLY_AMOUNT, DEFAULT_CURRENCY)
     );
     const monthlyLimit = WithdrawalLimit.monthly(
-      30,
-      Money.fromNumber(2_000_000, DEFAULT_CURRENCY)
+      WITHDRAWAL_LIMITS.MONTHLY_COUNT,
+      Money.fromNumber(WITHDRAWAL_LIMITS.MONTHLY_AMOUNT, DEFAULT_CURRENCY)
     );
 
     return {
@@ -228,7 +227,7 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
 
           // Daily limit check
           const dailyStart = WithdrawalLimit.getPeriodStart(
-            WithdrawalLimitPeriod.DAILY,
+            WITHDRAWAL_LIMIT_PERIODS.DAILY,
             now
           );
           const dailyCount = yield* withdrawalRepository
@@ -267,7 +266,7 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
           ) {
             return yield* Effect.fail(
               new WithdrawalLimitExceededError({
-                period: "daily",
+                period: WITHDRAWAL_LIMIT_PERIODS.DAILY,
                 limit: dailyLimit.maxCount,
                 current: dailyCount,
                 limitType:
@@ -278,7 +277,7 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
 
           // Weekly limit check
           const weeklyStart = WithdrawalLimit.getPeriodStart(
-            WithdrawalLimitPeriod.WEEKLY,
+            WITHDRAWAL_LIMIT_PERIODS.WEEKLY,
             now
           );
           const weeklyCount = yield* withdrawalRepository
@@ -313,7 +312,7 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
           ) {
             return yield* Effect.fail(
               new WithdrawalLimitExceededError({
-                period: "weekly",
+                period: WITHDRAWAL_LIMIT_PERIODS.WEEKLY,
                 limit: weeklyLimit.maxCount,
                 current: weeklyCount,
                 limitType:
@@ -324,7 +323,7 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
 
           // Monthly limit check
           const monthlyStart = WithdrawalLimit.getPeriodStart(
-            WithdrawalLimitPeriod.MONTHLY,
+            WITHDRAWAL_LIMIT_PERIODS.MONTHLY,
             now
           );
           const monthlyCount = yield* withdrawalRepository
@@ -363,7 +362,7 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
           ) {
             return yield* Effect.fail(
               new WithdrawalLimitExceededError({
-                period: "monthly",
+                period: WITHDRAWAL_LIMIT_PERIODS.MONTHLY,
                 limit: monthlyLimit.maxCount,
                 current: monthlyCount,
                 limitType:

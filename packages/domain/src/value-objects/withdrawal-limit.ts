@@ -1,16 +1,7 @@
+import type { WithdrawalLimitPeriod } from "@host/shared";
+
+import { WITHDRAWAL_LIMIT_PERIODS } from "@host/shared";
 import { Money } from "./money";
-
-/**
- * Period type for withdrawal limits
- */
-export const WithdrawalLimitPeriod = {
-  DAILY: "daily",
-  WEEKLY: "weekly",
-  MONTHLY: "monthly",
-} as const;
-
-type WithdrawalLimitPeriodType =
-  (typeof WithdrawalLimitPeriod)[keyof typeof WithdrawalLimitPeriod];
 
 /**
  * Value object representing withdrawal limits
@@ -18,7 +9,7 @@ type WithdrawalLimitPeriodType =
  */
 export class WithdrawalLimit {
   private constructor(
-    public readonly period: WithdrawalLimitPeriodType,
+    public readonly period: WithdrawalLimitPeriod,
     public readonly maxCount: number,
     public readonly maxAmount: Money
   ) {
@@ -35,7 +26,7 @@ export class WithdrawalLimit {
    */
   static daily(maxCount: number, maxAmount: Money): WithdrawalLimit {
     return new WithdrawalLimit(
-      WithdrawalLimitPeriod.DAILY,
+      WITHDRAWAL_LIMIT_PERIODS.DAILY,
       maxCount,
       maxAmount
     );
@@ -46,7 +37,7 @@ export class WithdrawalLimit {
    */
   static weekly(maxCount: number, maxAmount: Money): WithdrawalLimit {
     return new WithdrawalLimit(
-      WithdrawalLimitPeriod.WEEKLY,
+      WITHDRAWAL_LIMIT_PERIODS.WEEKLY,
       maxCount,
       maxAmount
     );
@@ -57,7 +48,7 @@ export class WithdrawalLimit {
    */
   static monthly(maxCount: number, maxAmount: Money): WithdrawalLimit {
     return new WithdrawalLimit(
-      WithdrawalLimitPeriod.MONTHLY,
+      WITHDRAWAL_LIMIT_PERIODS.MONTHLY,
       maxCount,
       maxAmount
     );
@@ -103,23 +94,23 @@ export class WithdrawalLimit {
    * Get the start date for this limit period
    */
   static getPeriodStart(
-    period: WithdrawalLimitPeriodType,
+    period: WithdrawalLimitPeriod,
     now: Date = new Date()
   ): Date {
     const start = new Date(now);
     start.setHours(0, 0, 0, 0);
 
     switch (period) {
-      case WithdrawalLimitPeriod.DAILY:
+      case WITHDRAWAL_LIMIT_PERIODS.DAILY:
         return start;
-      case WithdrawalLimitPeriod.WEEKLY: {
+      case WITHDRAWAL_LIMIT_PERIODS.WEEKLY: {
         // Start of week (Monday)
         const day = start.getDay();
         const diff = start.getDate() - day + (day === 0 ? -6 : 1);
         start.setDate(diff);
         return start;
       }
-      case WithdrawalLimitPeriod.MONTHLY:
+      case WITHDRAWAL_LIMIT_PERIODS.MONTHLY:
         start.setDate(1);
         return start;
       default:
