@@ -19,8 +19,10 @@ import { Layer } from "effect";
 import {
   // Import database repository implementations
   DrizzleTransactionRepositoryLive,
+  DrizzleWithdrawalRepositoryLive,
   DrizzleSavingsRepositoryLive,
   DrizzleWalletRepositoryLive,
+  DrizzleUserRepositoryLive,
 
   // Import payment gateway implementations
   FlutterwavePaymentServiceLive,
@@ -50,8 +52,10 @@ import { MonitoringLayer } from "../effects/monitoring";
  */
 export const DatabaseRepositoryLayer = Layer.mergeAll(
   DrizzleTransactionRepositoryLive,
+  DrizzleWithdrawalRepositoryLive,
   DrizzleSavingsRepositoryLive,
-  DrizzleWalletRepositoryLive
+  DrizzleWalletRepositoryLive,
+  DrizzleUserRepositoryLive
 );
 
 /**

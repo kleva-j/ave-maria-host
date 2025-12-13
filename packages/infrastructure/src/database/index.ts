@@ -21,3 +21,7 @@ export {
   DrizzleUserRepositoryLive,
 } from "./drizzle-user-repository";
 
+export {
+  DrizzleWithdrawalRepository,
+  DrizzleWithdrawalRepositoryLive,
+} from "./drizzle-withdrawal-repository";
