@@ -128,10 +128,7 @@ export function validateContribution(
     errors.push(`Maximum contribution amount is ${maximumAmount.format()}`);
   }
 
-  return {
-    isValid: errors.length === 0,
-    errors,
-  };
+  return { isValid: errors.length === 0, errors };
 }
 
 /**
@@ -176,10 +173,7 @@ export function validateWithdrawal(
     errors.push(`Minimum withdrawal amount is ${minimumAmount.format()}`);
   }
 
-  return {
-    isValid: errors.length === 0,
-    errors,
-  };
+  return { isValid: errors.length === 0, errors };
 }
 
 /**
@@ -211,10 +205,7 @@ export function validateWalletFunding(
     errors.push("Invalid payment source for wallet funding");
   }
 
-  return {
-    isValid: errors.length === 0,
-    errors,
-  };
+  return { isValid: errors.length === 0, errors };
 }
 
 /**
@@ -256,10 +247,7 @@ export function validateTransactionLimits(
     );
   }
 
-  return {
-    isValid: errors.length === 0,
-    errors,
-  };
+  return { isValid: errors.length === 0, errors };
 }
 
 /**

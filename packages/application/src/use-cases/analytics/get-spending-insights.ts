@@ -103,8 +103,7 @@ export const GetSpendingInsightsUseCaseLive = Layer.effect(
                   new DatabaseError({
                     operation: "getTransactionHistory",
                     table: "transactions",
-                    message:
-                      (error as any).message || "Failed to fetch transactions",
+                    message: error.message || "Failed to fetch transactions",
                   })
               )
             );
@@ -123,7 +122,7 @@ export const GetSpendingInsightsUseCaseLive = Layer.effect(
                     operation: "getTransactionHistory",
                     table: "transactions",
                     message:
-                      (error as any).message ||
+                      error.message ||
                       "Failed to fetch previous period transactions",
                   })
               )
