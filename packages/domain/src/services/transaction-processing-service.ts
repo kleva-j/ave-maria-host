@@ -292,6 +292,7 @@ export function processWithdrawal(
         plan.cycleDuration,
         plan.targetAmount,
         newCurrentAmount,
+        plan.minimumBalance,
         plan.autoSaveEnabled,
         plan.autoSaveTime,
         plan.status,
@@ -300,6 +301,7 @@ export function processWithdrawal(
         plan.interestRate,
         plan.contributionStreak,
         plan.totalContributions,
+        plan.version + 1,
         plan.createdAt,
         new Date()
       );

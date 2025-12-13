@@ -155,6 +155,7 @@ export const CreateSavingsPlanUseCaseLive = Layer.effect(
             dailyAmount,
             validatedInput.cycleDuration as CycleDuration,
             targetAmount,
+            undefined, // minimumBalance
             validatedInput.autoSaveEnabled ?? false,
             (validatedInput.autoSaveTime as AutoSaveTime) ?? "09:00",
             (validatedInput.interestRate as InterestRate) ?? 0.0

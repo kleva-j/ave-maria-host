@@ -4,22 +4,17 @@ import type {
   TransactionRepository,
   WithdrawalRepository,
   SavingsRepository,
-  WalletRepository,
   RepositoryError,
 } from "@host/domain";
 
-import { WithdrawalLimit, Transaction, PlanId, Money } from "@host/domain";
+import { Transaction, PlanId, Money } from "@host/domain";
 import { Effect, Context, Schema, Layer } from "effect";
 
 import {
-  // Errors
-  WithdrawalLimitExceededError,
   MinimumBalanceViolationError,
-  TransactionOperationError,
   ConcurrentWithdrawalError,
   WithdrawalNotAllowedError,
   InsufficientFundsError,
-  WalletNotFoundError,
   ValidationError,
   DatabaseError,
   // Enums
@@ -31,11 +26,9 @@ import {
   TransactionTypeSchema,
   PaymentSourceSchema,
   UserIdSchema,
-  // Constants
-  WITHDRAWAL_LIMIT_PERIODS,
-  WITHDRAWAL_LIMITS,
-  DEFAULT_CURRENCY,
 } from "@host/shared";
+
+import { WalletService, SavingsService } from "../../services";
 
 /**
  * Input for withdrawing from a savings plan
@@ -97,49 +90,36 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
     const savingsRepo = yield* Effect.serviceOption(
       Context.GenericTag<SavingsRepository>("@domain/SavingsRepository")
     );
-    const walletRepo = yield* Effect.serviceOption(
-      Context.GenericTag<WalletRepository>("@domain/WalletRepository")
-    );
     const transactionRepo = yield* Effect.serviceOption(
       Context.GenericTag<TransactionRepository>("@domain/TransactionRepository")
     );
     const withdrawalRepo = yield* Effect.serviceOption(
       Context.GenericTag<WithdrawalRepository>("@domain/WithdrawalRepository")
     );
+    const walletService = yield* Effect.serviceOption(WalletService);
+    const savingsService = yield* Effect.serviceOption(SavingsService);
 
     if (
       savingsRepo._tag === "None" ||
-      walletRepo._tag === "None" ||
       transactionRepo._tag === "None" ||
-      withdrawalRepo._tag === "None"
+      withdrawalRepo._tag === "None" ||
+      walletService._tag === "None" ||
+      savingsService._tag === "None"
     ) {
       return yield* Effect.fail(
         new ValidationError({
           field: "dependencies",
           message:
-            "Required repositories (Savings, Wallet, Transaction, Withdrawal) not available",
+            "Required dependencies (SavingsRepo, TransactionRepo, WithdrawalRepo, WalletService, SavingsService) not available",
         })
       );
     }
 
     const savingsRepository = savingsRepo.value;
-    const walletRepository = walletRepo.value;
     const transactionRepository = transactionRepo.value;
     const withdrawalRepository = withdrawalRepo.value;
-
-    // Configure withdrawal limits from centralized config
-    const dailyLimit = WithdrawalLimit.daily(
-      WITHDRAWAL_LIMITS.DAILY_COUNT,
-      Money.fromNumber(WITHDRAWAL_LIMITS.DAILY_AMOUNT, DEFAULT_CURRENCY)
-    );
-    const weeklyLimit = WithdrawalLimit.weekly(
-      WITHDRAWAL_LIMITS.WEEKLY_COUNT,
-      Money.fromNumber(WITHDRAWAL_LIMITS.WEEKLY_AMOUNT, DEFAULT_CURRENCY)
-    );
-    const monthlyLimit = WithdrawalLimit.monthly(
-      WITHDRAWAL_LIMITS.MONTHLY_COUNT,
-      Money.fromNumber(WITHDRAWAL_LIMITS.MONTHLY_AMOUNT, DEFAULT_CURRENCY)
-    );
+    const wallet = walletService.value;
+    const savings = savingsService.value;
 
     return {
       execute: (input: WithdrawFromSavingsPlanInput) =>
@@ -219,157 +199,12 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
           }
 
           // 5. Check Withdrawal Limits
-          const now = new Date();
           const withdrawalAmount = Money.fromNumber(
             input.amount,
             plan.currentAmount.currency
           );
 
-          // Daily limit check
-          const dailyStart = WithdrawalLimit.getPeriodStart(
-            WITHDRAWAL_LIMIT_PERIODS.DAILY,
-            now
-          );
-          const dailyCount = yield* withdrawalRepository
-            .getWithdrawalCountSince(plan.userId, dailyStart)
-            .pipe(
-              Effect.mapError(
-                (error) =>
-                  new DatabaseError({
-                    operation: error.operation,
-                    table: error.entity,
-                    message:
-                      error.message || "Failed to get daily withdrawal count",
-                  })
-              )
-            );
-          const dailyAmount = yield* withdrawalRepository
-            .getWithdrawalAmountSince(
-              plan.userId,
-              dailyStart,
-              plan.currentAmount.currency
-            )
-            .pipe(
-              Effect.mapError(
-                (error) =>
-                  new DatabaseError({
-                    operation: error.operation,
-                    table: error.entity,
-                    message:
-                      error.message || "Failed to get daily withdrawal amount",
-                  })
-              )
-            );
-
-          if (
-            dailyLimit.wouldExceed(dailyCount, dailyAmount, withdrawalAmount)
-          ) {
-            return yield* Effect.fail(
-              new WithdrawalLimitExceededError({
-                period: WITHDRAWAL_LIMIT_PERIODS.DAILY,
-                limit: dailyLimit.maxCount,
-                current: dailyCount,
-                limitType:
-                  dailyCount >= dailyLimit.maxCount ? "count" : "amount",
-              })
-            );
-          }
-
-          // Weekly limit check
-          const weeklyStart = WithdrawalLimit.getPeriodStart(
-            WITHDRAWAL_LIMIT_PERIODS.WEEKLY,
-            now
-          );
-          const weeklyCount = yield* withdrawalRepository
-            .getWithdrawalCountSince(plan.userId, weeklyStart)
-            .pipe(
-              Effect.mapError(
-                (error) =>
-                  new TransactionOperationError({
-                    operation: error.operation,
-                    reason: "Failed to get weekly withdrawal count",
-                  })
-              )
-            );
-          const weeklyAmount = yield* withdrawalRepository
-            .getWithdrawalAmountSince(
-              plan.userId,
-              weeklyStart,
-              plan.currentAmount.currency
-            )
-            .pipe(
-              Effect.mapError(
-                (error) =>
-                  new TransactionOperationError({
-                    operation: error.operation,
-                    reason: "Failed to get weekly withdrawal amount",
-                  })
-              )
-            );
-
-          if (
-            weeklyLimit.wouldExceed(weeklyCount, weeklyAmount, withdrawalAmount)
-          ) {
-            return yield* Effect.fail(
-              new WithdrawalLimitExceededError({
-                period: WITHDRAWAL_LIMIT_PERIODS.WEEKLY,
-                limit: weeklyLimit.maxCount,
-                current: weeklyCount,
-                limitType:
-                  weeklyCount >= weeklyLimit.maxCount ? "count" : "amount",
-              })
-            );
-          }
-
-          // Monthly limit check
-          const monthlyStart = WithdrawalLimit.getPeriodStart(
-            WITHDRAWAL_LIMIT_PERIODS.MONTHLY,
-            now
-          );
-          const monthlyCount = yield* withdrawalRepository
-            .getWithdrawalCountSince(plan.userId, monthlyStart)
-            .pipe(
-              Effect.mapError(
-                (error) =>
-                  new TransactionOperationError({
-                    operation: error.operation,
-                    reason: "Failed to get monthly withdrawal count",
-                  })
-              )
-            );
-          const monthlyAmount = yield* withdrawalRepository
-            .getWithdrawalAmountSince(
-              plan.userId,
-              monthlyStart,
-              plan.currentAmount.currency
-            )
-            .pipe(
-              Effect.mapError(
-                (error) =>
-                  new TransactionOperationError({
-                    operation: error.operation,
-                    reason: "Failed to get monthly withdrawal amount",
-                  })
-              )
-            );
-
-          if (
-            monthlyLimit.wouldExceed(
-              monthlyCount,
-              monthlyAmount,
-              withdrawalAmount
-            )
-          ) {
-            return yield* Effect.fail(
-              new WithdrawalLimitExceededError({
-                period: WITHDRAWAL_LIMIT_PERIODS.MONTHLY,
-                limit: monthlyLimit.maxCount,
-                current: monthlyCount,
-                limitType:
-                  monthlyCount >= monthlyLimit.maxCount ? "count" : "amount",
-              })
-            );
-          }
+          yield* savings.checkWithdrawalLimits(plan.userId, withdrawalAmount);
 
           // 6. Check minimum balance
           if (!plan.canWithdrawAmount(withdrawalAmount)) {
@@ -435,41 +270,7 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
 
           // 6. Handle Wallet Credit (if applicable)
           if (input.destination === PaymentDestinationEnum.WALLET) {
-            const wallet = yield* walletRepository
-              .findByUserId(plan.userId)
-              .pipe(
-                Effect.mapError(
-                  (error) =>
-                    new DatabaseError({
-                      operation: error.operation,
-                      table: error.entity,
-                      message: error.message,
-                    })
-                )
-              );
-
-            if (!wallet) {
-              return yield* Effect.fail(
-                new WalletNotFoundError({
-                  userId: plan.userId.value,
-                  operation: "WithdrawFromSavingsPlan",
-                })
-              );
-            }
-
-            if (wallet) {
-              // Credit wallet with the net amount
-              yield* walletRepository.credit(plan.userId, netAmount).pipe(
-                Effect.mapError(
-                  (error) =>
-                    new DatabaseError({
-                      operation: error.operation,
-                      table: error.entity,
-                      message: error.message || "Failed to credit wallet",
-                    })
-                )
-              );
-            }
+            yield* wallet.credit(plan.userId, netAmount);
           }
 
           // 7. Create Transaction Record
