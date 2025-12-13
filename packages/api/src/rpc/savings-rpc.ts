@@ -21,12 +21,16 @@
  * - withdrawFromPlan: Withdraw funds from a completed plan
  */
 
-import { type Layer, Effect, Schema, DateTime } from "effect";
+import type { ValidateContributionUseCase } from "@host/application";
+import type { Layer } from "effect";
 
+import { Effect, Schema, DateTime } from "effect";
 import { Rpc, RpcGroup } from "@effect/rpc";
+import { PlanId } from "@host/domain";
+
+import { AuthMiddleware, CurrentUser } from "./auth-rpc";
 
 import {
-  type ValidateContributionUseCase,
   WithdrawFromSavingsPlanUseCase,
   GetSavingsPlanProgressUseCase,
   ProcessContributionUseCase,
@@ -59,9 +63,6 @@ import {
   GetPlanSchema,
   DEFAULT_CURRENCY,
 } from "@host/shared";
-
-import { AuthMiddleware, CurrentUser } from "./auth-rpc";
-import { PlanId } from "@host/domain";
 
 // ============================================================================
 // Payload Classes
@@ -162,7 +163,50 @@ export class SavingsError extends Schema.TaggedError<SavingsError>()(
   }
 ) {}
 
-export const SavingRpcError = Schema.Union(SavingsError);
+/**
+ * Withdrawal limit exceeded error
+ */
+export class WithdrawalLimitError extends Schema.TaggedError<WithdrawalLimitError>()(
+  "WithdrawalLimitError",
+  {
+    period: Schema.Literal("daily", "weekly", "monthly"),
+    limit: Schema.Number,
+    current: Schema.Number,
+    limitType: Schema.Literal("count", "amount"),
+  }
+) {}
+
+/**
+ * Minimum balance violation error
+ */
+export class MinimumBalanceError extends Schema.TaggedError<MinimumBalanceError>()(
+  "MinimumBalanceError",
+  {
+    planId: Schema.String,
+    requestedAmount: Schema.Number,
+    currentBalance: Schema.Number,
+    minimumBalance: Schema.Number,
+    currency: Schema.String,
+  }
+) {}
+
+/**
+ * Concurrent withdrawal error
+ */
+export class ConcurrentWithdrawalRpcError extends Schema.TaggedError<ConcurrentWithdrawalRpcError>()(
+  "ConcurrentWithdrawalError",
+  {
+    planId: Schema.String,
+    message: Schema.String,
+  }
+) {}
+
+export const SavingRpcError = Schema.Union(
+  SavingsError,
+  WithdrawalLimitError,
+  MinimumBalanceError,
+  ConcurrentWithdrawalRpcError
+);
 
 // ============================================================================
 // RPC Group Definition
@@ -241,7 +285,7 @@ export class SavingsRpcs extends RpcGroup.make(
   Rpc.make("WithdrawFromPlan", {
     payload: WithdrawFromPlanPayload,
     success: WithdrawFromPlanResponse,
-    error: SavingsError,
+    error: SavingRpcError,
   }).middleware(AuthMiddleware)
 ) {}
 
@@ -576,14 +620,41 @@ export const SavingsHandlersLive: Layer.Layer<
           bankAccountId: payload.bankAccountId,
         })
         .pipe(
-          Effect.mapError(
-            (error) =>
-              new SavingsError({
-                operation: "WithdrawFromPlan",
-                message: error.message || "Failed to withdraw from plan",
-                cause: error,
-              })
-          )
+          Effect.mapError((error) => {
+            // Map specific error types to RPC errors
+            if (error._tag === "WithdrawalLimitExceededError") {
+              return new WithdrawalLimitError({
+                period: error.period,
+                limit: error.limit,
+                current: error.current,
+                limitType: error.limitType,
+              });
+            }
+
+            if (error._tag === "MinimumBalanceViolationError") {
+              return new MinimumBalanceError({
+                planId: error.planId,
+                requestedAmount: error.requestedAmount,
+                currentBalance: error.currentBalance,
+                minimumBalance: error.minimumBalance,
+                currency: error.currency,
+              });
+            }
+
+            if (error._tag === "ConcurrentWithdrawalError") {
+              return new ConcurrentWithdrawalRpcError({
+                planId: error.planId,
+                message: `Concurrent modification detected. Expected version ${error.expectedVersion}, but found ${error.actualVersion}. Please retry.`,
+              });
+            }
+
+            // Default to generic SavingsError for other types
+            return new SavingsError({
+              operation: "WithdrawFromPlan",
+              message: error.message || "Failed to withdraw from plan",
+              cause: error,
+            });
+          })
         );
 
       return new WithdrawFromPlanResponse({
