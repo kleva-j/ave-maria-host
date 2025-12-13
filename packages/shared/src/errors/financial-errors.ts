@@ -90,6 +90,18 @@ export class WalletOperationError extends Data.TaggedError(
 }> {}
 
 /**
+ * Error thrown when a transaction operation fails
+ * Used for transaction-specific errors not covered by other error types
+ */
+export class TransactionOperationError extends Data.TaggedError(
+  "TransactionOperationError"
+)<{
+  readonly operation: string;
+  readonly reason: string;
+  readonly transactionId?: string;
+}> {}
+
+/**
  * Error thrown when a user's wallet cannot be found
  * Used when quering for a user's wallet before crediting or withdrawing
  */
@@ -283,6 +295,7 @@ export type FinancialError =
   | BusinessRuleViolationError
   | ConcurrentWithdrawalError
   | WithdrawalNotAllowedError
+  | TransactionOperationError
   | TransactionNotFoundError
   | InvalidContributionError
   | InsufficientFundsError
