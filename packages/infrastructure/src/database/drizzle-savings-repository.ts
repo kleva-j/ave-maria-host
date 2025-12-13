@@ -24,6 +24,7 @@ function mapToDomainEntity(row: typeof savingsPlans.$inferSelect): SavingsPlan {
       ? Money.fromNumber(Number(row.targetAmount), row.currency as CurrencyCode)
       : null,
     Money.fromNumber(Number(row.currentAmount), row.currency as CurrencyCode),
+    Money.fromNumber(Number(row.minimumBalance), row.currency as CurrencyCode),
     row.autoSaveEnabled,
     row.autoSaveTime,
     row.status as PlanStatus,
@@ -32,6 +33,7 @@ function mapToDomainEntity(row: typeof savingsPlans.$inferSelect): SavingsPlan {
     Number(row.interestRate),
     row.contributionStreak,
     row.totalContributions,
+    row.version,
     row.createdAt,
     row.updatedAt
   );
@@ -72,6 +74,7 @@ export const DrizzleSavingsRepositoryLive = Layer.effect(
               cycleDuration: plan.cycleDuration,
               targetAmount: plan.targetAmount?.value.toString() || null,
               currentAmount: plan.currentAmount.value.toString(),
+              minimumBalance: plan.minimumBalance.value.toString(),
               autoSaveEnabled: plan.autoSaveEnabled,
               autoSaveTime: plan.autoSaveTime,
               status: plan.status,
@@ -80,6 +83,7 @@ export const DrizzleSavingsRepositoryLive = Layer.effect(
               interestRate: plan.interestRate.toString(),
               contributionStreak: plan.contributionStreak,
               totalContributions: plan.totalContributions,
+              version: plan.version,
               currency: plan.dailyAmount.currency,
               createdAt: plan.createdAt,
               updatedAt: plan.updatedAt,
@@ -194,6 +198,7 @@ export const DrizzleSavingsRepositoryLive = Layer.effect(
                 cycleDuration: plan.cycleDuration,
                 targetAmount: plan.targetAmount?.value.toString() || null,
                 currentAmount: plan.currentAmount.value.toString(),
+                minimumBalance: plan.minimumBalance.value.toString(),
                 autoSaveEnabled: plan.autoSaveEnabled,
                 autoSaveTime: plan.autoSaveTime,
                 status: plan.status,
@@ -202,6 +207,7 @@ export const DrizzleSavingsRepositoryLive = Layer.effect(
                 interestRate: plan.interestRate.toString(),
                 contributionStreak: plan.contributionStreak,
                 totalContributions: plan.totalContributions,
+                version: plan.version,
                 updatedAt: new Date(),
               })
               .where(eq(savingsPlans.id, plan.id.value));
