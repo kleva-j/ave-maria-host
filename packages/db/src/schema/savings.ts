@@ -12,6 +12,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { DEFAULT_CURRENCY } from "@host/shared";
+import { sql } from "drizzle-orm";
 import { user } from "./auth";
 
 /**
@@ -29,9 +30,12 @@ export const savingsPlans = pgTable(
     cycleDuration: integer("cycle_duration").notNull(), // days
     targetAmount: decimal("target_amount", { precision: 15, scale: 2 }),
     currentAmount: decimal("current_amount", { precision: 15, scale: 2 })
-      .default("0.00")
-      .notNull(),
-    autoSaveEnabled: boolean("auto_save_enabled").default(false).notNull(),
+      .notNull()
+      .default(sql`'0.00'`),
+    minimumBalance: decimal("minimum_balance", { precision: 15, scale: 2 })
+      .notNull()
+      .default(sql`'0.00'`),
+    autoSaveEnabled: boolean("auto_save_enabled").notNull().default(false),
     autoSaveTime: time("auto_save_time").default("09:00:00").notNull(),
     status: varchar("status", { length: 20 }).default("active").notNull(), // active, paused, completed, cancelled
     startDate: date("start_date").notNull(),
@@ -39,11 +43,12 @@ export const savingsPlans = pgTable(
     interestRate: decimal("interest_rate", { precision: 5, scale: 4 })
       .default("0.0000")
       .notNull(),
-    contributionStreak: integer("contribution_streak").default(0).notNull(),
-    totalContributions: integer("total_contributions").default(0).notNull(),
+    contributionStreak: integer("contribution_streak").notNull().default(0),
+    totalContributions: integer("total_contributions").notNull().default(0),
+    version: integer("version").notNull().default(1),
     currency: varchar("currency", { length: 3 })
-      .default(DEFAULT_CURRENCY)
-      .notNull(),
+      .notNull()
+      .default(DEFAULT_CURRENCY),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
@@ -55,6 +60,7 @@ export const savingsPlans = pgTable(
       table.autoSaveTime
     ),
     index("savings_plans_end_date_idx").on(table.endDate),
+    index("savings_plans_version_idx").on(table.version),
   ]
 );
 
