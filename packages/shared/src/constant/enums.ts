@@ -151,6 +151,7 @@ export const NotificationChannelEnum = {
 export const BiometricTypeEnum = {
   FINGERPRINT: "fingerprint",
   FACE: "face_id",
+  VOICE: "voice",
   IRIS: "iris",
 } as const;
 

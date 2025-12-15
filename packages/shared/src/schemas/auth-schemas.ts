@@ -20,7 +20,7 @@ import {
   TokenSchema,
   DateSchema,
   OtpSchema,
-} from "@host/shared";
+} from "./common-schemas";
 
 /**
  * User schema for Effect programs

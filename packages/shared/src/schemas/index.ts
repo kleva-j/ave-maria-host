@@ -8,3 +8,4 @@ export * from "./rewards-schema";
 export * from "./wallet-schemas";
 export * from "./group-schemas";
 export * from "./user-schemas";
+export * from "./auth-schemas";

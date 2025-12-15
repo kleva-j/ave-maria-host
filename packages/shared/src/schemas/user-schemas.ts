@@ -35,11 +35,11 @@ import {
 export class RegisterUserSchema extends Schema.Class<RegisterUserSchema>(
   "RegisterUserSchema"
 )({
-  phoneNumber: PhoneNumberSchema,
-  email: Schema.optional(EmailSchema), // Optional email for registration
-  password: PasswordSchema,
   firstName: FirstNameSchema,
   lastName: LastNameSchema,
+  email: EmailSchema,
+  phoneNumber: PhoneNumberSchema,
+  password: PasswordSchema,
 }) {}
 
 export type RegisterUserInput = typeof RegisterUserSchema.Type;
