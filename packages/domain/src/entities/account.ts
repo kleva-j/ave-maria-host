@@ -1,15 +1,13 @@
-import { Schema } from "effect";
-import { UserIdSchema } from "@host/shared";
+import type { AccountId } from "@host/shared";
 
-// Define AccountId brand (internal ID)
-export const AccountId = Schema.UUID.pipe(Schema.brand("AccountId"));
-export type AccountId = typeof AccountId.Type;
+import { AccountIdSchema, UserIdSchema } from "@host/shared";
+import { Schema } from "effect";
 
 /**
  * Account entity representing a linked authentication account (e.g. Google, OAuth)
  */
 export class Account extends Schema.Class<Account>("Account")({
-  id: AccountId.annotations({
+  id: AccountIdSchema.annotations({
     description: "Unique identifier for the account relation",
   }),
   accountId: Schema.String.annotations({

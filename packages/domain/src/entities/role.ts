@@ -1,9 +1,9 @@
-import type { RoleIdType } from "@host/shared";
+import type { RoleId } from "@host/shared";
 
 import { RoleIdSchema } from "@host/shared";
 import { Schema } from "effect";
 
-/**
+/**w
  * Role entity representing a user role in the system
  */
 export class Role extends Schema.Class<Role>("Role")({
@@ -33,7 +33,7 @@ export class Role extends Schema.Class<Role>("Role")({
    * Create a new Role instance
    */
   static create(params: {
-    id: RoleIdType;
+    id: RoleId;
     name: string;
     displayName: string;
     description?: string | null;

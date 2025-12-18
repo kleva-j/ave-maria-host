@@ -1,24 +1,24 @@
-import { Schema } from "effect";
-import { UserIdSchema } from "@host/shared";
+import type { BiometricAuthId, DeviceId, UserId } from "@host/shared";
 
-// Define BiometricAuthId brand
-export const BiometricAuthId = Schema.UUID.pipe(
-  Schema.brand("BiometricAuthId")
-);
-export type BiometricAuthId = typeof BiometricAuthId.Type;
+import { Schema } from "effect";
+import {
+  BiometricAuthIdSchema,
+  DeviceIdSchema,
+  UserIdSchema,
+} from "@host/shared";
 
 /**
  * BiometricAuth entity representing a registered biometric authenticator
  */
 export class BiometricAuth extends Schema.Class<BiometricAuth>("BiometricAuth")(
   {
-    id: BiometricAuthId.annotations({
+    id: BiometricAuthIdSchema.annotations({
       description: "Unique identifier for the biometric auth record",
     }),
     userId: UserIdSchema.annotations({
       description: "ID of the user",
     }),
-    deviceId: Schema.String.annotations({
+    deviceId: DeviceIdSchema.annotations({
       description: "Device ID",
     }),
     deviceName: Schema.NullOr(Schema.String).annotations({
@@ -46,8 +46,8 @@ export class BiometricAuth extends Schema.Class<BiometricAuth>("BiometricAuth")(
    */
   static create(params: {
     id: BiometricAuthId;
-    userId: typeof UserIdSchema.Type;
-    deviceId: string;
+    userId: UserId;
+    deviceId: DeviceId;
     deviceName?: string | null;
     publicKey: string;
     isActive?: boolean | null;

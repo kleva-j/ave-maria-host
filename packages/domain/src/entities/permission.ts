@@ -1,6 +1,6 @@
-import type { PermissionIdType } from "@host/shared";
+import type { PermissionId } from "@host/shared";
 
-import { PermissionIdSchema } from "@host/shared";
+import { DateSchema, PermissionIdSchema } from "@host/shared";
 import { Schema } from "effect";
 
 /**
@@ -19,19 +19,21 @@ export class Permission extends Schema.Class<Permission>("Permission")({
   description: Schema.NullOr(Schema.String).annotations({
     description: "Description of the permission",
   }),
+  // TODO: Create a resources enum that defines valid resources like 'savings', 'loan', 'account'
   resource: Schema.String.annotations({
     description: "Resource the permission applies to (e.g., 'savings')",
   }),
+  // TODO: Create an actions enum that defines valid actions like 'read', 'write', 'delete'
   action: Schema.String.annotations({
     description: "Action allowed on the resource (e.g., 'read')",
   }),
   isSystem: Schema.Boolean.annotations({
     description: "Whether this is a system permission",
   }),
-  createdAt: Schema.Date.annotations({
+  createdAt: DateSchema.annotations({
     description: "When the permission was created",
   }),
-  updatedAt: Schema.Date.annotations({
+  updatedAt: DateSchema.annotations({
     description: "When the permission was last updated",
   }),
 }) {
@@ -39,7 +41,7 @@ export class Permission extends Schema.Class<Permission>("Permission")({
    * Create a new Permission instance
    */
   static create(params: {
-    id: PermissionIdType;
+    id: PermissionId;
     name: string;
     displayName: string;
     description?: string | null;

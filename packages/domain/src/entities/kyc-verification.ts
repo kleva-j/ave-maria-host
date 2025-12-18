@@ -1,11 +1,23 @@
-import { Schema } from "effect";
-import { UserIdSchema } from "@host/shared";
+import type {
+  KycGovernmentIdType,
+  KycVerificationId,
+  KycStatus,
+  KycTier,
+  UserId,
+} from "@host/shared";
 
-// Define KycVerificationId brand
-export const KycVerificationId = Schema.UUID.pipe(
-  Schema.brand("KycVerificationId")
-);
-export type KycVerificationId = typeof KycVerificationId.Type;
+import { Schema } from "effect";
+import {
+  KycGovernmentIdTypeSchema,
+  KycVerificationIdSchema,
+  FirstNameSchema,
+  KycStatusSchema,
+  LastNameSchema,
+  KycTierSchema,
+  AddressSchema,
+  UserIdSchema,
+  DateSchema,
+} from "@host/shared";
 
 /**
  * KycVerification entity representing a KYC verification record
@@ -13,31 +25,31 @@ export type KycVerificationId = typeof KycVerificationId.Type;
 export class KycVerification extends Schema.Class<KycVerification>(
   "KycVerification"
 )({
-  id: KycVerificationId.annotations({
+  id: KycVerificationIdSchema.annotations({
     description: "Unique identifier for the KYC verification",
   }),
   userId: UserIdSchema.annotations({
     description: "ID of the user being verified",
   }),
-  tier: Schema.Number.annotations({
+  tier: KycTierSchema.annotations({
     description: "KYC tier (1 or 2)",
   }),
-  status: Schema.String.annotations({
+  status: KycStatusSchema.annotations({
     description: "Verification status (pending, approved, rejected, etc.)",
   }),
-  firstName: Schema.NullOr(Schema.String).annotations({
+  firstName: Schema.NullOr(FirstNameSchema).annotations({
     description: "First name (Tier 1)",
   }),
-  lastName: Schema.NullOr(Schema.String).annotations({
+  lastName: Schema.NullOr(LastNameSchema).annotations({
     description: "Last name (Tier 1)",
   }),
-  dateOfBirth: Schema.NullOr(Schema.Date).annotations({
+  dateOfBirth: Schema.NullOr(DateSchema).annotations({
     description: "Date of birth (Tier 1)",
   }),
-  address: Schema.NullOr(Schema.String).annotations({
+  address: Schema.NullOr(AddressSchema).annotations({
     description: "Address (Tier 1)",
   }),
-  governmentIdType: Schema.NullOr(Schema.String).annotations({
+  governmentIdType: Schema.NullOr(KycGovernmentIdTypeSchema).annotations({
     description: "Type of government ID (Tier 2)",
   }),
   governmentIdNumber: Schema.NullOr(Schema.String).annotations({
@@ -53,20 +65,20 @@ export class KycVerification extends Schema.Class<KycVerification>(
     // Using Unknown for JSONB
     description: "Additional verification metadata",
   }),
-  verifiedBy: Schema.NullOr(Schema.String).annotations({
+  verifiedBy: Schema.NullOr(UserIdSchema).annotations({
     // Assuming UUID string for admin user ID
     description: "ID of the admin who verified this",
   }),
-  verifiedAt: Schema.NullOr(Schema.Date).annotations({
+  verifiedAt: Schema.NullOr(DateSchema).annotations({
     description: "When the verification was processed",
   }),
   rejectionReason: Schema.NullOr(Schema.String).annotations({
     description: "Reason for rejection if rejected",
   }),
-  createdAt: Schema.Date.annotations({
+  createdAt: DateSchema.annotations({
     description: "When the record was created",
   }),
-  updatedAt: Schema.Date.annotations({
+  updatedAt: DateSchema.annotations({
     description: "When the record was last updated",
   }),
 }) {
@@ -75,19 +87,19 @@ export class KycVerification extends Schema.Class<KycVerification>(
    */
   static create(params: {
     id: KycVerificationId;
-    userId: typeof UserIdSchema.Type;
-    tier: number;
-    status: string;
+    userId: UserId;
+    tier: KycTier;
+    status: KycStatus;
     firstName?: string | null;
     lastName?: string | null;
     dateOfBirth?: Date | null;
     address?: string | null;
-    governmentIdType?: string | null;
+    governmentIdType?: KycGovernmentIdType | null;
     governmentIdNumber?: string | null;
     governmentIdImage?: string | null;
     selfieImage?: string | null;
     verificationData?: unknown | null;
-    verifiedBy?: string | null;
+    verifiedBy?: UserId | null;
     verifiedAt?: Date | null;
     rejectionReason?: string | null;
     createdAt?: Date;
