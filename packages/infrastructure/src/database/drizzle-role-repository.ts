@@ -1,4 +1,4 @@
-import type { PermissionIdType, RoleIdType } from "@host/shared";
+import type { PermissionId, RoleId } from "@host/shared";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { RoleRepository } from "@host/domain";
 
@@ -75,7 +75,7 @@ export const DrizzleRoleRepositoryLive = Layer.effect(
           )
         ),
 
-      findById: (id: RoleIdType) =>
+      findById: (id: RoleId) =>
         Effect.gen(function* () {
           const result = yield* db.withDrizzle(
             async (drizzle: NodePgDatabase) => {
@@ -149,7 +149,7 @@ export const DrizzleRoleRepositoryLive = Layer.effect(
           )
         ),
 
-      delete: (id: RoleIdType) =>
+      delete: (id: RoleId) =>
         Effect.gen(function* () {
           yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
             await drizzle.delete(roles).where(eq(roles.id, id));
@@ -160,7 +160,7 @@ export const DrizzleRoleRepositoryLive = Layer.effect(
           )
         ),
 
-      addPermission: (roleId: RoleIdType, permissionId: PermissionIdType) =>
+      addPermission: (roleId: RoleId, permissionId: PermissionId) =>
         Effect.gen(function* () {
           yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
             await drizzle
@@ -176,7 +176,7 @@ export const DrizzleRoleRepositoryLive = Layer.effect(
           )
         ),
 
-      removePermission: (roleId: RoleIdType, permissionId: PermissionIdType) =>
+      removePermission: (roleId: RoleId, permissionId: PermissionId) =>
         Effect.gen(function* () {
           yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
             await drizzle
@@ -196,7 +196,7 @@ export const DrizzleRoleRepositoryLive = Layer.effect(
           )
         ),
 
-      getPermissions: (roleId: RoleIdType) =>
+      getPermissions: (roleId: RoleId) =>
         Effect.gen(function* () {
           const result = yield* db.withDrizzle(
             async (drizzle: NodePgDatabase) => {

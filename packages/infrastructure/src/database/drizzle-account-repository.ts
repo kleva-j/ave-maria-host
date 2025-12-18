@@ -1,11 +1,11 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import type { UserId, AccountId } from "@host/shared";
 import type { AccountRepository } from "@host/domain";
-import type { UserIdType } from "@host/shared";
 
-import { Account, AccountId, RepositoryError } from "@host/domain";
+import { UserIdSchema, AccountIdSchema } from "@host/shared";
+import { Account, RepositoryError } from "@host/domain";
 import { DatabaseService, account } from "@host/db";
 import { Effect, Context, Layer } from "effect";
-import { UserIdSchema } from "@host/shared";
 import { eq, and } from "drizzle-orm";
 
 /**
@@ -13,7 +13,7 @@ import { eq, and } from "drizzle-orm";
  */
 function mapToDomainEntity(row: typeof account.$inferSelect): Account {
   return new Account({
-    id: AccountId.make(row.id),
+    id: AccountIdSchema.make(row.id),
     accountId: row.accountId,
     providerId: row.providerId,
     userId: UserIdSchema.make(row.userId),
@@ -113,7 +113,7 @@ export const DrizzleAccountRepositoryLive = Layer.effect(
           )
         ),
 
-      findByUserId: (userId: UserIdType) =>
+      findByUserId: (userId: UserId) =>
         Effect.gen(function* () {
           const result = yield* db.withDrizzle(
             async (drizzle: NodePgDatabase) => {

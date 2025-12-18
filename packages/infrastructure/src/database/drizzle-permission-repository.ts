@@ -1,6 +1,6 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { PermissionRepository } from "@host/domain";
-import type { PermissionIdType } from "@host/shared";
+import type { PermissionId } from "@host/shared";
 
 import { RepositoryError, Permission } from "@host/domain";
 import { DatabaseService, permissions } from "@host/db";
@@ -61,7 +61,7 @@ export const DrizzlePermissionRepositoryLive = Layer.effect(
           )
         ),
 
-      findById: (id: PermissionIdType) =>
+      findById: (id: PermissionId) =>
         Effect.gen(function* () {
           const result = yield* db.withDrizzle(
             async (drizzle: NodePgDatabase) => {
@@ -142,7 +142,7 @@ export const DrizzlePermissionRepositoryLive = Layer.effect(
           )
         ),
 
-      delete: (id: PermissionIdType) =>
+      delete: (id: PermissionId) =>
         Effect.gen(function* () {
           yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
             await drizzle.delete(permissions).where(eq(permissions.id, id));

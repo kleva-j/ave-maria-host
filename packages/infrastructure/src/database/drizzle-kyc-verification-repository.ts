@@ -1,16 +1,24 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { KycVerificationRepository } from "@host/domain";
-import type { UserIdType } from "@host/shared";
+import type {
+  KycGovernmentIdType,
+  KycVerificationId,
+  KycStatus,
+  KycTier,
+  UserId,
+} from "@host/shared";
 
+import { KycVerification, RepositoryError } from "@host/domain";
 import { DatabaseService, kycVerification } from "@host/db";
 import { Effect, Context, Layer } from "effect";
-import { UserIdSchema } from "@host/shared";
 import { eq, and } from "drizzle-orm";
 import {
-  KycVerificationId,
-  KycVerification,
-  RepositoryError,
-} from "@host/domain";
+  KycGovernmentIdTypeSchema,
+  KycVerificationIdSchema,
+  KycStatusSchema,
+  KycTierSchema,
+  UserIdSchema,
+} from "@host/shared";
 
 /**
  * Map database row to KycVerification domain entity
@@ -19,20 +27,22 @@ function mapToDomainEntity(
   row: typeof kycVerification.$inferSelect
 ): KycVerification {
   return new KycVerification({
-    id: KycVerificationId.make(row.id),
+    id: KycVerificationIdSchema.make(row.id),
     userId: UserIdSchema.make(row.userId),
-    tier: row.tier,
-    status: row.status,
+    tier: KycTierSchema.make(row.tier as KycTier),
+    status: KycStatusSchema.make(row.status as KycStatus),
     firstName: row.firstName,
     lastName: row.lastName,
     dateOfBirth: row.dateOfBirth ? new Date(row.dateOfBirth) : null,
     address: row.address,
-    governmentIdType: row.governmentIdType,
+    governmentIdType: KycGovernmentIdTypeSchema.make(
+      row.governmentIdType as KycGovernmentIdType
+    ),
     governmentIdNumber: row.governmentIdNumber,
     governmentIdImage: row.governmentIdImage,
     selfieImage: row.selfieImage,
     verificationData: row.verificationData,
-    verifiedBy: row.verifiedBy,
+    verifiedBy: UserIdSchema.make(row.verifiedBy as UserId),
     verifiedAt: row.verifiedAt,
     rejectionReason: row.rejectionReason,
     createdAt: row.createdAt,
@@ -110,7 +120,7 @@ export const DrizzleKycVerificationRepositoryLive = Layer.effect(
           )
         ),
 
-      findByUserId: (userId: UserIdType) =>
+      findByUserId: (userId: UserId) =>
         Effect.gen(function* () {
           const result = yield* db.withDrizzle(
             async (drizzle: NodePgDatabase) => {
@@ -131,7 +141,7 @@ export const DrizzleKycVerificationRepositoryLive = Layer.effect(
           )
         ),
 
-      findByUserIdAndTier: (userId: UserIdType, tier: number) =>
+      findByUserIdAndTier: (userId: UserId, tier: number) =>
         Effect.gen(function* () {
           const result = yield* db.withDrizzle(
             async (drizzle: NodePgDatabase) => {

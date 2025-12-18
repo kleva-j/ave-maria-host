@@ -1,12 +1,16 @@
+import type { BiometricAuthId, DeviceId, UserId } from "@host/shared";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type { DeviceIdType, UserIdType } from "@host/shared";
 import type { BiometricAuthRepository } from "@host/domain";
 
-import { BiometricAuth, BiometricAuthId, RepositoryError } from "@host/domain";
-import { DeviceIdSchema, UserIdSchema } from "@host/shared";
+import { BiometricAuth, RepositoryError } from "@host/domain";
 import { DatabaseService, biometricAuth } from "@host/db";
 import { Effect, Context, Layer } from "effect";
 import { eq } from "drizzle-orm";
+import {
+  BiometricAuthIdSchema,
+  DeviceIdSchema,
+  UserIdSchema,
+} from "@host/shared";
 
 /**
  * Map database row to BiometricAuth domain entity
@@ -15,7 +19,7 @@ function mapToDomainEntity(
   row: typeof biometricAuth.$inferSelect
 ): BiometricAuth {
   return new BiometricAuth({
-    id: BiometricAuthId.make(row.id),
+    id: BiometricAuthIdSchema.make(row.id),
     userId: UserIdSchema.make(row.userId),
     deviceId: DeviceIdSchema.make(row.deviceId),
     deviceName: row.deviceName,
@@ -86,7 +90,7 @@ export const DrizzleBiometricAuthRepositoryLive = Layer.effect(
           )
         ),
 
-      findByUserId: (userId: UserIdType) =>
+      findByUserId: (userId: UserId) =>
         Effect.gen(function* () {
           const result = yield* db.withDrizzle(
             async (drizzle: NodePgDatabase) => {
@@ -106,7 +110,7 @@ export const DrizzleBiometricAuthRepositoryLive = Layer.effect(
           )
         ),
 
-      findByDeviceId: (deviceId: DeviceIdType) =>
+      findByDeviceId: (deviceId: DeviceId) =>
         Effect.gen(function* () {
           const result = yield* db.withDrizzle(
             async (drizzle: NodePgDatabase) => {
