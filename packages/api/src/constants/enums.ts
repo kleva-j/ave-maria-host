@@ -1,0 +1,93 @@
+/**
+ * Audit event category
+ */
+export const AuditCategoryEnum = {
+  USER_MANAGEMENT: "user_management",
+  AUTHENTICATION: "authentication",
+  AUTHORIZATION: "authorization",
+  DATA_ACCESS: "data_access",
+  FINANCIAL: "financial",
+  SYSTEM: "system",
+  KYC: "kyc",
+} as const;
+
+/**
+ * Audit event severity
+ */
+export const AuditSeverityEnum = {
+  LOW: "low",
+  MEDIUM: "medium",
+  HIGH: "high",
+  CRITICAL: "critical",
+} as const;
+
+/**
+ * Audit log status
+ */
+export const AuditLogStatusEnum = {
+  SUCCESS: "success",
+  FAILURE: "failure",
+  PENDING: "pending",
+  WARNING: "warning",
+} as const;
+
+/**
+ * Biometric event type
+ */
+export const BiometricEventTypeEnum = {
+  AUTHENTICATE: "authenticate",
+  REGISTER: "register",
+  DISABLE: "disable",
+} as const;
+
+/**
+ * Security event type
+ */
+export const SecurityEventTypeEnum = {
+  SUSPICIOUS_ACTIVITY: "suspicious_activity",
+  UNAUTHORIZED_ACCESS: "unauthorized_access",
+  ACCOUNT_LOCKOUT: "account_lockout",
+  DATA_BREACH: "data_breach",
+} as const;
+
+/**
+ * Financial transaction type
+ */
+export const FinancialTransactionTypeEnum = {
+  WITHDRAWAL: "withdrawal",
+  TRANSFER: "transfer",
+  DEPOSIT: "deposit",
+} as const;
+
+/**
+ * KYC event type
+ */
+export const KYCEventTypeEnum = {} as const;
+
+/**
+ * KYC verification status
+ */
+export const KycVerificationStatusEnum = {
+  PENDING: "pending",
+  APPROVED: "approved",
+  REJECTED: "rejected",
+  UNDER_REVIEW: "under_review",
+} as const;
+
+/**
+ * Data access action
+ */
+export const DataAccessActionEnum = {
+  READ: "read",
+  WRITE: "write",
+  DELETE: "delete",
+} as const;
+
+/**
+ * Transaction limit type
+ */
+export const TransactionLimitTypeEnum = {
+  DAILY: "daily",
+  MONTHLY: "monthly",
+  PER_TRANSACTION: "per_transaction",
+} as const;
