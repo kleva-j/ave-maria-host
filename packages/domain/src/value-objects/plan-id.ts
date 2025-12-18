@@ -1,4 +1,4 @@
-import { PlanIdSchema, type PlanIdType } from "@host/shared";
+import { PlanIdSchema, type PlanId as PlanIdType } from "@host/shared";
 import { Equal, Schema } from "effect";
 
 /**

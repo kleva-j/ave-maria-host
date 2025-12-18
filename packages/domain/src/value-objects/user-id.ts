@@ -1,4 +1,4 @@
-import { UserIdSchema, type UserIdType } from "@host/shared";
+import { UserIdSchema, type UserId as UserIdType } from "@host/shared";
 import { Equal, Schema } from "effect";
 
 /**
