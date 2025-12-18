@@ -5,12 +5,14 @@ import {
   KycGovernmentIdTypeSchema,
   BiometricTypeSchema,
   PhoneNumberSchema,
+  ChallengeIdSchema,
   UrlStringSchema,
   FirstNameSchema,
   KycStatusSchema,
   IpAddressSchema,
   UserAgentSchema,
   SessionIdSchema,
+  DeviceIdSchema,
   LastNameSchema,
   PasswordSchema,
   KycTierSchema,
@@ -158,16 +160,6 @@ export const PhoneVerificationConfirmSchema = Schema.Struct({
 
 export type PhoneVerificationConfirm =
   typeof PhoneVerificationConfirmSchema.Type;
-
-/**
- * Device, Challenge ids Schema
- */
-export const DeviceIdSchema = Schema.UUID.pipe(Schema.brand("DeviceId"));
-export type DeviceIdType = typeof DeviceIdSchema.Type;
-export const ChallengeIdSchema = Schema.UUID.pipe(
-  Schema.brand("BiometricChallengeId")
-);
-export type ChallengeIdType = typeof ChallengeIdSchema.Type;
 
 /**
  * Biometric registration data

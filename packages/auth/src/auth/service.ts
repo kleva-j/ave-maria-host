@@ -17,7 +17,7 @@ import type {
   UnauthorizedError,
   InvalidOtpError,
   AuthError,
-} from "./auth-errors";
+} from "./errors";
 
 import type {
   BiometricRegistration,
@@ -30,7 +30,7 @@ import type {
   AuthContext,
   Session,
   User,
-} from "./auth-types";
+} from "./types";
 
 import { Context, type Effect } from "effect";
 
@@ -249,4 +249,4 @@ export const AuthService = Context.GenericTag<AuthService>(
 /**
  * Type alias for AuthService dependency
  */
-export type AuthServiceDeps = typeof AuthService.Service;
+export type AuthServices = typeof AuthService.Service;

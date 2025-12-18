@@ -1,23 +1,24 @@
-import type { KycStatus, BrandedKycTier } from "@host/shared";
+import type { UnauthorizedError } from "./errors";
 import type { UserRepository } from "@host/domain";
 import type {
   BiometricRegistration,
   BiometricAuthRequest,
   LoginCredentials,
+  BrandedKycTier,
   SessionOptions,
   RegisterData,
   KycTier1Data,
   KycTier2Data,
   AuthContext,
+  KycStatus,
   Session,
   User,
-} from "./auth-types";
+} from "@host/shared";
 
 import { Effect, Layer, Context, Schema } from "effect";
 import { EmailService } from "@host/infrastructure";
+import { AuthService } from "./service";
 import { UserId } from "@host/domain";
-
-import { AuthService } from "./auth-service";
 import { auth } from "..";
 
 import {
@@ -32,7 +33,6 @@ import {
 } from "@host/shared";
 
 import {
-  type UnauthorizedError,
   EmailVerificationRateLimitError,
   EmailAlreadyVerifiedError,
   InvalidRefreshTokenError,
@@ -50,7 +50,7 @@ import {
   UserNotFoundError,
   InvalidOtpError,
   AuthError,
-} from "./auth-errors";
+} from "./errors";
 
 // ============================================================================
 // Better-Auth Response Validation Schemas
@@ -1229,3 +1229,5 @@ export const AuthServiceLive: Layer.Layer<
     return new AuthServiceImpl(emailService, userRepository);
   })
 );
+
+export const AuthLayer = AuthServiceLive;

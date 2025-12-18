@@ -9,19 +9,19 @@ import type {
   SessionExpiredError,
   UserNotFoundError,
   InvalidTokenError,
-} from "./auth-errors";
+} from "./errors";
 
-import type { AuthContext } from "./auth-types";
+import type { AuthContext } from "./types";
 
 import { createHash, createVerify, randomBytes } from "node:crypto";
 import { Effect } from "effect";
 
-import { AuthService } from "./auth-service";
+import { AuthService } from "./service";
 import {
   InsufficientKycTierError,
   AccountSuspendedError,
   UnauthorizedError,
-} from "./auth-errors";
+} from "./errors";
 
 /**
  * Utility function to require authentication for an Effect program
@@ -289,16 +289,16 @@ export const checkKycTierRequirement = (
  */
 export const getTransactionLimits = (
   kycTier: BrandedKycTier
-): { daily: number; monthly: number; perTransaction: number } => {
+): { daily: number; monthly: number; per_transaction: number } => {
   switch (kycTier) {
     case 0: // Unverified
-      return { daily: 0, monthly: 0, perTransaction: 0 };
+      return { daily: 0, monthly: 0, per_transaction: 0 };
     case 1: // Tier 1 - Basic
-      return { daily: 50000, monthly: 500000, perTransaction: 10000 }; // NGN
+      return { daily: 50000, monthly: 500000, per_transaction: 10000 }; // NGN
     case 2: // Tier 2 - Full
-      return { daily: 500000, monthly: 5000000, perTransaction: 100000 }; // NGN
+      return { daily: 500000, monthly: 5000000, per_transaction: 100000 }; // NGN
     default:
-      return { daily: 0, monthly: 0, perTransaction: 0 };
+      return { daily: 0, monthly: 0, per_transaction: 0 };
   }
 };
 

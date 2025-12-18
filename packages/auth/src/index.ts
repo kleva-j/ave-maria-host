@@ -118,4 +118,18 @@ export const auth = betterAuth({
 });
 
 export type { User, Session } from "better-auth/types";
+
+// Re-export all authorization services and types
+export * from "./authorization";
+
+// Re-export all biometric services and types
+export * from "./biometric";
+
+// Re-export all effects services and types
 export * from "./effects";
+
+// Re-export all auth services and types
+export * from "./auth";
+
+// Re-export all KYC services and types
+export * from "./kyc";
