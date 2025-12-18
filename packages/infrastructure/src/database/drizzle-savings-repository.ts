@@ -212,6 +212,7 @@ export const DrizzleSavingsRepositoryLive = Layer.effect(
               })
               .where(eq(savingsPlans.id, plan.id.value));
           });
+          return null;
         }).pipe(
           Effect.catchAll((error) =>
             Effect.fail(RepositoryError.create("update", "SavingsPlan", error))

@@ -2,6 +2,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type {
   TransactionStatus,
   TransactionType,
+  PaymentSource,
   CurrencyCode,
 } from "@host/shared";
 
@@ -29,14 +30,14 @@ function mapToDomainEntity(row: typeof transactions.$inferSelect): Transaction {
     MoneyVO.fromNumber(Number(row.amount), row.currency as CurrencyCode),
     row.type as TransactionType,
     row.status as TransactionStatus,
-    null, // source - not stored in current schema
+    row.paymentSource as PaymentSource,
     row.reference,
     row.description || null,
     row.metadata ? JSON.parse(row.metadata) : null,
     row.createdAt,
     row.completedAt,
-    null, // failedAt - not in current schema
-    null // failureReason - not in current schema
+    row.failedAt,
+    row.failureReason
   );
 }
 
@@ -65,6 +66,7 @@ export const DrizzleTransactionRepositoryLive = Layer.effect(
               currency: transaction.amount.currency,
               type: transaction.type,
               status: transaction.status,
+              paymentSource: transaction.source as PaymentSource,
               reference: transaction.reference,
               description: transaction.description || null,
               metadata: transaction.metadata
@@ -73,6 +75,8 @@ export const DrizzleTransactionRepositoryLive = Layer.effect(
               createdAt: transaction.createdAt,
               completedAt: transaction.completedAt,
               updatedAt: new Date(),
+              failedAt: transaction.failedAt,
+              failureReason: transaction.failureReason,
             });
           });
         }).pipe(
@@ -167,23 +171,23 @@ export const DrizzleTransactionRepositoryLive = Layer.effect(
           )
         ),
 
-      update: (transaction: Transaction) =>
-        Effect.gen(function* () {
-          yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
-            await drizzle
-              .update(transactions)
-              .set({
-                status: transaction.status,
-                completedAt: transaction.completedAt,
-                updatedAt: new Date(),
-              })
-              .where(eq(transactions.id, transaction.id.value));
-          });
-        }).pipe(
-          Effect.catchAll((error) =>
-            Effect.fail(RepositoryError.create("update", "Transaction", error))
-          )
-        ),
+      // update: (transaction: Transaction) =>
+      //   Effect.gen(function* () {
+      //     yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
+      //       await drizzle
+      //         .update(transactions)
+      //         .set({
+      //           status: transaction.status,
+      //           completedAt: transaction.completedAt,
+      //           updatedAt: new Date(),
+      //         })
+      //         .where(eq(transactions.id, transaction.id.value));
+      //     });
+      //   }).pipe(
+      //     Effect.catchAll((error) =>
+      //       Effect.fail(RepositoryError.create("update", "Transaction", error))
+      //     )
+      //   ),
 
       findByStatus: (status: TransactionStatus) =>
         Effect.gen(function* () {
@@ -229,6 +233,26 @@ export const DrizzleTransactionRepositoryLive = Layer.effect(
           Effect.catchAll((error) =>
             Effect.fail(
               RepositoryError.create("findByTypeAndUser", "Transaction", error)
+            )
+          )
+        ),
+
+      findBySource: (source: PaymentSource) =>
+        Effect.gen(function* () {
+          const result = yield* db.withDrizzle(
+            async (drizzle: NodePgDatabase) => {
+              return await drizzle
+                .select()
+                .from(transactions)
+                .where(eq(transactions.paymentSource, source));
+            }
+          );
+
+          return result.map(mapToDomainEntity);
+        }).pipe(
+          Effect.catchAll((error) =>
+            Effect.fail(
+              RepositoryError.create("findBySource", "Transaction", error)
             )
           )
         ),

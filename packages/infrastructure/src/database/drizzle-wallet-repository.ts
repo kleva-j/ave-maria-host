@@ -7,13 +7,18 @@ import type {
   Wallet,
   UserId,
   Money,
+  WalletId,
 } from "@host/domain";
 
-import { TransactionStatusEnum, TransactionTypeEnum, DEFAULT_CURRENCY } from "@host/shared";
 import { wallets, transactions, DatabaseService } from "@host/db";
 import { Money as MoneyVO, RepositoryError } from "@host/domain";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { Effect, Context, Layer } from "effect";
+import {
+  TransactionStatusEnum,
+  TransactionTypeEnum,
+  DEFAULT_CURRENCY,
+} from "@host/shared";
 
 /**
  * Map database row to Wallet domain entity
@@ -50,11 +55,9 @@ export const DrizzleWalletRepositoryLive = Layer.effect(
       Effect.gen(function* () {
         const result = yield* db.withDrizzle(
           async (drizzle: NodePgDatabase) => {
+            const { balance, currency } = wallets;
             const rows = await drizzle
-              .select({
-                balance: wallets.balance,
-                currency: wallets.currency,
-              })
+              .select({ balance, currency })
               .from(wallets)
               .where(eq(wallets.userId, userId.value))
               .limit(1);
@@ -80,7 +83,7 @@ export const DrizzleWalletRepositoryLive = Layer.effect(
       );
 
     return DrizzleWalletRepository.of({
-      create: (userId: UserId, initialBalance?: Money) =>
+      createForUser: (userId: UserId, initialBalance?: Money) =>
         Effect.gen(function* () {
           const balance = initialBalance || MoneyVO.zero(DEFAULT_CURRENCY);
 
@@ -118,6 +121,26 @@ export const DrizzleWalletRepositoryLive = Layer.effect(
             Effect.fail(RepositoryError.create("create", "Wallet", error))
           )
         ),
+
+      findById: (id: WalletId) =>
+        Effect.gen(function* () {
+          const wallet = yield* db.withDrizzle(
+            async (drizzle: NodePgDatabase) => {
+              return await drizzle
+                .select()
+                .from(wallets)
+                .where(eq(wallets.id, id))
+                .limit(1);
+            }
+          );
+
+          return wallet[0] ? mapToDomainEntity(wallet[0]) : null;
+        }).pipe(
+          Effect.catchAll((error) =>
+            Effect.fail(RepositoryError.create("findById", "Wallet", error))
+          )
+        ),
+        
 
       findByUserId: (userId: UserId) =>
         Effect.gen(function* () {

@@ -49,34 +49,38 @@ export const DrizzleUserRepositoryLive = Layer.effect(
     const db = yield* DatabaseService;
 
     return DrizzleUserRepository.of({
-      save: (userEntity: User) =>
+      create: (userEntity: Omit<User, "id" | "createdAt" | "updatedAt">) =>
         Effect.gen(function* () {
-          yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
-            await drizzle.insert(user).values({
-              id: userEntity.id,
-              name: userEntity.name,
-              email: userEntity.email,
-              emailVerified: userEntity.emailVerified,
-              image: userEntity.image,
-              phoneNumber: userEntity.phoneNumber,
-              phoneVerified: userEntity.phoneVerified,
-              dateOfBirth: userEntity.dateOfBirth
-                ? userEntity.dateOfBirth.toISOString().split("T")[0]
-                : null,
-              kycTier: userEntity.kycTier,
-              kycStatus: userEntity.kycStatus,
-              kycData: userEntity.kycData,
-              kycVerifiedAt: userEntity.kycVerifiedAt,
-              biometricEnabled: userEntity.biometricEnabled,
-              biometricPublicKey: userEntity.biometricPublicKey,
-              isActive: userEntity.isActive,
-              isSuspended: userEntity.isSuspended,
-              suspendedAt: userEntity.suspendedAt,
-              suspensionReason: userEntity.suspensionReason,
-              createdAt: userEntity.createdAt,
-              updatedAt: userEntity.updatedAt,
-            });
-          });
+          const result = yield* db.withDrizzle(
+            async (drizzle: NodePgDatabase) => {
+              return await drizzle
+                .insert(user)
+                .values({
+                  name: userEntity.name,
+                  email: userEntity.email,
+                  emailVerified: userEntity.emailVerified,
+                  image: userEntity.image,
+                  phoneNumber: userEntity.phoneNumber,
+                  phoneVerified: userEntity.phoneVerified,
+                  dateOfBirth: userEntity.dateOfBirth
+                    ? userEntity.dateOfBirth.toISOString().split("T")[0]
+                    : null,
+                  kycTier: userEntity.kycTier,
+                  kycStatus: userEntity.kycStatus,
+                  kycData: userEntity.kycData,
+                  kycVerifiedAt: userEntity.kycVerifiedAt,
+                  biometricEnabled: userEntity.biometricEnabled,
+                  biometricPublicKey: userEntity.biometricPublicKey,
+                  isActive: userEntity.isActive,
+                  isSuspended: userEntity.isSuspended,
+                  suspendedAt: userEntity.suspendedAt,
+                  suspensionReason: userEntity.suspensionReason,
+                })
+                .returning();
+            }
+          );
+
+          return result[0] ? mapToDomainEntity(result[0]) : null;
         }).pipe(
           Effect.catchAll((error) =>
             Effect.fail(RepositoryError.create("save", "User", error))
@@ -144,33 +148,38 @@ export const DrizzleUserRepositoryLive = Layer.effect(
 
       update: (userEntity: User) =>
         Effect.gen(function* () {
-          yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
-            await drizzle
-              .update(user)
-              .set({
-                name: userEntity.name,
-                email: userEntity.email,
-                emailVerified: userEntity.emailVerified,
-                image: userEntity.image,
-                phoneNumber: userEntity.phoneNumber,
-                phoneVerified: userEntity.phoneVerified,
-                dateOfBirth: userEntity.dateOfBirth
-                  ? userEntity.dateOfBirth.toISOString().split("T")[0]
-                  : null,
-                kycTier: userEntity.kycTier,
-                kycStatus: userEntity.kycStatus,
-                kycData: userEntity.kycData,
-                kycVerifiedAt: userEntity.kycVerifiedAt,
-                biometricEnabled: userEntity.biometricEnabled,
-                biometricPublicKey: userEntity.biometricPublicKey,
-                isActive: userEntity.isActive,
-                isSuspended: userEntity.isSuspended,
-                suspendedAt: userEntity.suspendedAt,
-                suspensionReason: userEntity.suspensionReason,
-                updatedAt: new Date(),
-              })
-              .where(eq(user.id, userEntity.id));
-          });
+          const result = yield* db.withDrizzle(
+            async (drizzle: NodePgDatabase) => {
+              return await drizzle
+                .update(user)
+                .set({
+                  name: userEntity.name,
+                  email: userEntity.email,
+                  emailVerified: userEntity.emailVerified,
+                  image: userEntity.image,
+                  phoneNumber: userEntity.phoneNumber,
+                  phoneVerified: userEntity.phoneVerified,
+                  dateOfBirth: userEntity.dateOfBirth
+                    ? userEntity.dateOfBirth.toISOString().split("T")[0]
+                    : null,
+                  kycTier: userEntity.kycTier,
+                  kycStatus: userEntity.kycStatus,
+                  kycData: userEntity.kycData,
+                  kycVerifiedAt: userEntity.kycVerifiedAt,
+                  biometricEnabled: userEntity.biometricEnabled,
+                  biometricPublicKey: userEntity.biometricPublicKey,
+                  isActive: userEntity.isActive,
+                  isSuspended: userEntity.isSuspended,
+                  suspendedAt: userEntity.suspendedAt,
+                  suspensionReason: userEntity.suspensionReason,
+                  updatedAt: new Date(),
+                })
+                .where(eq(user.id, userEntity.id))
+                .returning();
+            }
+          );
+
+          return result[0] ? mapToDomainEntity(result[0]) : null;
         }).pipe(
           Effect.catchAll((error) =>
             Effect.fail(RepositoryError.create("update", "User", error))
@@ -182,15 +191,31 @@ export const DrizzleUserRepositoryLive = Layer.effect(
           yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
             await drizzle
               .update(user)
-              .set({
-                isActive: false,
-                updatedAt: new Date(),
-              })
+              .set({ isActive: false, updatedAt: new Date() })
               .where(eq(user.id, id.value));
           });
         }).pipe(
           Effect.catchAll((error) =>
             Effect.fail(RepositoryError.create("delete", "User", error))
+          )
+        ),
+
+      exists: (id: UserId) =>
+        Effect.gen(function* () {
+          const result = yield* db.withDrizzle(
+            async (drizzle: NodePgDatabase) => {
+              return await drizzle
+                .select()
+                .from(user)
+                .where(eq(user.id, id.value))
+                .limit(1);
+            }
+          );
+
+          return result.length > 0;
+        }).pipe(
+          Effect.catchAll((error) =>
+            Effect.fail(RepositoryError.create("exists", "User", error))
           )
         ),
 
