@@ -247,6 +247,18 @@ export type UserIdType = typeof UserIdSchema.Type;
 export const SessionIdSchema = Schema.UUID.pipe(Schema.brand("SessionId"));
 export type SessionIdType = typeof SessionIdSchema.Type;
 
+/**
+ * Schema for RoleId validation
+ */
+export const RoleIdSchema = Schema.UUID.pipe(Schema.brand("RoleId"));
+export type RoleIdType = typeof RoleIdSchema.Type;
+
+/**
+ * Schema for PermissionId validation
+ */
+export const PermissionIdSchema = Schema.UUID.pipe(Schema.brand("PermissionId"));
+export type PermissionIdType = typeof PermissionIdSchema.Type;
+
 // ============================================================================
 // Branded Type Utilities
 // ============================================================================

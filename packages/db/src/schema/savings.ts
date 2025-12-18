@@ -83,20 +83,24 @@ export const transactions = pgTable(
       .notNull(),
     type: varchar("type", { length: 20 }).notNull(), // contribution, withdrawal, interest, penalty, refund
     status: varchar("status", { length: 20 }).default("pending").notNull(), // pending, completed, failed, cancelled
+    paymentSource: varchar("payment_source", { length: 20 }).notNull(), // bank, card, crypto
     reference: varchar("reference", { length: 100 }).notNull().unique(),
     description: varchar("description", { length: 255 }),
     metadata: varchar("metadata", { length: 1000 }), // JSON string for additional data
     createdAt: timestamp("created_at").defaultNow().notNull(),
     completedAt: timestamp("completed_at"),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    failedAt: timestamp("failed_at"),
+    failureReason: varchar("failure_reason", { length: 255 }),
   },
   (table) => [
+    index("transactions_type_idx").on(table.type),
     index("transactions_user_idx").on(table.userId),
     index("transactions_plan_idx").on(table.planId),
     index("transactions_status_idx").on(table.status),
-    index("transactions_type_idx").on(table.type),
     index("transactions_reference_idx").on(table.reference),
     index("transactions_created_at_idx").on(table.createdAt),
+    index("transactions_payment_source_idx").on(table.paymentSource),
   ]
 );
 

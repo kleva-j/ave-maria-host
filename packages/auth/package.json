@@ -31,6 +31,7 @@
     "@host/domain": "workspace:*",
     "@host/shared": "workspace:*",
     "@host/infrastructure": "workspace:*",
+    "@host/api": "workspace:*",
     "effect": "catalog:",
     "@effect/schema": "catalog:"
   }

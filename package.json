@@ -14,6 +14,7 @@
     "dev:native": "turbo -F native dev",
     "dev:web": "turbo -F web dev",
     "dev:server": "turbo -F server dev",
+    "dev:fumadocs": "turbo -F fumadocs dev",
     "db:push": "turbo -F @host/db db:push",
     "db:studio": "turbo -F @host/db db:studio",
     "db:generate": "turbo -F @host/db db:generate",
