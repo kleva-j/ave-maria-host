@@ -3,7 +3,8 @@
 
 import { Schema } from "effect";
 
-import { PaymentSourceSchema, UserIdSchema } from "./common-schemas";
+import { PlanIdSchema, UserIdSchema } from "./id-schemas";
+import { PaymentSourceSchema } from "./enum-schemas";
 import {
   DEFAULT_AUTO_SAVE_TIME,
   PlanActionEnum,
@@ -66,13 +67,6 @@ export type AutoSaveTime = typeof AutoSaveTimeSchema.Type;
 export const AutoSaveEnabledSchema = Schema.Boolean;
 
 export type AutoSaveEnabled = typeof AutoSaveEnabledSchema.Type;
-
-/**
- * PlanId value object representing a unique identifier for savings plans
- */
-export const PlanIdSchema = Schema.UUID.pipe(Schema.brand("PlanId"));
-
-export type PlanIdType = typeof PlanIdSchema.Type;
 
 /**
  * Cycle duration schema

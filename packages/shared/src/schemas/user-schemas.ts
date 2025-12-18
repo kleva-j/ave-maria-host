@@ -1,24 +1,26 @@
 // User and Authentication Validation Schemas using Effect Schema
 // Input/output schemas for user management and KYC operations
 
+import { UserIdSchema, DeviceIdSchema } from "./id-schemas";
 import { Schema } from "effect";
-
 import {
   BiometricTypeSchema,
+  KycIdTypeSchema,
+  KycStatusSchema,
+  KycTierSchema,
+  StateSchema,
+} from "./enum-schemas";
+
+import {
   KycIdNumberSchema,
   PhoneNumberSchema,
   CountryCodeSchema,
   PostalCodeSchema,
-  KycIdTypeSchema,
-  KycStatusSchema,
   FirstNameSchema,
   PasswordSchema,
   LastNameSchema,
   DateTimeSchema,
-  KycTierSchema,
   AddressSchema,
-  UserIdSchema,
-  StateSchema,
   EmailSchema,
   CitySchema,
   BvnSchema,
@@ -112,7 +114,7 @@ export class EnableBiometricSchema extends Schema.Class<EnableBiometricSchema>(
   publicKey: Schema.String.pipe(
     Schema.minLength(1, { message: () => "Public key is required" })
   ),
-  deviceId: Schema.String.pipe(
+  deviceId: DeviceIdSchema.pipe(
     Schema.minLength(1, { message: () => "Device ID is required" })
   ),
 }) {}

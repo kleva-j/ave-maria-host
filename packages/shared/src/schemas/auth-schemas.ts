@@ -1,21 +1,30 @@
 import { Schema } from "effect";
 
 import {
-  KycGovernmentIdNumberSchema,
+  BiometricDeviceIdSchema,
+  ChallengeIdSchema,
+  SessionIdSchema,
+  DeviceIdSchema,
+  UserIdSchema,
+} from "./id-schemas";
+
+import {
   KycGovernmentIdTypeSchema,
   BiometricTypeSchema,
+  KycStatusSchema,
+  KycTierSchema,
+} from "./enum-schemas";
+
+import {
+  KycGovernmentIdNumberSchema,
   PhoneNumberSchema,
   UrlStringSchema,
   FirstNameSchema,
-  KycStatusSchema,
   IpAddressSchema,
   UserAgentSchema,
-  SessionIdSchema,
   LastNameSchema,
   PasswordSchema,
-  KycTierSchema,
   AddressSchema,
-  UserIdSchema,
   EmailSchema,
   TokenSchema,
   DateSchema,
@@ -61,7 +70,7 @@ export const SessionSchema = Schema.Struct({
   expiresAt: DateSchema,
   refreshToken: Schema.NullOr(TokenSchema),
   refreshTokenExpiresAt: Schema.NullOr(DateSchema),
-  deviceId: Schema.NullOr(Schema.String),
+  deviceId: Schema.NullOr(DeviceIdSchema),
   createdAt: DateSchema,
   updatedAt: DateSchema,
   ipAddress: IpAddressSchema,
@@ -108,7 +117,7 @@ export type RegisterData = typeof RegisterDataSchema.Type;
 export const SessionOptionsSchema = Schema.Struct({
   ipAddress: Schema.optional(IpAddressSchema),
   userAgent: Schema.optional(UserAgentSchema),
-  deviceId: Schema.optional(Schema.String),
+  deviceId: Schema.optional(DeviceIdSchema),
   expiresIn: Schema.optional(Schema.Number), // Duration in seconds
 });
 
@@ -160,16 +169,6 @@ export type PhoneVerificationConfirm =
   typeof PhoneVerificationConfirmSchema.Type;
 
 /**
- * Device, Challenge ids Schema
- */
-export const DeviceIdSchema = Schema.UUID.pipe(Schema.brand("DeviceId"));
-export type DeviceIdType = typeof DeviceIdSchema.Type;
-export const ChallengeIdSchema = Schema.UUID.pipe(
-  Schema.brand("BiometricChallengeId")
-);
-export type ChallengeIdType = typeof ChallengeIdSchema.Type;
-
-/**
  * Biometric registration data
  */
 export const BiometricRegistrationSchema = Schema.Struct({
@@ -209,7 +208,7 @@ export type BiometricAuthResult = typeof BiometricAuthResultSchema.Type;
  * Biometric Device Schema
  */
 export const BiometricDeviceSchema = Schema.Struct({
-  id: Schema.UUID.pipe(Schema.brand("BiometricDeviceId")),
+  id: BiometricDeviceIdSchema,
   userId: UserIdSchema,
   deviceId: DeviceIdSchema,
   deviceName: Schema.String,

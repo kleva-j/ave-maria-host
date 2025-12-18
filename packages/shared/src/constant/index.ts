@@ -6,6 +6,9 @@ import type {
   InterestRate,
 } from "../schemas";
 
+import { CurrencyCodeSchema } from "../schemas";
+import { RewardsBadgeTypeEnum } from "./enums";
+
 export * from "./enums";
 
 /**
@@ -16,6 +19,21 @@ export const DEFAULT_TOTAL_CONTRIBUTIONS = 0 as TotalContributions;
 export const DEFAULT_AUTO_SAVE_ENABLED = false as AutoSaveEnabled;
 export const DEFAULT_AUTO_SAVE_TIME = "09:00" as AutoSaveTime;
 export const DEFAULT_INTEREST_RATE = 0.0 as InterestRate;
+
+/**
+ * Currency codes
+ */
+export const CURRENCY_CODES = ["NGN", "USD", "EUR", "GBP"] as const;
+
+/**
+ * Default currency
+ */
+export const DEFAULT_CURRENCY = CurrencyCodeSchema.make("NGN");
+
+/**
+ * Total number of rewards badges
+ */
+export const TotalRewards = Object.values(RewardsBadgeTypeEnum).length;
 
 /**
  * Lagos LGAs

@@ -1,44 +1,15 @@
 // Common Validation Schemas using Effect Schema
 // Reusable schemas and validation patterns used across the application
 
-import { pipe, Schema } from "effect";
+import type { SessionIdSchema, UserIdSchema } from "./id-schemas";
+import type { KycTierSchema } from "./enum-schemas";
 
-import {
-  NotificationChannelEnum,
-  KycGovernmentIdTypeEnum,
-  PaymentDestinationEnum,
-  TransactionStatusEnum,
-  TransactionTypeEnum,
-  PaymentMethodEnum,
-  BiometricTypeEnum,
-  PaymentSourceEnum,
-  KycIdTypeEnum,
-  KycStatusEnum,
-  KycTierEnum,
-  STATES,
-  LGAS,
-} from "../constant";
+import { CurrencyCodeSchema } from "./enum-schemas";
+import { pipe, Schema } from "effect";
 
 // ============================================================================
 // Common Value Objects
 // ============================================================================
-
-/**
- * Schema for Money value object
- * Represents monetary amounts with currency (ISO_4217_CODES)
- */
-export const CURRENCY_CODES = ["NGN", "USD", "EUR", "GBP"] as const;
-
-/**
- * Default values for common schemas
- */
-export const CurrencyCodeSchema = Schema.Literal(...CURRENCY_CODES).pipe(
-  Schema.brand("CurrencyCode")
-);
-
-export const DEFAULT_CURRENCY = CurrencyCodeSchema.make("NGN");
-
-export type CurrencyCode = typeof CurrencyCodeSchema.Type;
 
 /**
  * Schema for Money validation
@@ -235,30 +206,6 @@ export type UserAgent = typeof UserAgentSchema.Type;
 export type IpAddress = typeof IpAddressSchema.Type;
 export type Token = typeof TokenSchema.Type;
 
-/**
- * Schema for UserId validation
- */
-export const UserIdSchema = Schema.UUID.pipe(Schema.brand("UserId"));
-export type UserIdType = typeof UserIdSchema.Type;
-
-/**
- * Schema for SessionId validation
- */
-export const SessionIdSchema = Schema.UUID.pipe(Schema.brand("SessionId"));
-export type SessionIdType = typeof SessionIdSchema.Type;
-
-/**
- * Schema for RoleId validation
- */
-export const RoleIdSchema = Schema.UUID.pipe(Schema.brand("RoleId"));
-export type RoleIdType = typeof RoleIdSchema.Type;
-
-/**
- * Schema for PermissionId validation
- */
-export const PermissionIdSchema = Schema.UUID.pipe(Schema.brand("PermissionId"));
-export type PermissionIdType = typeof PermissionIdSchema.Type;
-
 // ============================================================================
 // Branded Type Utilities
 // ============================================================================
@@ -362,16 +309,6 @@ export const AddressSchema = Schema.Trimmed.pipe(
 ).annotations({ description: "Physical address" });
 
 /**
- * Schema for State validation
- */
-export const StateSchema = Schema.Literal(...STATES)
-  .pipe(Schema.brand("State"))
-  .annotations({
-    message: () => "Invalid State code",
-    description: "State code",
-  });
-
-/**
  * Schema for City validation
  */
 export const CitySchema = Schema.Trimmed.pipe(
@@ -382,17 +319,6 @@ export const CitySchema = Schema.Trimmed.pipe(
     message: () => "City code must not exceed 10 characters",
   })
 );
-
-/**
- * Schema for LGA (Local Government Area) validation
- */
-
-export const LgaSchema = Schema.Literal(...LGAS)
-  .pipe(Schema.brand("Lga"))
-  .annotations({
-    message: () => "Invalid LGA code",
-    description: "LGA code",
-  });
 
 /**
  * Schema Validator for postal code validation
@@ -475,17 +401,6 @@ export const UrlSchema = Schema.Trimmed.pipe(
 ).annotations({ description: "URL" });
 
 /**
- * Schema for Country Name
- */
-export const CountryNameSchema = Schema.Literal("Nigeria")
-  .pipe(Schema.brand("CountryName"))
-  .annotations({
-    message: () => "Invalid country name",
-    description: "Country name",
-    defaultValue: "Nigeria",
-  });
-
-/**
  * Schema for ISO country code (2 letters)
  */
 export const CountryCodeSchema = Schema.Trimmed.pipe(
@@ -528,51 +443,6 @@ export const PasswordSchema = Schema.Trimmed.pipe(
   })
 ).annotations({ description: "Password" });
 
-/**
- * Schema for KYC status
- */
-export const KycStatusSchema = Schema.Literal(...Object.values(KycStatusEnum))
-  .pipe(Schema.brand("KycStatus"))
-  .annotations({
-    message: () => "Invalid KYC status",
-    description: "KYC status",
-  });
-
-export type KycStatus = typeof KycStatusSchema.Type;
-
-/**
- * Schema for KYC ID type
- */
-export const KycIdTypeSchema = Schema.Literal(...Object.values(KycIdTypeEnum))
-  .pipe(Schema.brand("KycIdType"))
-  .annotations({
-    message: () => "Invalid ID type",
-    description: "Type of government-issued ID",
-  });
-
-export type KycIdType = typeof KycIdTypeSchema.Type;
-
-/**
- * KYC Tier Schemas
- */
-export const KycTierSchema = Schema.Literal(...Object.values(KycTierEnum))
-  .pipe(Schema.brand("KycTier"))
-  .annotations({
-    message: () => "Invalid KYC tier. KYC tier must be between 0 and 2",
-    description: "KYC tier level",
-  });
-
-export const KycGovernmentIdTypeSchema = Schema.Literal(
-  ...Object.values(KycGovernmentIdTypeEnum)
-)
-  .pipe(Schema.brand("KycGovIdType"))
-  .annotations({
-    message: () => "Invalid ID type",
-    description: "Type of government-issued ID",
-  });
-
-export type KycGovernmentIdType = typeof KycGovernmentIdTypeSchema.Type;
-
 export const KycGovernmentIdNumberSchema = Schema.String.pipe(
   Schema.minLength(5, { message: () => "ID number is required" }),
   Schema.maxLength(32, {
@@ -591,52 +461,6 @@ export const KycIdNumberSchema = Schema.String.pipe(
     message: () => "ID number must not exceed 50 characters",
   })
 ).annotations({ description: "ID number" });
-
-/**
- * Biometric authentication types & schemas
- */
-export const BiometricTypeSchema = Schema.Literal(
-  ...Object.values(BiometricTypeEnum)
-)
-  .pipe(Schema.brand("BiometricType"))
-  .annotations({
-    message: () => "Invalid biometric type",
-    description: "Type of biometric verification",
-  });
-
-export type BiometricType = typeof BiometricTypeSchema.Type;
-
-// ============================================================================
-// Common Enums
-// ============================================================================
-
-/**
- * Schema for transaction status
- */
-export const TransactionStatusSchema = Schema.Literal(
-  ...Object.values(TransactionStatusEnum)
-)
-  .pipe(Schema.brand("TransactionStatus"))
-  .annotations({
-    message: () => "Invalid transaction status",
-    description: "Status of a transaction",
-  });
-
-export type TransactionStatus = typeof TransactionStatusSchema.Type;
-
-/**
- * Schema for Transaction type
- */
-export const TransactionTypeSchema = Schema.Literal(
-  ...Object.values(TransactionTypeEnum)
-)
-  .pipe(Schema.brand("TransactionType"))
-  .annotations({
-    message: () => "Invalid transaction type",
-    description: "Type of a transaction",
-  });
-
-export type TransactionType = typeof TransactionTypeSchema.Type;
 
 /**
  * Schema for Transaction Reference
@@ -661,34 +485,6 @@ export const TransactionDescriptionSchema = Schema.String.pipe(
 ).annotations({ description: "Transaction Description" });
 
 export type TransactionDescription = typeof TransactionDescriptionSchema.Type;
-
-/**
- * Schema for Payment Source
- */
-export const PaymentSourceSchema = Schema.Literal(
-  ...Object.values(PaymentSourceEnum)
-)
-  .pipe(Schema.brand("PaymentSource"))
-  .annotations({
-    message: () => "Invalid payment source",
-    description: "Source of payment",
-  });
-
-export type PaymentSource = typeof PaymentSourceSchema.Type;
-
-/**
- * Schema for Payment Destination
- */
-export const PaymentDestinationSchema = Schema.Literal(
-  ...Object.values(PaymentDestinationEnum)
-)
-  .pipe(Schema.brand("PaymentDestination"))
-  .annotations({
-    message: () => "Invalid payment destination",
-    description: "Destination of payment",
-  });
-
-export type PaymentDestination = typeof PaymentDestinationSchema.Type;
 
 /**
  * Interest rate schema
@@ -727,34 +523,6 @@ export const TotalContributionsSchema = Schema.Number.pipe(
 });
 
 export type TotalContributions = typeof TotalContributionsSchema.Type;
-
-/**
- * Schema for notification channel
- */
-export const NotificationChannelSchema = Schema.Literal(
-  ...Object.values(NotificationChannelEnum)
-)
-  .pipe(Schema.brand("NotificationChannel"))
-  .annotations({
-    message: () => "Invalid notification channel",
-    description: "Notification channel",
-  });
-
-export type NotificationChannel = typeof NotificationChannelSchema.Type;
-
-/**
- * Schema for payment method
- */
-export const PaymentMethodSchema = Schema.Literal(
-  ...Object.values(PaymentMethodEnum)
-)
-  .pipe(Schema.brand("PaymentMethod"))
-  .annotations({
-    message: () => "Invalid payment method",
-    description: "Payment method",
-  });
-
-export type PaymentMethod = typeof PaymentMethodSchema.Type;
 
 // ============================================================================
 // Validation Helpers
