@@ -1,26 +1,24 @@
 import type { TransactionId, UserId, PlanId, Money } from "../value-objects";
-import type { TransactionType, TransactionStatus } from "@host/shared";
 import type { Transaction } from "../entities/transaction";
-import type { RepositoryError } from ".";
+import type { Repository, RepositoryError } from ".";
 import type { Effect } from "effect";
+import type {
+  TransactionStatus,
+  TransactionType,
+  PaymentSource,
+} from "@host/shared";
 
 /**
  * Repository interface for Transaction entity
  */
-export interface TransactionRepository {
+export interface TransactionRepository
+  extends Repository<Transaction, TransactionId, RepositoryError> {
   /**
    * Save a new transaction
    */
   readonly save: (
     transaction: Transaction
   ) => Effect.Effect<void, RepositoryError>;
-
-  /**
-   * Find a transaction by its ID
-   */
-  readonly findById: (
-    id: TransactionId
-  ) => Effect.Effect<Transaction | null, RepositoryError>;
 
   /**
    * Find transactions by user ID with pagination
@@ -46,13 +44,6 @@ export interface TransactionRepository {
   ) => Effect.Effect<Transaction | null, RepositoryError>;
 
   /**
-   * Update an existing transaction
-   */
-  readonly update: (
-    transaction: Transaction
-  ) => Effect.Effect<void, RepositoryError>;
-
-  /**
    * Find transactions by status
    */
   readonly findByStatus: (
@@ -66,6 +57,13 @@ export interface TransactionRepository {
     type: TransactionType,
     userId: UserId,
     limit?: number
+  ) => Effect.Effect<Transaction[], RepositoryError>;
+
+  /**
+   * Find transaction by source
+   */
+  readonly findBySource: (
+    source: PaymentSource
   ) => Effect.Effect<Transaction[], RepositoryError>;
 
   /**

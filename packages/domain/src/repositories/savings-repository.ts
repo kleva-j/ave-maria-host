@@ -1,24 +1,18 @@
 import type { SavingsPlan } from "../entities/savings-plan";
 import type { PlanId, UserId } from "../value-objects";
+import type { RepositoryError, Repository } from ".";
 import type { PlanStatus } from "@host/shared";
-import type { RepositoryError } from ".";
 import type { Effect } from "effect";
 
 /**
  * Repository interface for SavingsPlan entity
  */
-export interface SavingsRepository {
+export interface SavingsRepository
+  extends Repository<SavingsPlan, PlanId, RepositoryError> {
   /**
    * Save a new savings plan
    */
   readonly save: (plan: SavingsPlan) => Effect.Effect<void, RepositoryError>;
-
-  /**
-   * Find a savings plan by its ID
-   */
-  readonly findById: (
-    id: PlanId
-  ) => Effect.Effect<SavingsPlan | null, RepositoryError>;
 
   /**
    * Find all savings plans for a user
@@ -33,16 +27,6 @@ export interface SavingsRepository {
   readonly findActiveByUserId: (
     userId: UserId
   ) => Effect.Effect<SavingsPlan[], RepositoryError>;
-
-  /**
-   * Update an existing savings plan
-   */
-  readonly update: (plan: SavingsPlan) => Effect.Effect<void, RepositoryError>;
-
-  /**
-   * Delete a savings plan (soft delete)
-   */
-  readonly delete: (id: PlanId) => Effect.Effect<void, RepositoryError>;
 
   /**
    * Find plans that are due for auto-save

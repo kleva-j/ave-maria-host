@@ -1,25 +1,14 @@
 import type { Effect } from "effect";
 
+import type { Repository, RepositoryError } from ".";
 import type { UserId } from "../value-objects";
 import type { User } from "../entities/user";
-import type { RepositoryError } from ".";
 
 /**
  * Repository interface for User entity
  */
-export interface UserRepository {
-  /**
-   * Save a new user
-   */
-  readonly save: (user: User) => Effect.Effect<void, RepositoryError>;
-
-  /**
-   * Find a user by their ID
-   */
-  readonly findById: (
-    id: UserId
-  ) => Effect.Effect<User | null, RepositoryError>;
-
+export interface UserRepository
+  extends Repository<User, UserId, RepositoryError> {
   /**
    * Find a user by their email address
    */
@@ -33,16 +22,6 @@ export interface UserRepository {
   readonly findByPhoneNumber: (
     phoneNumber: string
   ) => Effect.Effect<User | null, RepositoryError>;
-
-  /**
-   * Update an existing user
-   */
-  readonly update: (user: User) => Effect.Effect<void, RepositoryError>;
-
-  /**
-   * Delete a user (soft delete by setting isActive to false)
-   */
-  readonly delete: (id: UserId) => Effect.Effect<void, RepositoryError>;
 
   /**
    * Find all active users
