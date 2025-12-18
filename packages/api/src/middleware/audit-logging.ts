@@ -7,30 +7,28 @@
  */
 
 import type { AuthContext } from "@host/auth";
+import type { DeviceId } from "@host/shared";
+import type {
+  BiometricEventType,
+  SecurityEventType,
+  DataAccessAction,
+  AuditLogStatus,
+  AuditCategory,
+  AuditSeverity,
+} from "../types";
 
 import { Effect, Context, Layer } from "effect";
 import { LoggerService } from "./logging";
+import {
+  DataAccessActionEnum,
+  AuditLogStatusEnum,
+  AuditCategoryEnum,
+  AuditSeverityEnum,
+} from "../constants/enums";
 
 // ============================================================================
 // Audit Event Types
 // ============================================================================
-
-/**
- * Audit event categories
- */
-export type AuditCategory =
-  | "authentication"
-  | "authorization"
-  | "financial"
-  | "kyc"
-  | "user_management"
-  | "data_access"
-  | "system";
-
-/**
- * Audit event severity
- */
-export type AuditSeverity = "low" | "medium" | "high" | "critical";
 
 /**
  * Audit event structure
@@ -47,7 +45,7 @@ export interface AuditEvent {
   readonly userAgent?: string;
   readonly resource?: string;
   readonly resourceId?: string;
-  readonly status: "success" | "failure" | "pending";
+  readonly status: AuditLogStatus;
   readonly details: Record<string, unknown>;
   readonly metadata?: Record<string, unknown>;
 }
@@ -73,7 +71,7 @@ export interface AuditService {
   readonly logAuthentication: (
     userId: string,
     action: string,
-    status: "success" | "failure",
+    status: AuditLogStatus,
     details: Record<string, unknown>
   ) => Effect.Effect<void>;
 
@@ -84,7 +82,7 @@ export interface AuditService {
     authContext: AuthContext,
     action: string,
     resource: string,
-    status: "success" | "failure",
+    status: AuditLogStatus,
     reason?: string
   ) => Effect.Effect<void>;
 
@@ -96,7 +94,7 @@ export interface AuditService {
     transactionType: string,
     amount: number,
     currency: string,
-    status: "success" | "failure" | "pending",
+    status: AuditLogStatus,
     details: Record<string, unknown>
   ) => Effect.Effect<void>;
 
@@ -107,7 +105,7 @@ export interface AuditService {
     userId: string,
     action: string,
     tier: number,
-    status: "success" | "failure",
+    status: AuditLogStatus,
     details: Record<string, unknown>
   ) => Effect.Effect<void>;
 
@@ -118,8 +116,58 @@ export interface AuditService {
     authContext: AuthContext,
     resource: string,
     resourceId: string,
-    action: "read" | "write" | "delete"
+    action: DataAccessAction
   ) => Effect.Effect<void>;
+
+  /**
+   * Log biometric authentication event
+   */
+  readonly logBiometricEvent: (
+    userId: string,
+    action: BiometricEventType,
+    deviceId: DeviceId,
+    status: AuditLogStatus,
+    details: Record<string, unknown>
+  ) => Effect.Effect<void>;
+
+  /**
+   * Log security event
+   */
+  readonly logSecurityEvent: (
+    eventType: SecurityEventType,
+    severity: AuditSeverity,
+    userId?: string,
+    details?: Record<string, unknown>
+  ) => Effect.Effect<void>;
+
+  /**
+   * Query audit events with filters
+   */
+  readonly queryEvents: (filters: {
+    userId?: string;
+    category?: AuditCategory;
+    severity?: AuditSeverity;
+    startDate?: Date;
+    endDate?: Date;
+    limit?: number;
+    offset?: number;
+  }) => Effect.Effect<AuditEvent[], never>;
+
+  /**
+   * Get audit statistics
+   */
+  readonly getAuditStatistics: (
+    startDate: Date,
+    endDate: Date
+  ) => Effect.Effect<
+    {
+      totalEvents: number;
+      eventsByCategory: Record<AuditCategory, number>;
+      eventsBySeverity: Record<AuditSeverity, number>;
+      highRiskEvents: number;
+    },
+    never
+  >;
 }
 
 export const AuditService = Context.GenericTag<AuditService>("AuditService");
@@ -168,8 +216,11 @@ export const AuditServiceLive: Layer.Layer<AuditService, never, LoggerService> =
 
         logAuthentication: (userId, action, status, details) =>
           logEvent({
-            category: "authentication",
-            severity: status === "failure" ? "high" : "low",
+            category: AuditCategoryEnum.AUTHENTICATION,
+            severity:
+              status === AuditLogStatusEnum.FAILURE
+                ? AuditSeverityEnum.HIGH
+                : AuditSeverityEnum.LOW,
             action,
             userId,
             status,
@@ -178,8 +229,11 @@ export const AuditServiceLive: Layer.Layer<AuditService, never, LoggerService> =
 
         logAuthorization: (authContext, action, resource, status, reason) =>
           logEvent({
-            category: "authorization",
-            severity: status === "failure" ? "medium" : "low",
+            category: AuditCategoryEnum.AUTHORIZATION,
+            severity:
+              status === AuditLogStatusEnum.FAILURE
+                ? AuditSeverityEnum.HIGH
+                : AuditSeverityEnum.LOW,
             action,
             userId: authContext.user.id,
             userEmail: authContext.user.email,
@@ -200,8 +254,8 @@ export const AuditServiceLive: Layer.Layer<AuditService, never, LoggerService> =
           details
         ) =>
           logEvent({
-            category: "financial",
-            severity: "high",
+            category: AuditCategoryEnum.FINANCIAL,
+            severity: AuditSeverityEnum.HIGH,
             action: transactionType,
             userId: authContext.user.id,
             userEmail: authContext.user.email,
@@ -216,8 +270,8 @@ export const AuditServiceLive: Layer.Layer<AuditService, never, LoggerService> =
 
         logKycEvent: (userId, action, tier, status, details) =>
           logEvent({
-            category: "kyc",
-            severity: "high",
+            category: AuditCategoryEnum.KYC,
+            severity: AuditSeverityEnum.HIGH,
             action,
             userId,
             status,
@@ -229,15 +283,62 @@ export const AuditServiceLive: Layer.Layer<AuditService, never, LoggerService> =
 
         logDataAccess: (authContext, resource, resourceId, action) =>
           logEvent({
-            category: "data_access",
-            severity: action === "delete" ? "medium" : "low",
+            category: AuditCategoryEnum.DATA_ACCESS,
+            severity:
+              action === DataAccessActionEnum.DELETE
+                ? AuditSeverityEnum.MEDIUM
+                : AuditSeverityEnum.LOW,
             action: `${action}_${resource}`,
             userId: authContext.user.id,
             userEmail: authContext.user.email,
             resource,
             resourceId,
-            status: "success",
+            status: AuditLogStatusEnum.SUCCESS,
             details: {},
+          }),
+
+        logBiometricEvent: (userId, action, deviceId, status, details) =>
+          logEvent({
+            category: AuditCategoryEnum.AUTHENTICATION,
+            severity:
+              status === AuditLogStatusEnum.FAILURE
+                ? AuditSeverityEnum.HIGH
+                : AuditSeverityEnum.MEDIUM,
+            action: `biometric_${action}`,
+            userId,
+            status,
+            details: {
+              deviceId,
+              ...details,
+            },
+          }),
+
+        logSecurityEvent: (eventType, severity, userId, details) =>
+          logEvent({
+            category: AuditCategoryEnum.SYSTEM,
+            severity,
+            action: eventType,
+            userId: userId || "system",
+            status: AuditLogStatusEnum.WARNING,
+            details: details || {},
+          }),
+
+        queryEvents: (filters) =>
+          Effect.sync(() => {
+            // In production, this would query a database
+            // For now, return empty array as placeholder
+            return [];
+          }),
+
+        getAuditStatistics: (startDate, endDate) =>
+          Effect.sync(() => {
+            // In production, this would calculate real statistics
+            return {
+              totalEvents: 0,
+              eventsByCategory: {} as Record<AuditCategory, number>,
+              eventsBySeverity: {} as Record<AuditSeverity, number>,
+              highRiskEvents: 0,
+            };
           }),
       });
     })
@@ -267,22 +368,22 @@ export const withAuditLog =
           Effect.tap((result) =>
             audit.logEvent({
               category,
-              severity: "medium",
+              severity: AuditSeverityEnum.MEDIUM,
               action,
               userId: authContext.user.id,
               userEmail: authContext.user.email,
-              status: "success",
+              status: AuditLogStatusEnum.SUCCESS,
               details: getDetails(result),
             })
           ),
           Effect.tapError((error) =>
             audit.logEvent({
               category,
-              severity: "high",
+              severity: AuditSeverityEnum.HIGH,
               action,
               userId: authContext.user.id,
               userEmail: authContext.user.email,
-              status: "failure",
+              status: AuditLogStatusEnum.FAILURE,
               details: {
                 error: String(error),
               },

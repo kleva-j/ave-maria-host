@@ -13,8 +13,10 @@
  * - **Transaction Limits**: Enforce transaction limits based on KYC tier
  */
 
+import type { TransactionLimitType } from "../types";
 import type { AuthContext } from "@host/auth";
 
+import { logAuditEvent, LoggerService } from "./logging";
 import { Effect, Context, Layer } from "effect";
 import {
   InsufficientKycTierError,
@@ -23,8 +25,6 @@ import {
   UnauthorizedError,
 } from "@host/auth";
 
-import { logAuditEvent, LoggerService } from "./logging";
-
 // ============================================================================
 // Authorization Types
 // ============================================================================
@@ -32,46 +32,38 @@ import { logAuditEvent, LoggerService } from "./logging";
 /**
  * User roles in the system
  */
-export type UserRole = "user" | "admin" | "support" | "compliance";
+export type Role =
+  | "user" // Regular user (KYC Tier 0-2)
+  | "moderator" // Group moderator
+  | "admin" // System administrator
+  | "super_admin" // Super administrator
+  | "kyc_reviewer" // KYC reviewer
+  | "support"; // Customer support
 
 /**
  * Permission resource actions
  */
-type kycAction = "submit" | "approve" | "reject";
-type userAction = "read" | "update" | "suspend";
-type adminAction = "access";
-type analyticsAction = "read";
-type walletAction = "read" | "fund" | "withdraw";
-type groupAction = "create" | "join" | "manage";
-type savingsAction = "create" | "read" | "update" | "delete";
-
-type PermissionAction<T extends PermissionResource> =
-  | (T extends "kyc" ? kycAction : never)
-  | (T extends "user" ? userAction : never)
-  | (T extends "admin" ? adminAction : never)
-  | (T extends "analytics" ? analyticsAction : never)
-  | (T extends "wallet" ? walletAction : never)
-  | (T extends "group" ? groupAction : never)
-  | (T extends "savings" ? savingsAction : never);
+export type ResourceActions = {
+  wallet: "read" | "fund" | "withdraw" | "transfer";
+  kyc: "submit" | "approve" | "review" | "reject";
+  user: "read" | "update" | "suspend" | "delete";
+  analytics: "read" | "export";
+  admin: "transactions" | "groups" | "users" | "system" | "kyc";
+  group: "create" | "read" | "join" | "manage" | "moderate" | "delete";
+  savings: "contribute" | "withdraw" | "update" | "create" | "delete" | "read";
+};
 
 /**
  * Permission resources
  */
-type PermissionResource =
-  | "analytics"
-  | "savings"
-  | "wallet"
-  | "admin"
-  | "group"
-  | "user"
-  | "kyc";
+export type Resource = keyof ResourceActions;
 
 /**
  * Permission types for operations (access control list)
  */
 export type Permission = {
-  [K in PermissionResource]: `${K}:${PermissionAction<K>}`;
-}[PermissionResource];
+  [K in Resource]: `${K}:${ResourceActions[K]}`;
+}[Resource];
 
 /**
  * Operation context for authorization checks
@@ -90,7 +82,7 @@ export interface AuthorizationResult {
   readonly allowed: boolean;
   readonly reason?: string;
   readonly requiredTier?: number;
-  readonly requiredRole?: UserRole;
+  readonly requiredRole?: Role;
 }
 
 // ============================================================================
@@ -123,7 +115,7 @@ export interface AuthorizationService {
    */
   readonly checkRole: (
     authContext: AuthContext,
-    role: UserRole
+    role: Role
   ) => Effect.Effect<void, UnauthorizedError>;
 
   /**
@@ -139,7 +131,7 @@ export interface AuthorizationService {
   readonly checkTransactionLimit: (
     authContext: AuthContext,
     amount: number,
-    limitType: "daily" | "monthly" | "perTransaction"
+    limitType: TransactionLimitType
   ) => Effect.Effect<void, UnauthorizedError>;
 
   /**
@@ -456,7 +448,20 @@ function checkUserPermission(
     "kyc:approve": 0, // Admin only
     "kyc:reject": 0, // Admin only
     "user:suspend": 0, // Admin only
-    "admin:access": 0, // Admin only
+    "user:delete": 0,
+    "admin:kyc": 0,
+    "admin:transactions": 0,
+    "admin:groups": 0,
+    "admin:users": 0,
+    "admin:system": 0,
+    "analytics:export": 0,
+    "savings:contribute": 0,
+    "savings:withdraw": 0,
+    "wallet:transfer": 0,
+    "group:read": 0,
+    "group:delete": 0,
+    "group:moderate": 0,
+    "kyc:review": 0,
   };
 
   const requiredTier = permissionTierMap[permission] ?? 0;
@@ -472,7 +477,7 @@ function checkUserPermission(
 /**
  * Get user role (simplified - in production, this would come from database)
  */
-function getUserRole(_authContext: AuthContext): UserRole {
+function getUserRole(_authContext: AuthContext): Role {
   // In a real implementation, this would check user roles from database
   // For now, return "user" as default
   return "user";
@@ -516,7 +521,7 @@ export const requirePermission =
  * Require specific role for an operation
  */
 export const requireRole =
-  (role: UserRole) =>
+  (role: Role) =>
   <A, E, R>(effect: (authContext: AuthContext) => Effect.Effect<A, E, R>) =>
   (
     authContext: AuthContext
@@ -549,7 +554,7 @@ export const requireActiveAccount =
  * Check transaction limit before processing
  */
 export const requireTransactionLimit =
-  (amount: number, limitType: "daily" | "monthly" | "perTransaction") =>
+  (amount: number, limitType: TransactionLimitType) =>
   <A, E, R>(effect: (authContext: AuthContext) => Effect.Effect<A, E, R>) =>
   (
     authContext: AuthContext
