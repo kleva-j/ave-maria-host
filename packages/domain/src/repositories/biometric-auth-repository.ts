@@ -1,10 +1,8 @@
+import type { BiometricAuth } from "../entities/biometric-auth";
 import type { RepositoryError, Repository } from ".";
+import type { BiometricAuthId } from "@host/shared";
 import type { UserId } from "../value-objects";
 import type { Effect } from "effect";
-import type {
-  BiometricAuthId,
-  BiometricAuth,
-} from "../entities/biometric-auth";
 
 /**
  * Repository interface for managing BiometricAuth entities

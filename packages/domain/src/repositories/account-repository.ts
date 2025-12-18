@@ -1,8 +1,7 @@
-import type { Account, AccountId } from "../entities/account";
-import type { UserIdType } from "@host/shared";
-import type { Effect } from "effect";
-
+import type { AccountId, UserId } from "@host/shared";
 import type { Repository, RepositoryError } from ".";
+import type { Account } from "../entities/account";
+import type { Effect } from "effect";
 
 /**
  * Repository interface for managing Account entities
@@ -23,5 +22,5 @@ export interface AccountRepository
    * Find Accounts by User ID
    * @param userId
    */
-  findByUserId(userId: UserIdType): Effect.Effect<Account[], RepositoryError>;
+  findByUserId(userId: UserId): Effect.Effect<Account[], RepositoryError>;
 }

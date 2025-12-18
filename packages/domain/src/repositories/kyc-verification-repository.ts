@@ -1,10 +1,8 @@
+import type { KycVerification } from "../entities/kyc-verification";
+import type { KycVerificationId } from "@host/shared";
 import type { Repository, RepositoryError } from ".";
 import type { UserId } from "../value-objects";
 import type { Effect } from "effect";
-import type {
-  KycVerificationId,
-  KycVerification,
-} from "../entities/kyc-verification";
 
 /**
  * Repository interface for managing KycVerification entities
@@ -13,7 +11,7 @@ export interface KycVerificationRepository
   extends Repository<KycVerification, KycVerificationId, RepositoryError> {
   /**
    * Find all KycVerifications by a user ID
-   * @param userId
+   * @param userId The user ID to search for
    */
   findByUserId(
     userId: UserId
@@ -21,8 +19,8 @@ export interface KycVerificationRepository
 
   /**
    * Find a KycVerification by its user ID and tier
-   * @param userId
-   * @param tier
+   * @param userId The user ID to search for
+   * @param tier The KYC tier to search for
    */
   findByUserIdAndTier(
     userId: UserId,
