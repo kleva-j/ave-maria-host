@@ -1,5 +1,5 @@
+import type { Repository, RepositoryError, WalletId } from "..";
 import type { UserId, Money } from "../value-objects";
-import type { RepositoryError } from "..";
 import type { Effect } from "effect";
 
 /**
@@ -17,11 +17,12 @@ export interface Wallet {
 /**
  * Repository interface for Wallet operations
  */
-export interface WalletRepository {
+export interface WalletRepository
+  extends Repository<Wallet, WalletId, RepositoryError> {
   /**
    * Create a new wallet for a user
    */
-  readonly create: (
+  readonly createForUser: (
     userId: UserId,
     initialBalance?: Money
   ) => Effect.Effect<Wallet, RepositoryError>;
