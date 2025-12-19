@@ -1,7 +1,7 @@
 /**
  * Audit event category
  */
-export const AuditCategoryEnum = {
+export const AUDIT_CATEGORY = {
   USER_MANAGEMENT: "user_management",
   AUTHENTICATION: "authentication",
   AUTHORIZATION: "authorization",
@@ -14,7 +14,7 @@ export const AuditCategoryEnum = {
 /**
  * Audit event severity
  */
-export const AuditSeverityEnum = {
+export const AUDIT_SEVERITY = {
   LOW: "low",
   MEDIUM: "medium",
   HIGH: "high",
@@ -24,7 +24,7 @@ export const AuditSeverityEnum = {
 /**
  * Audit log status
  */
-export const AuditLogStatusEnum = {
+export const AUDIT_LOG_STATUS = {
   SUCCESS: "success",
   FAILURE: "failure",
   PENDING: "pending",
@@ -34,7 +34,7 @@ export const AuditLogStatusEnum = {
 /**
  * Biometric event type
  */
-export const BiometricEventTypeEnum = {
+export const BIOMETRIC_EVENT_TYPE = {
   AUTHENTICATE: "authenticate",
   REGISTER: "register",
   DISABLE: "disable",
@@ -43,7 +43,7 @@ export const BiometricEventTypeEnum = {
 /**
  * Security event type
  */
-export const SecurityEventTypeEnum = {
+export const SECURITY_EVENT_TYPE = {
   SUSPICIOUS_ACTIVITY: "suspicious_activity",
   UNAUTHORIZED_ACCESS: "unauthorized_access",
   ACCOUNT_LOCKOUT: "account_lockout",
@@ -53,7 +53,7 @@ export const SecurityEventTypeEnum = {
 /**
  * Financial transaction type
  */
-export const FinancialTransactionTypeEnum = {
+export const FINANCIAL_TRANSACTION_TYPE = {
   WITHDRAWAL: "withdrawal",
   TRANSFER: "transfer",
   DEPOSIT: "deposit",
@@ -62,12 +62,12 @@ export const FinancialTransactionTypeEnum = {
 /**
  * KYC event type
  */
-export const KYCEventTypeEnum = {} as const;
+export const KYC_EVENT_TYPE = {} as const;
 
 /**
  * KYC verification status
  */
-export const KycVerificationStatusEnum = {
+export const KYC_VERIFICATION_STATUS = {
   PENDING: "pending",
   APPROVED: "approved",
   REJECTED: "rejected",
@@ -77,7 +77,7 @@ export const KycVerificationStatusEnum = {
 /**
  * Data access action
  */
-export const DataAccessActionEnum = {
+export const DATA_ACCESS_ACTION = {
   READ: "read",
   WRITE: "write",
   DELETE: "delete",
@@ -86,7 +86,7 @@ export const DataAccessActionEnum = {
 /**
  * Transaction limit type
  */
-export const TransactionLimitTypeEnum = {
+export const TRANSACTION_LIMIT_TYPE = {
   DAILY: "daily",
   MONTHLY: "monthly",
   PER_TRANSACTION: "per_transaction",

@@ -1,17 +1,13 @@
+import type { FinancialError } from "@host/shared";
 import type {
   TransactionRepository,
   SavingsRepository,
   WalletRepository,
 } from "@host/domain";
 
+import { ValidationError, DatabaseError } from "@host/shared";
 import { TransactionId, Transaction } from "@host/domain";
 import { Effect, Context, Layer } from "effect";
-
-import {
-  type FinancialError,
-  ValidationError,
-  DatabaseError,
-} from "@host/shared";
 
 /**
  * Output from auto-save processing

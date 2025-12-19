@@ -5,10 +5,10 @@ import type {
   BiometricAuthResult,
   BiometricChallenge,
   BiometricDevice,
-  BrandedUserId,
   BiometricType,
   AuthContext,
   DeviceId,
+  UserId,
 } from "@host/shared";
 
 import type {
@@ -36,7 +36,7 @@ export interface BiometricService {
    * Generate a challenge for biometric authentication
    */
   readonly generateChallenge: (
-    userId: BrandedUserId,
+    userId: UserId,
     deviceId: DeviceId
   ) => Effect.Effect<
     BiometricChallenge,
@@ -67,7 +67,7 @@ export interface BiometricService {
    * Disable biometric authentication for a device
    */
   readonly disableDevice: (
-    userId: BrandedUserId,
+    userId: UserId,
     deviceId: DeviceId
   ) => Effect.Effect<void, BiometricAuthError | UserNotFoundError>;
 
@@ -75,14 +75,14 @@ export interface BiometricService {
    * Get all registered biometric devices for a user
    */
   readonly getUserDevices: (
-    userId: BrandedUserId
+    userId: UserId
   ) => Effect.Effect<BiometricDevice[], UserNotFoundError>;
 
   /**
    * Update device information (name, status, etc.)
    */
   readonly updateDevice: (
-    userId: BrandedUserId,
+    userId: UserId,
     deviceId: DeviceId,
     updates: Partial<Pick<BiometricDevice, "deviceName" | "isActive">>
   ) => Effect.Effect<BiometricDevice, BiometricAuthError | UserNotFoundError>;
@@ -91,7 +91,7 @@ export interface BiometricService {
    * Verify device ownership before sensitive operations
    */
   readonly verifyDeviceOwnership: (
-    userId: BrandedUserId,
+    userId: UserId,
     deviceId: DeviceId
   ) => Effect.Effect<boolean, BiometricAuthError | UserNotFoundError>;
 
@@ -99,7 +99,7 @@ export interface BiometricService {
    * Get biometric authentication history for a user
    */
   readonly getAuthHistory: (
-    userId: BrandedUserId,
+    userId: UserId,
     limit?: number,
     offset?: number
   ) => Effect.Effect<BiometricAuthResult[], UserNotFoundError>;
@@ -108,7 +108,7 @@ export interface BiometricService {
    * Revoke all biometric devices for a user (security measure)
    */
   readonly revokeAllDevices: (
-    userId: BrandedUserId,
+    userId: UserId,
     reason?: string
   ) => Effect.Effect<void, UserNotFoundError>;
 
@@ -116,7 +116,7 @@ export interface BiometricService {
    * Check if biometric authentication is available for a user
    */
   readonly isBiometricAvailable: (
-    userId: BrandedUserId
+    userId: UserId
   ) => Effect.Effect<boolean, UserNotFoundError>;
 
   /**

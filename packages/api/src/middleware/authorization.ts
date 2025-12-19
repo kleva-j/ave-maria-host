@@ -44,10 +44,10 @@ export type Role =
  * Permission resource actions
  */
 export type ResourceActions = {
-  wallet: "read" | "fund" | "withdraw" | "transfer";
+  analytics: "read" | "export";
   kyc: "submit" | "approve" | "review" | "reject";
   user: "read" | "update" | "suspend" | "delete";
-  analytics: "read" | "export";
+  wallet: "read" | "fund" | "withdraw" | "transfer";
   admin: "transactions" | "groups" | "users" | "system" | "kyc";
   group: "create" | "read" | "join" | "manage" | "moderate" | "delete";
   savings: "contribute" | "withdraw" | "update" | "create" | "delete" | "read";

@@ -45,7 +45,7 @@ export const StateSchema = Schema.Literal(...STATES)
  */
 
 export const LgaSchema = Schema.Literal(...LGAS)
-  .pipe(Schema.brand("Lga"))
+  .pipe(Schema.brand("LGA"))
   .annotations({
     message: () => "Invalid LGA code",
     description: "LGA code",

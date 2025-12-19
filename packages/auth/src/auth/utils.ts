@@ -1,8 +1,5 @@
-import type {
-  BrandedSessionId,
-  BrandedKycTier,
-  BrandedUserId,
-} from "@host/shared";
+import type { SessionId, BrandedKycTier, UserId } from "@host/shared";
+import type { AuthContext } from "./types";
 
 import type {
   SessionValidationError,
@@ -11,12 +8,10 @@ import type {
   InvalidTokenError,
 } from "./errors";
 
-import type { AuthContext } from "./types";
-
 import { createHash, createVerify, randomBytes } from "node:crypto";
+import { AuthService } from "./service";
 import { Effect } from "effect";
 
-import { AuthService } from "./service";
 import {
   InsufficientKycTierError,
   AccountSuspendedError,
@@ -116,13 +111,13 @@ export const requirePermission = (
 /**
  * Utility function to extract user ID from auth context
  */
-export const extractUserId = (authContext: AuthContext): BrandedUserId =>
+export const extractUserId = (authContext: AuthContext): UserId =>
   authContext.user.id;
 
 /**
  * Utility function to extract session ID from auth context
  */
-export const extractSessionId = (authContext: AuthContext): BrandedSessionId =>
+export const extractSessionId = (authContext: AuthContext): SessionId =>
   authContext.session.id;
 
 /**

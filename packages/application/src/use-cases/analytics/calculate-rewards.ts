@@ -1,6 +1,6 @@
 import type { TransactionRepository, SavingsRepository } from "@host/domain";
-
 import type { FinancialError, RewardTier, Badge } from "@host/shared";
+
 import { Effect, Context, Layer, Schema } from "effect";
 import { UserId } from "@host/domain";
 

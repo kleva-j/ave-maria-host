@@ -1,12 +1,5 @@
+import { TransactionIdSchema } from "@host/shared";
 import { Equal, Schema } from "effect";
-
-/**
- * Schema for TransactionId validation
- */
-export const TransactionIdSchema = Schema.UUID.pipe(
-  Schema.brand("TransactionId")
-);
-export type TransactionIdType = typeof TransactionIdSchema.Type;
 
 /**
  * TransactionId value object representing a unique identifier for transactions

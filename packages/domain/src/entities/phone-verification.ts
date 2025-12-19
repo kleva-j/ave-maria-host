@@ -1,10 +1,9 @@
+import type { PhoneVerificationId } from "@host/shared";
+
+import { DateSchema, OtpSchema, PhoneVerificationIdSchema } from "@host/shared";
 import { Schema } from "effect";
 
 // Define PhoneVerificationId brand
-export const PhoneVerificationId = Schema.UUID.pipe(
-  Schema.brand("PhoneVerificationId")
-);
-export type PhoneVerificationId = typeof PhoneVerificationId.Type;
 
 /**
  * PhoneVerification entity representing a phone number verification OTP
@@ -12,16 +11,16 @@ export type PhoneVerificationId = typeof PhoneVerificationId.Type;
 export class PhoneVerification extends Schema.Class<PhoneVerification>(
   "PhoneVerification"
 )({
-  id: PhoneVerificationId.annotations({
+  id: PhoneVerificationIdSchema.annotations({
     description: "Unique identifier for the phone verification",
   }),
   phoneNumber: Schema.String.annotations({
     description: "Phone number being verified",
   }),
-  otp: Schema.String.annotations({
+  otp: OtpSchema.annotations({
     description: "One-Time Password",
   }),
-  expiresAt: Schema.Date.annotations({
+  expiresAt: DateSchema.annotations({
     description: "When the OTP expires",
   }),
   verified: Schema.NullOr(Schema.Boolean).annotations({
@@ -30,7 +29,7 @@ export class PhoneVerification extends Schema.Class<PhoneVerification>(
   attempts: Schema.NullOr(Schema.Number).annotations({
     description: "Number of verification attempts",
   }),
-  createdAt: Schema.Date.annotations({
+  createdAt: DateSchema.annotations({
     description: "When the record was created",
   }),
 }) {

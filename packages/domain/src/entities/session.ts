@@ -1,10 +1,7 @@
-import type { BrandedSessionId } from "@host/shared";
+import type { SessionId } from "@host/shared";
 
 import { UserIdSchema, SessionIdSchema } from "@host/shared";
 import { Schema } from "effect";
-
-export const SessionId = SessionIdSchema;
-export type SessionId = typeof SessionId.Type;
 
 /**
  * Session entity representing a user session
@@ -51,7 +48,7 @@ export class Session extends Schema.Class<Session>("Session")({
    * Create a new Session instance
    */
   static create(params: {
-    id: BrandedSessionId;
+    id: SessionId;
     expiresAt: Date;
     token: string;
     refreshToken?: string | null;

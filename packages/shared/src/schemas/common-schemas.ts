@@ -5,6 +5,7 @@ import type { SessionIdSchema, UserIdSchema } from "./id-schemas";
 import type { KycTierSchema } from "./enum-schemas";
 
 import { CurrencyCodeSchema } from "./enum-schemas";
+import { UuidSchema } from "./id-schemas";
 import { pipe, Schema } from "effect";
 
 // ============================================================================
@@ -158,13 +159,6 @@ export const UrlStringSchema = NonEmptyTrimmedString.pipe(
 export type UrlString = typeof UrlStringSchema.Type;
 
 /**
- * Schema for UUID validation
- */
-export const UuidSchema = Schema.UUID.annotations({
-  message: () => "Invalid UUID format",
-});
-
-/**
  * Schema for Date validation
  */
 export const DateSchema = Schema.Date.annotations({
@@ -199,7 +193,6 @@ export const TokenSchema = Schema.String.pipe(Schema.minLength(1)).annotations({
   message: () => "Invalid token format",
 });
 
-export type Uuid = typeof UuidSchema.Type;
 export type Date = typeof DateSchema.Type;
 export type DateTime = typeof DateTimeSchema.Type;
 export type UserAgent = typeof UserAgentSchema.Type;

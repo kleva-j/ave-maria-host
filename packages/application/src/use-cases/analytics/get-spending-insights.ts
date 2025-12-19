@@ -1,7 +1,7 @@
 import type { TransactionRepository } from "@host/domain";
 import type { FinancialError } from "@host/shared";
 
-import { ValidationError, DatabaseError } from "@host/shared";
+import { ValidationError, DatabaseError, DateSchema } from "@host/shared";
 import { Effect, Context, Layer, Schema } from "effect";
 import { UserId } from "@host/domain";
 
@@ -10,8 +10,8 @@ import { UserId } from "@host/domain";
  */
 export const GetSpendingInsightsInput = Schema.Struct({
   userId: UserId,
-  startDate: Schema.Date,
-  endDate: Schema.Date,
+  startDate: DateSchema,
+  endDate: DateSchema,
   categories: Schema.optional(Schema.Array(Schema.String)),
 });
 

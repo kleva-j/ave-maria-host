@@ -20,10 +20,10 @@ import type {
 import { Effect, Context, Layer } from "effect";
 import { LoggerService } from "./logging";
 import {
-  DataAccessActionEnum,
-  AuditLogStatusEnum,
-  AuditCategoryEnum,
-  AuditSeverityEnum,
+  DATA_ACCESS_ACTION,
+  AUDIT_LOG_STATUS,
+  AUDIT_SEVERITY,
+  AUDIT_CATEGORY,
 } from "../constants/enums";
 
 // ============================================================================
@@ -216,11 +216,11 @@ export const AuditServiceLive: Layer.Layer<AuditService, never, LoggerService> =
 
         logAuthentication: (userId, action, status, details) =>
           logEvent({
-            category: AuditCategoryEnum.AUTHENTICATION,
+            category: AUDIT_CATEGORY.AUTHENTICATION,
             severity:
-              status === AuditLogStatusEnum.FAILURE
-                ? AuditSeverityEnum.HIGH
-                : AuditSeverityEnum.LOW,
+              status === AUDIT_LOG_STATUS.FAILURE
+                ? AUDIT_SEVERITY.HIGH
+                : AUDIT_SEVERITY.LOW,
             action,
             userId,
             status,
@@ -229,11 +229,11 @@ export const AuditServiceLive: Layer.Layer<AuditService, never, LoggerService> =
 
         logAuthorization: (authContext, action, resource, status, reason) =>
           logEvent({
-            category: AuditCategoryEnum.AUTHORIZATION,
+            category: AUDIT_CATEGORY.AUTHORIZATION,
             severity:
-              status === AuditLogStatusEnum.FAILURE
-                ? AuditSeverityEnum.HIGH
-                : AuditSeverityEnum.LOW,
+              status === AUDIT_LOG_STATUS.FAILURE
+                ? AUDIT_SEVERITY.HIGH
+                : AUDIT_SEVERITY.LOW,
             action,
             userId: authContext.user.id,
             userEmail: authContext.user.email,
@@ -254,8 +254,8 @@ export const AuditServiceLive: Layer.Layer<AuditService, never, LoggerService> =
           details
         ) =>
           logEvent({
-            category: AuditCategoryEnum.FINANCIAL,
-            severity: AuditSeverityEnum.HIGH,
+            category: AUDIT_CATEGORY.FINANCIAL,
+            severity: AUDIT_SEVERITY.HIGH,
             action: transactionType,
             userId: authContext.user.id,
             userEmail: authContext.user.email,
@@ -270,8 +270,8 @@ export const AuditServiceLive: Layer.Layer<AuditService, never, LoggerService> =
 
         logKycEvent: (userId, action, tier, status, details) =>
           logEvent({
-            category: AuditCategoryEnum.KYC,
-            severity: AuditSeverityEnum.HIGH,
+            category: AUDIT_CATEGORY.KYC,
+            severity: AUDIT_SEVERITY.HIGH,
             action,
             userId,
             status,
@@ -283,27 +283,27 @@ export const AuditServiceLive: Layer.Layer<AuditService, never, LoggerService> =
 
         logDataAccess: (authContext, resource, resourceId, action) =>
           logEvent({
-            category: AuditCategoryEnum.DATA_ACCESS,
+            category: AUDIT_CATEGORY.DATA_ACCESS,
             severity:
-              action === DataAccessActionEnum.DELETE
-                ? AuditSeverityEnum.MEDIUM
-                : AuditSeverityEnum.LOW,
+              action === DATA_ACCESS_ACTION.DELETE
+                ? AUDIT_SEVERITY.MEDIUM
+                : AUDIT_SEVERITY.LOW,
             action: `${action}_${resource}`,
             userId: authContext.user.id,
             userEmail: authContext.user.email,
             resource,
             resourceId,
-            status: AuditLogStatusEnum.SUCCESS,
+            status: AUDIT_LOG_STATUS.SUCCESS,
             details: {},
           }),
 
         logBiometricEvent: (userId, action, deviceId, status, details) =>
           logEvent({
-            category: AuditCategoryEnum.AUTHENTICATION,
+            category: AUDIT_CATEGORY.AUTHENTICATION,
             severity:
-              status === AuditLogStatusEnum.FAILURE
-                ? AuditSeverityEnum.HIGH
-                : AuditSeverityEnum.MEDIUM,
+              status === AUDIT_LOG_STATUS.FAILURE
+                ? AUDIT_SEVERITY.HIGH
+                : AUDIT_SEVERITY.MEDIUM,
             action: `biometric_${action}`,
             userId,
             status,
@@ -315,11 +315,11 @@ export const AuditServiceLive: Layer.Layer<AuditService, never, LoggerService> =
 
         logSecurityEvent: (eventType, severity, userId, details) =>
           logEvent({
-            category: AuditCategoryEnum.SYSTEM,
+            category: AUDIT_CATEGORY.SYSTEM,
             severity,
             action: eventType,
             userId: userId || "system",
-            status: AuditLogStatusEnum.WARNING,
+            status: AUDIT_LOG_STATUS.WARNING,
             details: details || {},
           }),
 
@@ -368,22 +368,22 @@ export const withAuditLog =
           Effect.tap((result) =>
             audit.logEvent({
               category,
-              severity: AuditSeverityEnum.MEDIUM,
+              severity: AUDIT_SEVERITY.MEDIUM,
               action,
               userId: authContext.user.id,
               userEmail: authContext.user.email,
-              status: AuditLogStatusEnum.SUCCESS,
+              status: AUDIT_LOG_STATUS.SUCCESS,
               details: getDetails(result),
             })
           ),
           Effect.tapError((error) =>
             audit.logEvent({
               category,
-              severity: AuditSeverityEnum.HIGH,
+              severity: AUDIT_SEVERITY.HIGH,
               action,
               userId: authContext.user.id,
               userEmail: authContext.user.email,
-              status: AuditLogStatusEnum.FAILURE,
+              status: AUDIT_LOG_STATUS.FAILURE,
               details: {
                 error: String(error),
               },

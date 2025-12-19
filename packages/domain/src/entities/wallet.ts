@@ -1,14 +1,16 @@
-import { UserIdSchema, MoneySchema, DateSchema } from "@host/shared";
 import { Schema } from "effect";
-
-export const WalletId = Schema.UUID.pipe(Schema.brand("WalletId"));
-export type WalletId = typeof WalletId.Type;
+import {
+  WalletIdSchema,
+  UserIdSchema,
+  MoneySchema,
+  DateSchema,
+} from "@host/shared";
 
 /**
  * Wallet entity schema for repository operations
  */
 export class Wallet extends Schema.Class<Wallet>("Wallet")({
-  id: WalletId.annotations({
+  id: WalletIdSchema.annotations({
     description: "Unique identifier for the wallet",
   }),
   userId: UserIdSchema.annotations({
