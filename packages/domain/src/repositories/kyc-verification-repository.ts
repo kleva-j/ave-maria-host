@@ -4,6 +4,8 @@ import type { Repository, RepositoryError } from ".";
 import type { UserId } from "../value-objects";
 import type { Effect } from "effect";
 
+import { Context } from "effect";
+
 /**
  * Repository interface for managing KycVerification entities
  */
@@ -27,3 +29,16 @@ export interface KycVerificationRepository
     tier: number
   ): Effect.Effect<KycVerification | null, RepositoryError>;
 }
+
+/**
+ * @description
+ * Context type for KycVerificationRepository.
+ *
+ * This type represents an implementation of the KycVerificationRepository interface,
+ *
+ * @see KycVerificationRepository
+ */
+export const KycVerificationRepository =
+  Context.GenericTag<KycVerificationRepository>(
+    "@domain/KycVerificationRepository"
+  );

@@ -1,9 +1,9 @@
+import type { PhoneVerification } from "../entities/phone-verification";
+import type { PhoneVerificationId } from "@host/shared";
 import type { Repository, RepositoryError } from ".";
 import type { Effect } from "effect";
-import type {
-  PhoneVerificationId,
-  PhoneVerification,
-} from "../entities/phone-verification";
+
+import { Context } from "effect";
 
 /**
  * Repository interface for managing PhoneVerification entities
@@ -19,3 +19,16 @@ export interface PhoneVerificationRepository
     phoneNumber: string
   ): Effect.Effect<PhoneVerification | null, RepositoryError>;
 }
+
+/**
+ * @description
+ * Context type for PhoneVerificationRepository.
+ *
+ * This type represents an implementation of the PhoneVerificationRepository interface,
+ *
+ * @see PhoneVerificationRepository
+ */
+export const PhoneVerificationRepository =
+  Context.GenericTag<PhoneVerificationRepository>(
+    "@domain/PhoneVerificationRepository"
+  );

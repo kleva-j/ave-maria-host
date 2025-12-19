@@ -2,6 +2,8 @@ import type { PlanId, UserId, Money } from "../value-objects";
 import type { RepositoryError } from ".";
 import type { Effect } from "effect";
 
+import { Context } from "effect";
+
 /**
  * Withdrawal history entry for tracking limits
  */
@@ -68,3 +70,15 @@ export interface WithdrawalRepository {
     planId: PlanId
   ) => Effect.Effect<boolean, RepositoryError>;
 }
+
+/**
+ * @description
+ * Context type for WithdrawalRepository.
+ *
+ * This type represents an implementation of WithdrawalRepository interface,
+ *
+ * @see WithdrawalRepository
+ */
+export const WithdrawalRepository = Context.GenericTag<WithdrawalRepository>(
+  "@domain/WithdrawalRepository"
+);

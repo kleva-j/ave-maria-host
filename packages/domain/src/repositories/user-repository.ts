@@ -1,14 +1,24 @@
-import type { Effect } from "effect";
-
 import type { Repository, RepositoryError } from ".";
 import type { UserId } from "../value-objects";
 import type { User } from "../entities/user";
+import type { Effect } from "effect";
+
+import { Context } from "effect";
 
 /**
  * Repository interface for User entity
  */
 export interface UserRepository
   extends Repository<User, UserId, RepositoryError> {
+  /**
+   * Find a user by their ID
+   */
+  readonly findById: (
+    id: UserId
+  ) => Effect.Effect<User | null, RepositoryError>;
+
+  readonly update: (user: User) => Effect.Effect<User | null, RepositoryError>;
+
   /**
    * Find a user by their email address
    */
@@ -56,3 +66,15 @@ export interface UserRepository
     phoneNumber: string
   ) => Effect.Effect<boolean, RepositoryError>;
 }
+
+/**
+ * @description
+ * Context type for UserRepository.
+ *
+ * This type represents an implementation of the UserRepository interface,
+ *
+ * @see UserRepository
+ */
+export const UserRepository = Context.GenericTag<UserRepository>(
+  "@domain/UserRepository"
+);

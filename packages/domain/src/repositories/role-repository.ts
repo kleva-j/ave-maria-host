@@ -4,6 +4,8 @@ import type { Repository, RepositoryError } from ".";
 import type { Role } from "../entities/role";
 import type { Effect } from "effect";
 
+import { Context } from "effect";
+
 /**
  * Repository interface for managing Role entities
  */
@@ -35,3 +37,15 @@ export interface RoleRepository
    */
   getPermissions(roleId: RoleId): Effect.Effect<Permission[], Error>;
 }
+
+/**
+ * @description
+ * Context type for RoleRepository.
+ *
+ * This type represents an implementation of the RoleRepository interface,
+ *
+ * @see RoleRepository
+ */
+export const RoleRepository = Context.GenericTag<RoleRepository>(
+  "@domain/RoleRepository"
+);

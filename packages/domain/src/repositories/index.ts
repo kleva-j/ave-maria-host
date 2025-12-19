@@ -3,26 +3,19 @@
 
 import { type Effect, Data } from "effect";
 
-export type { PhoneVerificationRepository } from "./phone-verification-repository";
-export type { KycVerificationRepository } from "./kyc-verification-repository";
-export type { BiometricAuthRepository } from "./biometric-auth-repository";
-export type { VerificationRepository } from "./verification-repository";
-export type { TransactionRepository } from "./transaction-repository";
-export type { PermissionRepository } from "./permission-repository";
-export type { SessionRepository } from "./session-repository";
-export type { SavingsRepository } from "./savings-repository";
-export type { AccountRepository } from "./account-repository";
-export type { UserRepository } from "./user-repository";
-export type { RoleRepository } from "./role-repository";
-export type {
-  WithdrawalHistoryEntry,
-  WithdrawalRepository,
-} from "./withdrawal-repository";
-export type {
-  WalletTransactionSummary,
-  WalletRepository,
-  Wallet,
-} from "./wallet-repository";
+export * from "./phone-verification-repository";
+export * from "./kyc-verification-repository";
+export * from "./biometric-auth-repository";
+export * from "./verification-repository";
+export * from "./transaction-repository";
+export * from "./permission-repository";
+export * from "./withdrawal-repository";
+export * from "./session-repository";
+export * from "./savings-repository";
+export * from "./account-repository";
+export * from "./wallet-repository";
+export * from "./user-repository";
+export * from "./role-repository";
 
 /**
  * Repository error class
@@ -66,7 +59,7 @@ export interface Repository<T, Id, E = Error> {
    * Create a new entity.
    * @param entity The entity to create.
    */
-  create?: (
+  readonly create?: (
     entity: Omit<T, "id" | "createdAt" | "updatedAt">
   ) => Effect.Effect<T | null, E>;
 
@@ -74,19 +67,19 @@ export interface Repository<T, Id, E = Error> {
    * Find an entity by its ID.
    * @param id The ID of the entity to find.
    */
-  findById?: (id: Id) => Effect.Effect<T | null, E>;
+  readonly findById?: (id: Id) => Effect.Effect<T | null, E>;
 
   /**
    * Find single entity by criteria
    * @param criteria
    */
-  findOne?: (criteria?: Partial<T>) => Effect.Effect<T | null, E>;
+  readonly findOne?: (criteria?: Partial<T>) => Effect.Effect<T | null, E>;
 
   /**
    * Find entities with pagination, optional filtering and ordering
    * @param criteria
    */
-  findMany?: (
+  readonly findMany?: (
     criteria?: FindManyOptions<T>
   ) => Effect.Effect<PaginatedResult<T>, E>;
 
@@ -94,31 +87,31 @@ export interface Repository<T, Id, E = Error> {
    * Find all entities with optional filtering and ordering
    * @param options
    */
-  findAll?: (options?: FindAllOptions<T>) => Effect.Effect<T[], E>;
+  readonly findAll?: (options?: FindAllOptions<T>) => Effect.Effect<T[], E>;
 
   /**
    * Update an existing entity.
    * @param entity The entity to update.
    */
-  update?: (entity: T) => Effect.Effect<T | null, E>;
+  readonly update?: (entity: T) => Effect.Effect<T | null, E>;
 
   /**
    * Delete an entity by its ID.
    * @param id The ID of the entity to delete.
    */
-  delete?: (id: Id) => Effect.Effect<void, E>;
+  readonly delete?: (id: Id) => Effect.Effect<void, E>;
 
   /**
    * Check if an entity exists by its ID.
    * @param id The ID of the entity to check.
    */
-  exists?: (id: Id) => Effect.Effect<boolean, E>;
+  readonly exists?: (id: Id) => Effect.Effect<boolean, E>;
 
   /**
    * Count the number of entities that match the given criteria.
    * @param criteria The criteria to match.
    */
-  count?: (criteria?: Partial<T>) => Effect.Effect<number, E>;
+  readonly count?: (criteria?: Partial<T>) => Effect.Effect<number, E>;
 }
 
 /**

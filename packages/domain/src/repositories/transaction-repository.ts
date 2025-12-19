@@ -8,6 +8,8 @@ import type {
   PaymentSource,
 } from "@host/shared";
 
+import { Context } from "effect";
+
 /**
  * Repository interface for Transaction entity
  */
@@ -19,6 +21,10 @@ export interface TransactionRepository
   readonly save: (
     transaction: Transaction
   ) => Effect.Effect<void, RepositoryError>;
+
+  readonly update: (
+    entity: Transaction
+  ) => Effect.Effect<Transaction | null, RepositoryError>;
 
   /**
    * Find transactions by user ID with pagination
@@ -119,3 +125,15 @@ export interface TransactionRepository
     RepositoryError
   >;
 }
+
+/**
+ * @description
+ * Context type for TransactionRepository.
+ *
+ * This type represents an implementation of the TransactionRepository interface,
+ *
+ * @see TransactionRepository
+ */
+export const TransactionRepository = Context.GenericTag<TransactionRepository>(
+  "@domain/TransactionRepository"
+);

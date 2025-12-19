@@ -3,6 +3,8 @@ import type { Repository, RepositoryError } from ".";
 import type { PermissionId } from "@host/shared";
 import type { Effect } from "effect";
 
+import { Context } from "effect";
+
 /**
  * Repository interface for managing Permission entities
  */
@@ -13,3 +15,15 @@ export interface PermissionRepository
    */
   findByName(name: string): Effect.Effect<Permission | null, RepositoryError>;
 }
+
+/**
+ * @description
+ * Context type for PermissionRepository.
+ *
+ * This type represents an implementation of the PermissionRepository interface,
+ *
+ * @see PermissionRepository
+ */
+export const PermissionRepository = Context.GenericTag<PermissionRepository>(
+  "@domain/PermissionRepository"
+);

@@ -1,6 +1,9 @@
-import type { Repository, RepositoryError, WalletId } from "..";
+import type { Repository, RepositoryError } from "..";
 import type { UserId, Money } from "../value-objects";
+import type { WalletId } from "@host/shared";
 import type { Effect } from "effect";
+
+import { Context } from "effect";
 
 /**
  * Wallet entity for repository operations
@@ -90,6 +93,18 @@ export interface WalletRepository
     endDate: Date
   ) => Effect.Effect<WalletTransactionSummary, RepositoryError>;
 }
+
+/**
+ * @description
+ * Context type for WalletRepository.
+ *
+ * This type represents an implementation of the WalletRepository interface,
+ *
+ * @see WalletRepository
+ */
+export const WalletRepository = Context.GenericTag<WalletRepository>(
+  "@domain/WalletRepository"
+);
 
 /**
  * Wallet transaction summary

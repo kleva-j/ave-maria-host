@@ -4,15 +4,33 @@ import type { RepositoryError, Repository } from ".";
 import type { PlanStatus } from "@host/shared";
 import type { Effect } from "effect";
 
+import { Context } from "effect";
+
 /**
  * Repository interface for SavingsPlan entity
  */
 export interface SavingsRepository
   extends Repository<SavingsPlan, PlanId, RepositoryError> {
   /**
+   * Find a savings plan by its ID
+   */
+  readonly findById: (
+    id: PlanId
+  ) => Effect.Effect<SavingsPlan | null, RepositoryError>;
+
+  /**
    * Save a new savings plan
    */
-  readonly save: (plan: SavingsPlan) => Effect.Effect<void, RepositoryError>;
+  readonly save: (
+    plan: SavingsPlan
+  ) => Effect.Effect<SavingsPlan | null, RepositoryError>;
+
+  /**
+   * Update an existing savings plan
+   */
+  readonly update: (
+    plan: SavingsPlan
+  ) => Effect.Effect<SavingsPlan | null, RepositoryError>;
 
   /**
    * Find all savings plans for a user
@@ -58,3 +76,15 @@ export interface SavingsRepository
     status: PlanStatus
   ) => Effect.Effect<SavingsPlan[], RepositoryError>;
 }
+
+/**
+ * @description
+ * Context type for SavingsRepository.
+ *
+ * This type represents an implementation of the SavingsRepository interface,
+ *
+ * @see SavingsRepository
+ */
+export const SavingsRepository = Context.GenericTag<SavingsRepository>(
+  "@domain/SavingsRepository"
+);

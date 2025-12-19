@@ -3,6 +3,8 @@ import type { Repository, RepositoryError } from ".";
 import type { Account } from "../entities/account";
 import type { Effect } from "effect";
 
+import { Context } from "effect";
+
 /**
  * Repository interface for managing Account entities
  */
@@ -24,3 +26,15 @@ export interface AccountRepository
    */
   findByUserId(userId: UserId): Effect.Effect<Account[], RepositoryError>;
 }
+
+/**
+ * @description
+ * Context type for AccountRepository.
+ *
+ * This type represents an implementation of the AccountRepository interface,
+ *
+ * @see AccountRepository
+ */
+export const AccountRepository = Context.GenericTag<AccountRepository>(
+  "@domain/AccountRepository"
+);

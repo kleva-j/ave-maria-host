@@ -4,6 +4,8 @@ import type { BiometricAuthId } from "@host/shared";
 import type { UserId } from "../value-objects";
 import type { Effect } from "effect";
 
+import { Context } from "effect";
+
 /**
  * Repository interface for managing BiometricAuth entities
  */
@@ -23,3 +25,16 @@ export interface BiometricAuthRepository
    */
   findByDeviceId(deviceId: string): Effect.Effect<BiometricAuth | null, Error>;
 }
+
+/**
+ * @description
+ * Context type for BiometricAuthRepository.
+ *
+ * This type represents an implementation of the BiometricAuthRepository interface,
+ *
+ * @see BiometricAuthRepository
+ */
+export const BiometricAuthRepository =
+  Context.GenericTag<BiometricAuthRepository>(
+    "@domain/BiometricAuthRepository"
+  );
