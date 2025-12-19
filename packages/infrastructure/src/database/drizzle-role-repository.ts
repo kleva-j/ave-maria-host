@@ -1,5 +1,5 @@
-import type { PermissionId, RoleId } from "@host/shared";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import type { PermissionId, RoleId } from "@host/shared";
 import type { RoleRepository } from "@host/domain";
 
 import { DatabaseService, rolePermissions, permissions, roles } from "@host/db";

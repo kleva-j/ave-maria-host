@@ -1,5 +1,5 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type { CurrencyCode } from "@host/shared";
+import type { CurrencyCode, WalletId } from "@host/shared";
 
 import type {
   WalletTransactionSummary,
@@ -7,7 +7,6 @@ import type {
   Wallet,
   UserId,
   Money,
-  WalletId,
 } from "@host/domain";
 
 import { wallets, transactions, DatabaseService } from "@host/db";
@@ -140,7 +139,6 @@ export const DrizzleWalletRepositoryLive = Layer.effect(
             Effect.fail(RepositoryError.create("findById", "Wallet", error))
           )
         ),
-        
 
       findByUserId: (userId: UserId) =>
         Effect.gen(function* () {

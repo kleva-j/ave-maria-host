@@ -1,14 +1,12 @@
 import type { PhoneVerificationRepository } from "@host/domain";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import type { PhoneVerificationId } from "@host/shared";
 
+import { PhoneVerification, RepositoryError } from "@host/domain";
 import { DatabaseService, phoneVerification } from "@host/db";
+import { PhoneVerificationIdSchema } from "@host/shared";
 import { Effect, Context, Layer } from "effect";
 import { eq } from "drizzle-orm";
-import {
-  PhoneVerificationId,
-  PhoneVerification,
-  RepositoryError,
-} from "@host/domain";
 
 /**
  * Map database row to PhoneVerification domain entity
@@ -17,7 +15,7 @@ function mapToDomainEntity(
   row: typeof phoneVerification.$inferSelect
 ): PhoneVerification {
   return new PhoneVerification({
-    id: PhoneVerificationId.make(row.id),
+    id: PhoneVerificationIdSchema.make(row.id),
     phoneNumber: row.phoneNumber,
     otp: row.otp,
     expiresAt: row.expiresAt,
