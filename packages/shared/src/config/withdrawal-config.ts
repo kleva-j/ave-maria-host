@@ -59,6 +59,28 @@ export const WITHDRAWAL_LIMITS = {
    * Individual plans can have higher minimum balances
    */
   DEFAULT_MINIMUM_BALANCE: 1_000,
+
+  /**
+   * Threshold above which a tax warning is triggered in NGN
+   */
+  TAX_THRESHOLD_AMOUNT: 1_000_000,
+
+  /**
+   * Standard withdrawal fees in NGN
+   */
+  FEES: {
+    WALLET_DESTINATION: 0,
+    BANK_DESTINATION: 50,
+  },
+
+  /**
+   * KYC Tier based withdrawal limits in NGN
+   */
+  KYC_TIER_LIMITS: {
+    UNVERIFIED: 50_000,
+    BASIC: 500_000,
+    FULL: 10_000_000, // Effectively "unlimited" for practical purposes
+  },
 } as const;
 
 /**
