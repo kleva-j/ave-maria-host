@@ -286,6 +286,31 @@ export class FundsOnHoldError extends Data.TaggedError("FundsOnHoldError")<{
 }> {}
 
 /**
+ * Error thrown when a withdrawal violates compliance rules (e.g., KYC limits)
+ */
+export class ComplianceViolationError extends Data.TaggedError(
+  "ComplianceViolationError"
+)<{
+  readonly userId: string;
+  readonly reason: string;
+  readonly limitAmount: number;
+  readonly requestedAmount: number;
+  readonly kycTier: string;
+  readonly currency: string;
+}> {}
+
+/**
+ * Error/Warning thrown when a withdrawal has tax implications
+ * This can be informational or used to block until acknowledged
+ */
+export class TaxWarningError extends Data.TaggedError("TaxWarningError")<{
+  readonly amount: number;
+  readonly threshold: number;
+  readonly message: string;
+  readonly currency: string;
+}> {}
+
+/**
  * Union type representing all possible financial errors in the system
  * Use this type for comprehensive error handling in Effect pipelines
  */
@@ -297,6 +322,7 @@ export type FinancialError =
   | WithdrawalNotAllowedError
   | TransactionOperationError
   | TransactionNotFoundError
+  | ComplianceViolationError
   | InvalidContributionError
   | InsufficientFundsError
   | DuplicateResourceError
@@ -312,6 +338,7 @@ export type FinancialError =
   | PlanNotFoundError
   | NotificationError
   | FundsOnHoldError
+  | TaxWarningError
   | ValidationError
   | RateLimitError
   | DatabaseError;
