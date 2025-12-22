@@ -2,7 +2,7 @@ import type { PaymentSource, TransactionType } from "@host/shared";
 import type { SavingsPlan } from "../entities/savings-plan";
 import type { UserId, PlanId } from "../value-objects";
 
-import { DEFAULT_CURRENCY, PaymentSourceEnum } from "@host/shared";
+import { DEFAULT_CURRENCY, KycTierEnum, PaymentSourceEnum } from "@host/shared";
 import { Money } from "../value-objects";
 /**
  * Validation result interface
@@ -12,27 +12,18 @@ export interface ValidationResult {
   errors: string[];
 }
 
-/**
- * KYC tier
- */
-const KYC_TIERS = {
-  UNVERIFIED: "UNVERIFIED",
-  BASIC: "BASIC",
-  FULL: "FULL",
-} as const;
-
 export const KYC_TIER_LIMIT = {
-  [KYC_TIERS.UNVERIFIED]: {
+  [KycTierEnum.UNVERIFIED]: {
     daily: 5_000,
     monthly: 50_000,
     singleTransaction: 2_000,
   },
-  [KYC_TIERS.BASIC]: {
+  [KycTierEnum.BASIC]: {
     daily: 50_000,
     monthly: 500_000,
     singleTransaction: 20_000,
   },
-  [KYC_TIERS.FULL]: {
+  [KycTierEnum.FULL]: {
     daily: 500_000,
     monthly: 5_000_000,
     singleTransaction: 200_000,
@@ -40,45 +31,45 @@ export const KYC_TIER_LIMIT = {
 } as const;
 
 export const KYC_TIER = {
-  [KYC_TIERS.UNVERIFIED]: {
+  [KycTierEnum.UNVERIFIED]: {
     dailyLimit: Money.fromNumber(
-      KYC_TIER_LIMIT[KYC_TIERS.UNVERIFIED].daily,
+      KYC_TIER_LIMIT[KycTierEnum.UNVERIFIED].daily,
       DEFAULT_CURRENCY
     ),
     monthlyLimit: Money.fromNumber(
-      KYC_TIER_LIMIT[KYC_TIERS.UNVERIFIED].monthly,
+      KYC_TIER_LIMIT[KycTierEnum.UNVERIFIED].monthly,
       DEFAULT_CURRENCY
     ),
     singleTransactionLimit: Money.fromNumber(
-      KYC_TIER_LIMIT[KYC_TIERS.UNVERIFIED].singleTransaction,
+      KYC_TIER_LIMIT[KycTierEnum.UNVERIFIED].singleTransaction,
       DEFAULT_CURRENCY
     ),
   },
-  [KYC_TIERS.BASIC]: {
+  [KycTierEnum.BASIC]: {
     dailyLimit: Money.fromNumber(
-      KYC_TIER_LIMIT[KYC_TIERS.BASIC].daily,
+      KYC_TIER_LIMIT[KycTierEnum.BASIC].daily,
       DEFAULT_CURRENCY
     ),
     monthlyLimit: Money.fromNumber(
-      KYC_TIER_LIMIT[KYC_TIERS.BASIC].monthly,
+      KYC_TIER_LIMIT[KycTierEnum.BASIC].monthly,
       DEFAULT_CURRENCY
     ),
     singleTransactionLimit: Money.fromNumber(
-      KYC_TIER_LIMIT[KYC_TIERS.BASIC].singleTransaction,
+      KYC_TIER_LIMIT[KycTierEnum.BASIC].singleTransaction,
       DEFAULT_CURRENCY
     ),
   },
-  [KYC_TIERS.FULL]: {
+  [KycTierEnum.FULL]: {
     dailyLimit: Money.fromNumber(
-      KYC_TIER_LIMIT[KYC_TIERS.FULL].daily,
+      KYC_TIER_LIMIT[KycTierEnum.FULL].daily,
       DEFAULT_CURRENCY
     ),
     monthlyLimit: Money.fromNumber(
-      KYC_TIER_LIMIT[KYC_TIERS.FULL].monthly,
+      KYC_TIER_LIMIT[KycTierEnum.FULL].monthly,
       DEFAULT_CURRENCY
     ),
     singleTransactionLimit: Money.fromNumber(
-      KYC_TIER_LIMIT[KYC_TIERS.FULL].singleTransaction,
+      KYC_TIER_LIMIT[KycTierEnum.FULL].singleTransaction,
       DEFAULT_CURRENCY
     ),
   },

@@ -1,57 +1,40 @@
-import type { UnauthorizedError, UserNotFoundError } from "../effects";
+import type { UnauthorizedError, UserNotFoundError } from "../auth/errors";
 import type { AuthContext } from "..";
 import type { Effect } from "effect";
 
 import { Context } from "effect";
 
 /**
- * Permission types in the system
+ * Permission resource actions
  */
-export type Permission =
-  // User management
-  | "user:read"
-  | "user:update"
-  | "user:delete"
-  | "user:suspend"
+export type ResourceActions = {
+  // Analytics Actions
+  analytics: "read" | "export";
+  // KYC Actions
+  kyc: "submit" | "approve" | "review" | "reject";
+  // User Actions
+  user: "read" | "update" | "suspend" | "delete";
+  // Wallet Actions
+  wallet: "read" | "fund" | "withdraw" | "transfer";
+  // Admin Actions
+  admin: "transactions" | "groups" | "users" | "system" | "kyc";
+  // Group Actions
+  group: "create" | "read" | "join" | "manage" | "moderate" | "delete";
+  // Savings Actions
+  savings: "contribute" | "withdraw" | "update" | "create" | "delete" | "read";
+};
 
-  // Savings operations
-  | "savings:create"
-  | "savings:read"
-  | "savings:update"
-  | "savings:delete"
-  | "savings:contribute"
-  | "savings:withdraw"
+/**
+ * Permission resources
+ */
+export type AuthorizationResource = keyof ResourceActions;
 
-  // Group operations
-  | "group:create"
-  | "group:read"
-  | "group:join"
-  | "group:manage"
-  | "group:moderate"
-  | "group:delete"
-
-  // Wallet operations
-  | "wallet:read"
-  | "wallet:fund"
-  | "wallet:withdraw"
-  | "wallet:transfer"
-
-  // Admin operations
-  | "admin:users"
-  | "admin:groups"
-  | "admin:transactions"
-  | "admin:kyc"
-  | "admin:system"
-
-  // KYC operations
-  | "kyc:submit"
-  | "kyc:review"
-  | "kyc:approve"
-  | "kyc:reject"
-
-  // Analytics
-  | "analytics:read"
-  | "analytics:export";
+/**
+ * Permission types for operations (access control list)
+ */
+export type Permission = {
+  [K in AuthorizationResource]: `${K}:${ResourceActions[K]}`;
+}[AuthorizationResource];
 
 /**
  * User roles in the system

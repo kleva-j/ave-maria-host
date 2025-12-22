@@ -62,7 +62,11 @@ export const FINANCIAL_TRANSACTION_TYPE = {
 /**
  * KYC event type
  */
-export const KYC_EVENT_TYPE = {} as const;
+export const KYC_EVENT_TYPE = {
+  SUBMIT: "submit",
+  APPROVE: "approve",
+  REJECT: "reject",
+} as const;
 
 /**
  * KYC verification status
