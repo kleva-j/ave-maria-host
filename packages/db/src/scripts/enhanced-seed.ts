@@ -1,13 +1,22 @@
 #!/usr/bin/env bun
 
+import type {
+  transactions,
+  savingsPlans,
+  permissions,
+  ajoGroups,
+  roles,
+  user,
+} from "../schema";
+
 import { PlatformConfigProvider, Terminal } from "@effect/platform";
 import { NodeContext, NodeRuntime } from "@effect/platform-node";
 import { Effect, Layer, Console } from "effect";
+import { DEFAULT_CURRENCY } from "@host/shared";
 import { fileURLToPath } from "node:url";
 import { SqlClient } from "@effect/sql";
-import { join } from "node:path";
-
 import { PgLive } from "../database";
+import { join } from "node:path";
 
 /**
  * Enhanced Database Seeding Script
@@ -47,13 +56,20 @@ interface SeedConfig {
   minimal: boolean;
 }
 
+type Transactions = (typeof transactions.$inferInsert)[];
+type Permissions = (typeof permissions.$inferInsert)[];
+type Plans = (typeof savingsPlans.$inferInsert)[];
+type Groups = (typeof ajoGroups.$inferInsert)[];
+type Roles = (typeof roles.$inferInsert)[];
+type Users = (typeof user.$inferInsert)[];
+
 interface SeedData {
-  roles: any[];
-  permissions: any[];
-  users: any[];
-  plans: any[];
-  groups: any[];
-  transactions: any[];
+  transactions: Transactions;
+  permissions: Permissions;
+  groups: Groups;
+  roles: Roles;
+  users: Users;
+  plans: Plans;
 }
 
 // ============================================================================
@@ -61,7 +77,7 @@ interface SeedData {
 // ============================================================================
 
 const getEnvironmentData = (env: Environment): SeedData => {
-  const baseRoles = [
+  const baseRoles: Roles = [
     {
       name: "admin",
       display_name: "Administrator",
@@ -76,7 +92,7 @@ const getEnvironmentData = (env: Environment): SeedData => {
     },
   ];
 
-  const basePermissions = [
+  const basePermissions: Permissions = [
     {
       name: "user:read",
       display_name: "Read User",
@@ -576,14 +592,15 @@ const seedUserAnalytics = (
 
       yield* sql`
         INSERT INTO user_analytics (
-          user_id, total_saved, current_streak, total_contributions, active_plans
+          user_id, total_saved, current_streak, total_contributions, active_plans, currency
         )
         VALUES (
           ${user.id},
           ${totalSaved},
           ${currentStreak},
           ${totalContributions},
-          1
+          1,
+          ${DEFAULT_CURRENCY}
         )
         ON CONFLICT (user_id) DO UPDATE SET
           total_saved = EXCLUDED.total_saved,
