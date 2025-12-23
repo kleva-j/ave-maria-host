@@ -199,3 +199,12 @@ export const RewardsBadgeTypeEnum = {
   EARLY_BIRD: "early_bird",
   NIGHT_OWL: "night_owl",
 } as const;
+
+/**
+ * Fee Type Enum
+ */
+export const FeeTypeEnum = {
+  FIXED: "fixed",
+  HYBRID: "hybrid",
+  PERCENTAGE: "percentage",
+} as const;

@@ -28,11 +28,17 @@ import {
   UserIdSchema,
 } from "@host/shared";
 
-import { WalletService, SavingsService } from "../../services";
+import {
+  ComplianceService,
+  SavingsService,
+  WalletService,
+  FeeService,
+} from "../../services";
 
 /**
  * Input for withdrawing from a savings plan
  */
+// ... (omitted for brevity)
 // The schema is defined in shared, we just need the type, but since we want to validate,
 // we might want to extend or wrap it. The RPC layer already validates the payload,
 // but the Use Case should ideally validate its own input or trust the caller.
@@ -96,21 +102,25 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
     const withdrawalRepo = yield* Effect.serviceOption(
       Context.GenericTag<WithdrawalRepository>("@domain/WithdrawalRepository")
     );
-    const walletService = yield* Effect.serviceOption(WalletService);
+    const complianceService = yield* Effect.serviceOption(ComplianceService);
     const savingsService = yield* Effect.serviceOption(SavingsService);
+    const walletService = yield* Effect.serviceOption(WalletService);
+    const feeService = yield* Effect.serviceOption(FeeService);
 
     if (
       savingsRepo._tag === "None" ||
       transactionRepo._tag === "None" ||
       withdrawalRepo._tag === "None" ||
       walletService._tag === "None" ||
-      savingsService._tag === "None"
+      savingsService._tag === "None" ||
+      complianceService._tag === "None" ||
+      feeService._tag === "None"
     ) {
       return yield* Effect.fail(
         new ValidationError({
           field: "dependencies",
           message:
-            "Required dependencies (SavingsRepo, TransactionRepo, WithdrawalRepo, WalletService, SavingsService) not available",
+            "Required dependencies (SavingsRepo, TransactionRepo, WithdrawalRepo, WalletService, SavingsService, ComplianceService, FeeService) not available",
         })
       );
     }
@@ -120,13 +130,12 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
     const withdrawalRepository = withdrawalRepo.value;
     const wallet = walletService.value;
     const savings = savingsService.value;
+    const compliance = complianceService.value;
+    const fees = feeService.value;
 
     return {
       execute: (input: WithdrawFromSavingsPlanInput) =>
         Effect.gen(function* () {
-          // Validate input
-          // (RPC validates schema, but good practice to re-validate or just use typed input)
-
           // 1. Fetch Plan
           const plan = yield* savingsRepository
             .findById(PlanId.fromString(input.planId))
@@ -134,8 +143,8 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
               Effect.mapError(
                 (error: RepositoryError) =>
                   new DatabaseError({
-                    operation: error.operation,
-                    table: error.entity,
+                    operation: "findById",
+                    table: "savings_plans",
                     message: error.message || "Failed to find plan",
                   })
               )
@@ -168,8 +177,8 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
               Effect.mapError(
                 (error) =>
                   new DatabaseError({
-                    operation: error.operation,
-                    table: error.entity,
+                    operation: "hasPendingWithdrawals",
+                    table: "withdrawals",
                     message:
                       error.message || "Failed to check pending withdrawals",
                   })
@@ -198,15 +207,35 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
             );
           }
 
-          // 5. Check Withdrawal Limits
           const withdrawalAmount = Money.fromNumber(
             input.amount,
             plan.currentAmount.currency
           );
 
+          // 5. Check Withdrawal Limits (Phase 2)
           yield* savings.checkWithdrawalLimits(plan.userId, withdrawalAmount);
 
-          // 6. Check minimum balance
+          // 6. Check Compliance Tier Limits (Phase 3)
+          yield* compliance.checkCompliance(plan.userId, withdrawalAmount);
+
+          // 7. Get Tax Warning (Phase 3)
+          const taxWarning = yield* compliance.getTaxWarning(withdrawalAmount);
+          if (taxWarning) {
+            // In a real scenario, we might want to log this or return it as part of success message
+            // or even require acknowledgement. For now, we'll include it in the audit trail.
+          }
+
+          // 8. Calculate Fees (Phase 3)
+          const processingFeeAmount = yield* fees.calculateFees(
+            input.amount,
+            input.destination
+          );
+          const processingFee = Money.fromNumber(
+            processingFeeAmount,
+            plan.currentAmount.currency
+          );
+
+          // 9. Check minimum balance & Total Balance
           if (!plan.canWithdrawAmount(withdrawalAmount)) {
             return yield* Effect.fail(
               new MinimumBalanceViolationError({
@@ -219,7 +248,6 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
             );
           }
 
-          // 4. Validate Balance
           if (plan.currentAmount.value < input.amount) {
             return yield* Effect.fail(
               new InsufficientFundsError({
@@ -230,22 +258,20 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
             );
           }
 
-          // 5. Calculate Penalty and Net Amount
+          // 10. Calculate Penalty and Net Amount
           let penalty = Money.zero(plan.currentAmount.currency);
           if (isEarlyWithdrawal) {
-            // Determine penalty
-            // Note: Domain calculates penalty based on TOTAL current amount.
-            // We assume this applies proportionally or as a fixed fee logic from domain.
-            // However, strictly reusing the method provided:
             penalty = plan.calculateEarlyWithdrawalPenalty();
           }
 
-          const netAmountValue = input.amount - penalty.value;
+          const netAmountValue =
+            input.amount - processingFee.value - penalty.value;
+
           if (netAmountValue <= 0) {
             return yield* Effect.fail(
               new WithdrawalNotAllowedError({
                 planId: plan.id.value,
-                reason: `Withdrawal amount ${input.amount} cannot cover penalty ${penalty.value}`,
+                reason: `Withdrawal amount ${input.amount} cannot cover fees ${processingFee.value} and penalty ${penalty.value}`,
               })
             );
           }
@@ -255,32 +281,25 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
             plan.currentAmount.currency
           );
 
-          // 5. Perform Withdrawal (Credit Wallet or External Bank)
-          // For 'wallet' destination, we credit the internal wallet.
-          // For 'bank', we might just record a pending transaction.
-
-          // Debit the plan
-          // 5.1. Store original version for concurrency check
+          // 11. Perform Withdrawal
           const originalVersion = plan.version;
-
-          // 5.2. Update Plan Entity
           const updatedPlan = plan.withdraw(
             Money.fromNumber(input.amount, plan.currentAmount.currency)
           );
 
-          // 6. Handle Wallet Credit (if applicable)
+          // 12. Handle Wallet Credit (if applicable)
           if (input.destination === PaymentDestinationEnum.WALLET) {
             yield* wallet.credit(plan.userId, netAmount);
           }
 
-          // 7. Create Transaction Record
+          // 13. Create Transaction Record
           const reference = `WDR-${Date.now()}-${Math.floor(
             Math.random() * 1000
           )}`;
 
           const transaction = Transaction.create(
             plan.userId,
-            netAmount, // Record the Net amount received by user
+            netAmount,
             TransactionTypeSchema.make(TransactionTypeEnum.WITHDRAWAL),
             reference,
             plan.id,
@@ -289,8 +308,10 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
               : PaymentSourceSchema.make(PaymentSourceEnum.BANK_TRANSFER),
             JSON.stringify({
               grossAmount: input.amount,
+              fee: processingFee.value,
               penalty: penalty.value,
               isEarlyWithdrawal,
+              taxWarning: taxWarning || undefined,
             })
           ).complete();
 
@@ -298,21 +319,20 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
             Effect.mapError(
               (error) =>
                 new DatabaseError({
-                  operation: error.operation,
-                  table: error.entity,
+                  operation: "save",
+                  table: "transactions",
                   message: error.message,
                 })
             )
           );
 
-          // 8. Verify concurrency control before saving
-          // Re-fetch plan to check if version changed
+          // 14. Verify concurrency and Save Plan
           const currentPlan = yield* savingsRepository.findById(plan.id).pipe(
             Effect.mapError(
               (error) =>
                 new DatabaseError({
-                  operation: error.operation,
-                  table: error.entity,
+                  operation: "findById",
+                  table: "savings_plans",
                   message: error.message || "Failed to verify plan state",
                 })
             )
@@ -328,13 +348,12 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
             );
           }
 
-          // 9. Save Updated Plan
           yield* savingsRepository.update(updatedPlan).pipe(
             Effect.mapError(
               (error) =>
                 new DatabaseError({
-                  operation: error.operation,
-                  table: error.entity,
+                  operation: "update",
+                  table: "savings_plans",
                   message: error.message,
                 })
             )
@@ -343,7 +362,9 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
           return {
             transactionId: transaction.id.value,
             status: "success",
-            message: "Withdrawal processed successfully",
+            message: taxWarning
+              ? `Withdrawal processed. ${taxWarning}`
+              : "Withdrawal processed successfully",
           };
         }),
     };
