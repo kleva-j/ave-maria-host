@@ -1,10 +1,11 @@
+import type { UserRepository } from "@host/domain";
+import type { FinancialError, KycStatus, KycTier } from "@host/shared";
+
 import { Effect, Context, Layer } from "effect";
+import { User, UserId } from "@host/domain";
 import { Schema } from "effect";
 
-import { type UserRepository, User, UserId } from "@host/domain";
-
 import {
-  type FinancialError,
   UserNotFoundError,
   ValidationError,
   KycStatusSchema,
@@ -32,10 +33,10 @@ export type UpdateKycStatusInput = typeof UpdateKycStatusInput.Type;
  */
 export interface UpdateKycStatusOutput {
   readonly user: User;
-  readonly previousTier: number;
-  readonly newTier: number;
-  readonly previousStatus: string;
-  readonly newStatus: string;
+  readonly previousTier: KycTier;
+  readonly newTier: KycTier;
+  readonly previousStatus: KycStatus;
+  readonly newStatus: KycStatus;
 }
 
 /**
@@ -106,9 +107,7 @@ export const UpdateKycStatusUseCaseLive = Layer.effect(
 
           if (!user) {
             return yield* Effect.fail(
-              new UserNotFoundError({
-                userId: validatedInput.userId,
-              })
+              new UserNotFoundError({ userId: validatedInput.userId })
             );
           }
 

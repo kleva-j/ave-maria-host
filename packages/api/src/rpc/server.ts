@@ -18,16 +18,23 @@ import type { HttpServer } from "@effect/platform";
 import type { DatabaseService } from "@host/db";
 import type { Hono } from "hono";
 import type {
+  WithdrawFromSavingsPlanUseCase,
+  GetSavingsPlanProgressUseCase,
   GenerateProgressReportUseCase,
   ValidateContributionUseCase,
   ProcessContributionUseCase,
   GetSpendingInsightsUseCase,
   GetSavingsAnalyticsUseCase,
+  SuspendUserAccountUseCase,
   CreateSavingsPlanUseCase,
   UpdateSavingsPlanUseCase,
+  UpdateUserProfileUseCase,
   CalculateRewardsUseCase,
   GetWalletBalanceUseCase,
   ListSavingsPlanUseCase,
+  UpdateKycStatusUseCase,
+  GetUserProfileUseCase,
+  GetSavingsPlanUseCase,
   WithdrawFundsUseCase,
   FundWalletUseCase,
 } from "@host/application";
@@ -44,6 +51,7 @@ import { Effect, Layer, Option } from "effect";
 import { AnalyticsRpcs, AnalyticsHandlersLive } from "./analytics-rpc";
 import { SavingsRpcs, SavingsHandlersLive } from "./savings-rpc";
 import { WalletRpcs, WalletHandlersLive } from "./wallet-rpc";
+import { UserRpcs, UserHandlersLive } from "./user-rpc";
 import { TodoRpcs, TodoHandlersLive } from "./todo-rpc";
 import {
   AuthenticationError,
@@ -59,16 +67,23 @@ import {
 } from "./email-verification-rpc";
 
 export type AppUseCaseGroup =
+  | WithdrawFromSavingsPlanUseCase
+  | GetSavingsPlanProgressUseCase
   | GenerateProgressReportUseCase
   | ValidateContributionUseCase
   | ProcessContributionUseCase
   | GetSavingsAnalyticsUseCase
   | GetSpendingInsightsUseCase
+  | SuspendUserAccountUseCase
   | CreateSavingsPlanUseCase
   | UpdateSavingsPlanUseCase
+  | UpdateUserProfileUseCase
   | GetWalletBalanceUseCase
   | CalculateRewardsUseCase
+  | UpdateKycStatusUseCase
   | ListSavingsPlanUseCase
+  | GetUserProfileUseCase
+  | GetSavingsPlanUseCase
   | WithdrawFundsUseCase
   | FundWalletUseCase;
 
@@ -79,7 +94,8 @@ export const AppRpcs = TodoRpcs.merge(AuthRpcs)
   .merge(EmailVerificationRpcs)
   .merge(AnalyticsRpcs)
   .merge(SavingsRpcs)
-  .merge(WalletRpcs);
+  .merge(WalletRpcs)
+  .merge(UserRpcs);
 
 /**
  * Authentication middleware implementation for the server
@@ -196,6 +212,7 @@ export const createRpcWebHandler = (
             "WalletHandlersLive",
             "AnalyticsHandlersLive",
             "EmailVerificationHandlersLive",
+            "UserHandlersLive",
           ],
         }),
         {
@@ -233,6 +250,7 @@ export const RpcServerLive: Layer.Layer<never, never, RpcServerDeps> =
     Layer.provide(WalletHandlersLive),
     Layer.provide(AnalyticsHandlersLive),
     Layer.provide(EmailVerificationHandlersLive),
+    Layer.provide(UserHandlersLive),
     // Middleware
     Layer.provide(AuthMiddlewareLive)
   );
