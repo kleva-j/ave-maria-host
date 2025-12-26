@@ -6,6 +6,7 @@ export * from "./kyc-verification";
 export * from "./biometric-auth";
 export * from "./verification";
 export * from "./savings-plan";
+export * from "./bank-account";
 export * from "./transaction";
 export * from "./permission";
 export * from "./session";

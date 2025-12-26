@@ -102,6 +102,18 @@ export class TransactionOperationError extends Data.TaggedError(
 }> {}
 
 /**
+ * Error thrown when a bank account operation fails
+ * Used for bank account-specific errors not covered by other error types
+ */
+export class BankAccountOperationError extends Data.TaggedError(
+  "BankAccountOperationError"
+)<{
+  readonly operation: string;
+  readonly reason: string;
+  readonly bankAccountId?: string;
+}> {}
+
+/**
  * Error thrown when a user's wallet cannot be found
  * Used when quering for a user's wallet before crediting or withdrawing
  */
@@ -109,6 +121,17 @@ export class WalletNotFoundError extends Data.TaggedError(
   "WalletNotFoundError"
 )<{
   readonly userId: string;
+  readonly operation: string;
+}> {}
+
+/**
+ * Error thrown when a bank account cannot be found
+ * Used when quering for a bank account before crediting or withdrawing
+ */
+export class BankAccountNotFoundError extends Data.TaggedError(
+  "BankAccountNotFoundError"
+)<{
+  readonly bankAccountId: string;
   readonly operation: string;
 }> {}
 
@@ -321,6 +344,8 @@ export type FinancialError =
   | ConcurrentWithdrawalError
   | WithdrawalNotAllowedError
   | TransactionOperationError
+  | BankAccountOperationError
+  | BankAccountNotFoundError
   | TransactionNotFoundError
   | ComplianceViolationError
   | InvalidContributionError

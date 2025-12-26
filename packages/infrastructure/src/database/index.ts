@@ -4,6 +4,7 @@
 export * from "./drizzle-phone-verification-repository";
 export * from "./drizzle-kyc-verification-repository";
 export * from "./drizzle-biometric-auth-repository";
+export * from "./drizzle-bank-account-repository";
 export * from "./drizzle-verification-repository";
 export * from "./drizzle-transaction-repository";
 export * from "./drizzle-withdrawal-repository";

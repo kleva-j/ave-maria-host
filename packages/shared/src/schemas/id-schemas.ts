@@ -89,6 +89,13 @@ export const TransactionIdSchema = UuidSchema.pipe(
  */
 export const WalletIdSchema = UuidSchema.pipe(Schema.brand("WalletId"));
 
+/**
+ * BankAccountId value object representing a unique identifier for bank accounts
+ */
+export const BankAccountIdSchema = UuidSchema.pipe(
+  Schema.brand("BankAccountId")
+);
+
 // Types
 export type Uuid = typeof UuidSchema.Type;
 export type UserId = typeof UserIdSchema.Type;
@@ -101,6 +108,7 @@ export type SessionId = typeof SessionIdSchema.Type;
 export type ChallengeId = typeof ChallengeIdSchema.Type;
 export type PermissionId = typeof PermissionIdSchema.Type;
 export type TransactionId = typeof TransactionIdSchema.Type;
+export type BankAccountId = typeof BankAccountIdSchema.Type;
 export type BiometricAuthId = typeof BiometricAuthIdSchema.Type;
 export type KycVerificationId = typeof KycVerificationIdSchema.Type;
 export type BiometricDeviceId = typeof BiometricDeviceIdSchema.Type;

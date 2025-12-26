@@ -5,3 +5,4 @@ export * from "./savings";
 export * from "./analytics";
 export * from "./permissions";
 export * from "./notifications";
+export * from "./bank-accounts";

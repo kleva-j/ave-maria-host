@@ -1,6 +1,7 @@
 // Shared Schema Definitions
 // Effect Schema and Zod schemas used across the application
 
+export * from "./bank-account-schema";
 export * from "./analytics-schemas";
 export * from "./savings-schemas";
 export * from "./common-schemas";
