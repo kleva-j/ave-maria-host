@@ -36,6 +36,7 @@ export {
 export * from "./email-verification-rpc";
 export * from "./analytics-rpc";
 export * from "./savings-rpc";
+export * from "./payment-rpc";
 export * from "./wallet-rpc";
 export * from "./user-rpc";
 export * from "./todo-rpc";

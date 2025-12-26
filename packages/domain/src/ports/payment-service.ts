@@ -1,6 +1,8 @@
+import type { PaymentStatus, TransactionType } from "@host/shared";
 import type { UserId, Money } from "../value-objects";
+import type { Effect } from "effect";
 
-import { type Effect, Data } from "effect";
+import { Data, Context } from "effect";
 
 /**
  * Payment method information
@@ -8,18 +10,10 @@ import { type Effect, Data } from "effect";
 export const PaymentMethodType = {
   BANK_ACCOUNT: "bank_account",
   DEBIT_CARD: "debit_card",
-  MOBILE_MONEY: "mobile_money",
-} as const;
-
-const TransactionType = {
-  PAYMENT: "payment",
-  WITHDRAWAL: "withdrawal",
 } as const;
 
 export type PaymentMethodType =
   (typeof PaymentMethodType)[keyof typeof PaymentMethodType];
-
-type TransactionType = (typeof TransactionType)[keyof typeof TransactionType];
 
 export interface PaymentMethod {
   readonly id: string;
@@ -29,17 +23,6 @@ export interface PaymentMethod {
   readonly isDefault: boolean;
   readonly isActive: boolean;
 }
-
-/**
- * Payment transaction result
- */
-export const PaymentStatus = {
-  SUCCESS: "success",
-  PENDING: "pending",
-  FAILED: "failed",
-} as const;
-
-export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus];
 
 export interface PaymentResult {
   readonly transactionId: string;
@@ -54,7 +37,7 @@ export interface PaymentResult {
 /**
  * Bank account information
  */
-export interface BankAccount {
+export interface GatewayBankAccount {
   readonly accountNumber: string;
   readonly bankCode: string;
   readonly bankName: string;
@@ -92,7 +75,7 @@ export interface PaymentService {
   readonly processWithdrawal: (
     userId: UserId,
     amount: Money,
-    bankAccount: BankAccount,
+    bankAccount: GatewayBankAccount,
     reference: string
   ) => Effect.Effect<PaymentResult, PaymentError>;
 
@@ -137,7 +120,7 @@ export interface PaymentService {
   readonly resolveBankAccount: (
     accountNumber: string,
     bankCode: string
-  ) => Effect.Effect<BankAccount, PaymentError>;
+  ) => Effect.Effect<GatewayBankAccount, PaymentError>;
 
   /**
    * Calculate transaction fees
@@ -170,3 +153,7 @@ export class PaymentError extends Data.TaggedError("PaymentError")<{
     super({ ...args, timestamp: new Date() });
   }
 }
+
+export const PaymentService = Context.GenericTag<PaymentService>(
+  "@domain/PaymentService"
+);

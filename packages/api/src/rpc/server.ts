@@ -21,6 +21,7 @@ import type {
   WithdrawFromSavingsPlanUseCase,
   GetSavingsPlanProgressUseCase,
   GenerateProgressReportUseCase,
+  GetTransactionHistoryUseCase,
   ValidateContributionUseCase,
   ProcessContributionUseCase,
   GetSpendingInsightsUseCase,
@@ -29,8 +30,11 @@ import type {
   CreateSavingsPlanUseCase,
   UpdateSavingsPlanUseCase,
   UpdateUserProfileUseCase,
+  GetLinkedAccountsUseCase,
+  GetPaymentMethodsUseCase,
   CalculateRewardsUseCase,
   GetWalletBalanceUseCase,
+  LinkBankAccountUseCase,
   ListSavingsPlanUseCase,
   UpdateKycStatusUseCase,
   GetUserProfileUseCase,
@@ -50,6 +54,7 @@ import { Effect, Layer, Option } from "effect";
 // Import RPC groups
 import { AnalyticsRpcs, AnalyticsHandlersLive } from "./analytics-rpc";
 import { SavingsRpcs, SavingsHandlersLive } from "./savings-rpc";
+import { PaymentRpcs, PaymentHandlersLive } from "./payment-rpc";
 import { WalletRpcs, WalletHandlersLive } from "./wallet-rpc";
 import { UserRpcs, UserHandlersLive } from "./user-rpc";
 import { TodoRpcs, TodoHandlersLive } from "./todo-rpc";
@@ -70,17 +75,21 @@ export type AppUseCaseGroup =
   | WithdrawFromSavingsPlanUseCase
   | GetSavingsPlanProgressUseCase
   | GenerateProgressReportUseCase
+  | GetTransactionHistoryUseCase
   | ValidateContributionUseCase
   | ProcessContributionUseCase
   | GetSavingsAnalyticsUseCase
   | GetSpendingInsightsUseCase
   | SuspendUserAccountUseCase
+  | GetPaymentMethodsUseCase
   | CreateSavingsPlanUseCase
   | UpdateSavingsPlanUseCase
+  | GetLinkedAccountsUseCase
   | UpdateUserProfileUseCase
   | GetWalletBalanceUseCase
   | CalculateRewardsUseCase
   | UpdateKycStatusUseCase
+  | LinkBankAccountUseCase
   | ListSavingsPlanUseCase
   | GetUserProfileUseCase
   | GetSavingsPlanUseCase
@@ -94,6 +103,7 @@ export const AppRpcs = TodoRpcs.merge(AuthRpcs)
   .merge(EmailVerificationRpcs)
   .merge(AnalyticsRpcs)
   .merge(SavingsRpcs)
+  .merge(PaymentRpcs)
   .merge(WalletRpcs)
   .merge(UserRpcs);
 
@@ -210,6 +220,7 @@ export const createRpcWebHandler = (
             "AuthHandlersLive",
             "SavingsHandlersLive",
             "WalletHandlersLive",
+            "PaymentHandlersLive",
             "AnalyticsHandlersLive",
             "EmailVerificationHandlersLive",
             "UserHandlersLive",
@@ -246,8 +257,9 @@ export const RpcServerLive: Layer.Layer<never, never, RpcServerDeps> =
     // Handlers
     Layer.provide(TodoHandlersLive),
     Layer.provide(AuthHandlersLive),
-    Layer.provide(SavingsHandlersLive),
     Layer.provide(WalletHandlersLive),
+    Layer.provide(SavingsHandlersLive),
+    Layer.provide(PaymentHandlersLive),
     Layer.provide(AnalyticsHandlersLive),
     Layer.provide(EmailVerificationHandlersLive),
     Layer.provide(UserHandlersLive),
