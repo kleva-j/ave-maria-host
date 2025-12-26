@@ -26,6 +26,7 @@ import { Rpc, RpcGroup } from "@effect/rpc";
 import { TotalRewards } from "@host/shared";
 import { Effect, Schema } from "effect";
 
+// Use Cases
 import {
   GenerateProgressReportUseCase,
   GetSavingsAnalyticsUseCase,
@@ -200,6 +201,7 @@ export class AnalyticsRpcs extends RpcGroup.make(
 // ============================================================================
 
 /**
+ * @description
  * Live implementation of analytics RPC handlers
  * Integrates with application use cases and analytics services
  */

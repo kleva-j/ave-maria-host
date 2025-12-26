@@ -1,10 +1,9 @@
-import type { TransactionRepository, UserId, PlanId } from "@host/domain";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import type { TransactionRepository } from "@host/domain";
 import type {
   TransactionStatus,
   TransactionType,
   PaymentSource,
-  CurrencyCode,
 } from "@host/shared";
 
 import { DEFAULT_CURRENCY, TransactionStatusEnum } from "@host/shared";
@@ -12,10 +11,12 @@ import { eq, and, gte, lte, sql, desc, inArray } from "drizzle-orm";
 import { DatabaseService, transactions } from "@host/db";
 import { Effect, Context, Layer } from "effect";
 import {
-  Money as MoneyVO,
   RepositoryError,
   TransactionId,
   Transaction,
+  UserId,
+  PlanId,
+  Money,
 } from "@host/domain";
 
 /**
@@ -24,9 +25,9 @@ import {
 function mapToDomainEntity(row: typeof transactions.$inferSelect): Transaction {
   return new Transaction(
     TransactionId.fromString(row.id),
-    { value: row.userId } as UserId,
-    row.planId ? ({ value: row.planId } as PlanId) : null,
-    MoneyVO.fromNumber(Number(row.amount), row.currency as CurrencyCode),
+    UserId.fromString(row.userId),
+    row.planId ? PlanId.fromString(row.planId) : null,
+    Money.fromNumber(Number(row.amount)),
     row.type as TransactionType,
     row.status as TransactionStatus,
     row.paymentSource as PaymentSource,
@@ -259,29 +260,38 @@ export const DrizzleTransactionRepositoryLive = Layer.effect(
 
       getTransactionHistory: (
         userId: UserId,
-        startDate: Date,
-        endDate: Date,
-        limit = 100,
-        offset = 0
+        startDate?: Date,
+        endDate?: Date,
+        limit?: number,
+        offset?: number,
+        type?: TransactionType,
+        status?: TransactionStatus
       ) =>
         Effect.gen(function* () {
-          const result = yield* db.withDrizzle(
-            async (drizzle: NodePgDatabase) => {
-              return await drizzle
-                .select()
-                .from(transactions)
-                .where(
-                  and(
-                    eq(transactions.userId, userId.value),
-                    gte(transactions.createdAt, startDate),
-                    lte(transactions.createdAt, endDate)
-                  )
-                )
-                .orderBy(desc(transactions.createdAt))
-                .limit(limit)
-                .offset(offset);
+          const result = yield* db.withDrizzle(async (drizzle) => {
+            const conditions = [eq(transactions.userId, userId.value)];
+
+            if (startDate) {
+              conditions.push(gte(transactions.createdAt, startDate));
             }
-          );
+            if (endDate) {
+              conditions.push(lte(transactions.createdAt, endDate));
+            }
+            if (type) {
+              conditions.push(eq(transactions.type, type));
+            }
+            if (status) {
+              conditions.push(eq(transactions.status, status));
+            }
+            // Should we sort properly?
+            return await drizzle
+              .select()
+              .from(transactions)
+              .where(and(...conditions))
+              .limit(limit || 20)
+              .offset(offset || 0)
+              .orderBy(desc(transactions.createdAt));
+          });
 
           return result.map(mapToDomainEntity);
         }).pipe(
@@ -332,10 +342,7 @@ export const DrizzleTransactionRepositoryLive = Layer.effect(
             }
           );
 
-          return MoneyVO.fromNumber(
-            Number(result.total),
-            result.currency as CurrencyCode
-          );
+          return Money.fromNumber(Number(result.total));
         }).pipe(
           Effect.catchAll((error) =>
             Effect.fail(
@@ -383,10 +390,7 @@ export const DrizzleTransactionRepositoryLive = Layer.effect(
             }
           );
 
-          return MoneyVO.fromNumber(
-            Number(result.total),
-            result.currency as CurrencyCode
-          );
+          return Money.fromNumber(Number(result.total));
         }).pipe(
           Effect.catchAll((error) =>
             Effect.fail(

@@ -1,7 +1,6 @@
 import type { SavingsRepository, TransactionRepository } from "@host/domain";
 
-import { Effect, Context, Layer } from "effect";
-import { Schema } from "@effect/schema";
+import { Effect, Context, Layer, Schema } from "effect";
 import { UserId } from "@host/domain";
 
 import {
@@ -14,7 +13,7 @@ import {
  * Input for getting savings analytics
  */
 export const GetSavingsAnalyticsInput = Schema.Struct({
-  userId: Schema.UUID,
+  userId: UserId,
   period: Schema.optional(
     Schema.Literal("week", "month", "quarter", "year", "all")
   ),
@@ -218,8 +217,7 @@ export const GetSavingsAnalyticsUseCaseLive = Layer.effect(
                   new DatabaseError({
                     operation: "findByUserId",
                     table: "transactions",
-                    message:
-                      (error as any).message || "Failed to fetch transactions",
+                    message: error.message || "Failed to fetch transactions",
                   })
               )
             );

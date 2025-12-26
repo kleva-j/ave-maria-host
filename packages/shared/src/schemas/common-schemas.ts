@@ -189,9 +189,9 @@ export const IpAddressSchema = Schema.String.pipe(
 /**
  * Schema for Token validation
  */
-export const TokenSchema = Schema.String.pipe(Schema.minLength(1)).annotations({
-  message: () => "Invalid token format",
-});
+export const TokenSchema = Schema.Trimmed.pipe(Schema.minLength(10)).annotations(
+  { message: () => "Invalid token format" }
+);
 
 export type Date = typeof DateSchema.Type;
 export type DateTime = typeof DateTimeSchema.Type;
@@ -332,24 +332,6 @@ export const BvnSchema = Schema.Trimmed.pipe(
 ).annotations({ description: "Biometric verification number (BVN)" });
 
 /**
- * Schema for Nigerian bank account number
- */
-export const NigerianAccountNumberSchema = Schema.Trimmed.pipe(
-  Schema.pattern(/^\d{10}$/, {
-    message: () => "Account number must be exactly 10 digits",
-  })
-).annotations({ description: "Bank account number" });
-
-/**
- * Schema for Nigerian bank code
- */
-export const NigerianBankCodeSchema = Schema.Trimmed.pipe(
-  Schema.pattern(/^\d{3}$/, {
-    message: () => "Bank code must be exactly 3 digits",
-  })
-).annotations({ description: "Bank code" });
-
-/**
  * Schema for time in HH:MM format
  */
 export const TimeSchema = Schema.Trimmed.pipe(
@@ -383,6 +365,13 @@ export const NonNegativeIntSchema = Schema.Number.pipe(
   Schema.int({ message: () => "Must be a whole number" }),
   Schema.nonNegative({ message: () => "Cannot be negative" })
 ).annotations({ description: "Non-negative integer" });
+
+/**
+ * Schema for boolean value
+ */
+export const BooleanSchema = Schema.Boolean.annotations({
+  description: "Boolean value (true or false)",
+});
 
 /**
  * Schema for URL validation

@@ -1,24 +1,25 @@
 import type { TransactionRepository, WalletRepository } from "@host/domain";
+import type { FinancialError } from "@host/shared";
 
-import { Effect, Context, Layer } from "effect";
-import { Schema } from "@effect/schema";
+import { Effect, Context, Layer, Schema } from "effect";
 import { UserId } from "@host/domain";
 
 import {
-  type FinancialError,
   UserNotFoundError,
   ValidationError,
   DatabaseError,
+  UserIdSchema,
+  DateSchema,
 } from "@host/shared";
 
 /**
  * Input for getting wallet balance
  */
 export const GetWalletBalanceInput = Schema.Struct({
-  userId: Schema.UUID,
+  userId: UserIdSchema,
   includeTransactionSummary: Schema.optional(Schema.Boolean),
-  summaryStartDate: Schema.optional(Schema.Date),
-  summaryEndDate: Schema.optional(Schema.Date),
+  summaryStartDate: Schema.optional(DateSchema),
+  summaryEndDate: Schema.optional(DateSchema),
 });
 
 export type GetWalletBalanceInput = typeof GetWalletBalanceInput.Type;

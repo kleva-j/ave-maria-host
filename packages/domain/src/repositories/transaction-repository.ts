@@ -77,10 +77,12 @@ export interface TransactionRepository
    */
   readonly getTransactionHistory: (
     userId: UserId,
-    startDate: Date,
-    endDate: Date,
+    startDate?: Date,
+    endDate?: Date,
     limit?: number,
-    offset?: number
+    offset?: number,
+    type?: TransactionType,
+    status?: TransactionStatus
   ) => Effect.Effect<Transaction[], RepositoryError>;
 
   /**

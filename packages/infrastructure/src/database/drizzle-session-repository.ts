@@ -1,10 +1,11 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { SessionRepository } from "@host/domain";
+import type { SessionId } from "@host/shared";
 
-import { Session, SessionId, RepositoryError } from "@host/domain";
+import { UserIdSchema, SessionIdSchema, DeviceIdSchema } from "@host/shared";
+import { Session, RepositoryError } from "@host/domain";
 import { DatabaseService, session } from "@host/db";
 import { Effect, Context, Layer } from "effect";
-import { UserIdSchema } from "@host/shared";
 import { eq } from "drizzle-orm";
 
 /**
@@ -12,7 +13,7 @@ import { eq } from "drizzle-orm";
  */
 function mapToDomainEntity(row: typeof session.$inferSelect): Session {
   return new Session({
-    id: SessionId.make(row.id),
+    id: SessionIdSchema.make(row.id),
     expiresAt: row.expiresAt,
     token: row.token,
     refreshToken: row.refreshToken,
@@ -21,7 +22,7 @@ function mapToDomainEntity(row: typeof session.$inferSelect): Session {
     updatedAt: row.updatedAt,
     ipAddress: row.ipAddress,
     userAgent: row.userAgent,
-    deviceId: row.deviceId,
+    deviceId: row.deviceId ? DeviceIdSchema.make(row.deviceId) : null,
     lastActivityAt: row.lastActivityAt,
     userId: UserIdSchema.make(row.userId),
   });

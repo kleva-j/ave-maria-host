@@ -8,6 +8,7 @@ import {
   PaymentSourceEnum,
   BiometricTypeEnum,
   PaymentMethodEnum,
+  PaymentStatusEnum,
   CURRENCY_CODES,
   KycIdTypeEnum,
   KycStatusEnum,
@@ -188,6 +189,18 @@ export const PaymentMethodSchema = Schema.Literal(
     description: "Payment method",
   });
 
+/**
+ * Schema for payment status
+ */
+export const PaymentStatusSchema = Schema.Literal(
+  ...Object.values(PaymentStatusEnum)
+)
+  .pipe(Schema.brand("PaymentStatus"))
+  .annotations({
+    message: () => "Invalid payment status",
+    description: "Payment Status",
+  });
+
 export type LGA = typeof LgaSchema.Type;
 export type State = typeof StateSchema.Type;
 export type KycTier = typeof KycTierSchema.Type;
@@ -198,6 +211,7 @@ export type CurrencyCode = typeof CurrencyCodeSchema.Type;
 export type BiometricType = typeof BiometricTypeSchema.Type;
 export type PaymentSource = typeof PaymentSourceSchema.Type;
 export type PaymentMethod = typeof PaymentMethodSchema.Type;
+export type PaymentStatus = typeof PaymentStatusSchema.Type;
 export type TransactionType = typeof TransactionTypeSchema.Type;
 export type TransactionStatus = typeof TransactionStatusSchema.Type;
 export type PaymentDestination = typeof PaymentDestinationSchema.Type;

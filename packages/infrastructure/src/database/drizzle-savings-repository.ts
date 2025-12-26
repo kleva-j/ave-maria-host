@@ -1,12 +1,18 @@
-import type { SavingsRepository, PlanId, UserId } from "@host/domain";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type { CurrencyCode, PlanStatus } from "@host/shared";
+import type { SavingsRepository } from "@host/domain";
+import type { PlanStatus } from "@host/shared";
 
-import { RepositoryError, SavingsPlan, Money } from "@host/domain";
 import { DatabaseService, savingsPlans } from "@host/db";
 import { Effect, Context, Layer } from "effect";
 import { PlanStatusEnum } from "@host/shared";
 import { eq, and, sql } from "drizzle-orm";
+import {
+  RepositoryError,
+  SavingsPlan,
+  UserId,
+  PlanId,
+  Money,
+} from "@host/domain";
 
 /**
  * Converts a database row into a SavingsPlan domain entity
@@ -15,16 +21,14 @@ import { eq, and, sql } from "drizzle-orm";
  */
 function mapToDomainEntity(row: typeof savingsPlans.$inferSelect): SavingsPlan {
   return new SavingsPlan(
-    { value: row.id } as PlanId,
-    { value: row.userId } as UserId,
+    PlanId.fromString(row.id),
+    UserId.fromString(row.userId),
     row.planName,
-    Money.fromNumber(Number(row.dailyAmount), row.currency as CurrencyCode),
+    Money.fromNumber(Number(row.dailyAmount)),
     row.cycleDuration,
-    row.targetAmount
-      ? Money.fromNumber(Number(row.targetAmount), row.currency as CurrencyCode)
-      : null,
-    Money.fromNumber(Number(row.currentAmount), row.currency as CurrencyCode),
-    Money.fromNumber(Number(row.minimumBalance), row.currency as CurrencyCode),
+    row.targetAmount ? Money.fromNumber(Number(row.targetAmount)) : null,
+    Money.fromNumber(Number(row.currentAmount)),
+    Money.fromNumber(Number(row.minimumBalance)),
     row.autoSaveEnabled,
     row.autoSaveTime,
     row.status as PlanStatus,

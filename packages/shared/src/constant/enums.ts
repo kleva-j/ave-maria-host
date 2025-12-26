@@ -106,6 +106,16 @@ export const PaymentMethodEnum = {
   USSD: "ussd",
 } as const;
 
+/**
+ * Payment Status Enum
+ */
+export const PaymentStatusEnum = {
+  SUCCESS: "success",
+  PENDING: "pending",
+  FAILED: "failed",
+  ERROR: "error",
+} as const;
+
 // ==============================
 // Plan Enumerations
 // ==============================

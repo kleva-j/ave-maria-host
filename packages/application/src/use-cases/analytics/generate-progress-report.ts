@@ -1,23 +1,25 @@
 import type { TransactionRepository, SavingsRepository } from "@host/domain";
 
-import { Effect, Context, Layer } from "effect";
+import { Effect, Context, Layer, Schema } from "effect";
 import { PlanId, UserId } from "@host/domain";
-import { Schema } from "@effect/schema";
 import {
   type FinancialError,
   AuthorizationError,
   PlanNotFoundError,
   ValidationError,
   DatabaseError,
+  BooleanSchema,
+  UserIdSchema,
+  PlanIdSchema,
 } from "@host/shared";
 
 /**
  * Input for generating progress report
  */
 export const GenerateProgressReportInput = Schema.Struct({
-  userId: Schema.UUID,
-  planId: Schema.UUID,
-  includeTransactionHistory: Schema.optional(Schema.Boolean),
+  userId: UserIdSchema,
+  planId: PlanIdSchema,
+  includeTransactionHistory: Schema.optional(BooleanSchema),
 });
 
 export type GenerateProgressReportInput =
@@ -132,9 +134,7 @@ export const GenerateProgressReportUseCaseLive = Layer.effect(
 
           if (!plan) {
             return yield* Effect.fail(
-              new PlanNotFoundError({
-                planId: validatedInput.planId,
-              })
+              new PlanNotFoundError({ planId: validatedInput.planId })
             );
           }
 

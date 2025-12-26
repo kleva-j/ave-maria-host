@@ -1,7 +1,15 @@
-import type { SessionId } from "@host/shared";
+import type { DeviceId, SessionId } from "@host/shared";
 
-import { UserIdSchema, SessionIdSchema } from "@host/shared";
 import { Schema } from "effect";
+import {
+  IpAddressSchema,
+  UserAgentSchema,
+  SessionIdSchema,
+  DeviceIdSchema,
+  UserIdSchema,
+  TokenSchema,
+  DateSchema,
+} from "@host/shared";
 
 /**
  * Session entity representing a user session
@@ -10,34 +18,34 @@ export class Session extends Schema.Class<Session>("Session")({
   id: SessionIdSchema.annotations({
     description: "Unique identifier for the session",
   }),
-  expiresAt: Schema.Date.annotations({
+  expiresAt: DateSchema.annotations({
     description: "When the session expires",
   }),
-  token: Schema.String.annotations({
+  token: TokenSchema.annotations({
     description: "Session token",
   }),
-  refreshToken: Schema.NullOr(Schema.String).annotations({
+  refreshToken: Schema.NullOr(TokenSchema).annotations({
     description: "Refresh token",
   }),
-  refreshTokenExpiresAt: Schema.NullOr(Schema.Date).annotations({
+  refreshTokenExpiresAt: Schema.NullOr(DateSchema).annotations({
     description: "When the refresh token expires",
   }),
-  createdAt: Schema.Date.annotations({
+  createdAt: DateSchema.annotations({
     description: "When the session was created",
   }),
-  updatedAt: Schema.Date.annotations({
+  updatedAt: DateSchema.annotations({
     description: "When the session was last updated",
   }),
-  ipAddress: Schema.NullOr(Schema.String).annotations({
+  ipAddress: Schema.NullOr(IpAddressSchema).annotations({
     description: "IP address of the client",
   }),
-  userAgent: Schema.NullOr(Schema.String).annotations({
+  userAgent: Schema.NullOr(UserAgentSchema).annotations({
     description: "User agent of the client",
   }),
-  deviceId: Schema.NullOr(Schema.String).annotations({
+  deviceId: Schema.NullOr(DeviceIdSchema).annotations({
     description: "Device ID of the client",
   }),
-  lastActivityAt: Schema.NullOr(Schema.Date).annotations({
+  lastActivityAt: Schema.NullOr(DateSchema).annotations({
     description: "When the last activity occurred",
   }),
   userId: UserIdSchema.annotations({
@@ -57,7 +65,7 @@ export class Session extends Schema.Class<Session>("Session")({
     updatedAt?: Date;
     ipAddress?: string | null;
     userAgent?: string | null;
-    deviceId?: string | null;
+    deviceId: DeviceId | null;
     lastActivityAt?: Date | null;
     userId: typeof UserIdSchema.Type;
   }): Session {

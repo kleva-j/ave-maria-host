@@ -1,5 +1,4 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type { CurrencyCode } from "@host/shared";
 import type {
   WithdrawalHistoryEntry,
   WithdrawalRepository,
@@ -10,8 +9,8 @@ import type {
 import { TransactionStatusEnum, TransactionTypeEnum } from "@host/shared";
 import { DatabaseService, transactions } from "@host/db";
 import { Money, RepositoryError } from "@host/domain";
-import { Effect, Context, Layer } from "effect";
 import { eq, and, gte, sql } from "drizzle-orm";
+import { Effect, Context, Layer } from "effect";
 
 /**
  * Drizzle implementation of WithdrawalRepository
@@ -94,7 +93,7 @@ export const DrizzleWithdrawalRepositoryLive = Layer.effect(
             }
           );
 
-          return Money.fromNumber(Number(result), currency as CurrencyCode);
+          return Money.fromNumber(Number(result));
         }).pipe(
           Effect.catchAll((error) =>
             Effect.fail(
@@ -173,7 +172,7 @@ export const DrizzleWithdrawalRepositoryLive = Layer.effect(
             }
           );
 
-          return Money.fromNumber(Number(result), currency as CurrencyCode);
+          return Money.fromNumber(Number(result));
         }).pipe(
           Effect.catchAll((error) =>
             Effect.fail(

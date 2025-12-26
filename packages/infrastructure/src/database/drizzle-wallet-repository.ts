@@ -1,16 +1,15 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type { CurrencyCode, WalletId } from "@host/shared";
+import type { WalletId } from "@host/shared";
 
 import type {
   WalletTransactionSummary,
   WalletRepository,
   Wallet,
-  UserId,
   Money,
 } from "@host/domain";
 
+import { UserId, Money as MoneyVO, RepositoryError } from "@host/domain";
 import { wallets, transactions, DatabaseService } from "@host/db";
-import { Money as MoneyVO, RepositoryError } from "@host/domain";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { Effect, Context, Layer } from "effect";
 import {
@@ -25,11 +24,8 @@ import {
 function mapToDomainEntity(row: typeof wallets.$inferSelect): Wallet {
   return {
     id: row.id,
-    userId: { value: row.userId } as UserId,
-    balance: MoneyVO.fromNumber(
-      Number(row.balance),
-      row.currency as CurrencyCode
-    ),
+    userId: UserId.fromString(row.userId),
+    balance: MoneyVO.fromNumber(Number(row.balance)),
     isActive: row.isActive,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -71,10 +67,7 @@ export const DrizzleWalletRepositoryLive = Layer.effect(
           );
         }
 
-        return MoneyVO.fromNumber(
-          Number(result.balance),
-          result.currency as CurrencyCode
-        );
+        return MoneyVO.fromNumber(Number(result.balance));
       }).pipe(
         Effect.catchAll((error) =>
           Effect.fail(RepositoryError.create("getBalance", "Wallet", error))
@@ -93,7 +86,7 @@ export const DrizzleWalletRepositoryLive = Layer.effect(
                 .values({
                   userId: userId.value,
                   balance: balance.value.toString(),
-                  currency: balance.currency,
+                  currency: DEFAULT_CURRENCY,
                   isActive: true,
                   createdAt: new Date(),
                   updatedAt: new Date(),
@@ -187,10 +180,7 @@ export const DrizzleWalletRepositoryLive = Layer.effect(
             );
           }
 
-          return MoneyVO.fromNumber(
-            Number(result.balance),
-            result.currency as CurrencyCode
-          );
+          return MoneyVO.fromNumber(Number(result.balance));
         }).pipe(
           Effect.catchAll((error) =>
             Effect.fail(RepositoryError.create("credit", "Wallet", error))
@@ -241,10 +231,7 @@ export const DrizzleWalletRepositoryLive = Layer.effect(
             );
           }
 
-          return MoneyVO.fromNumber(
-            Number(result.balance),
-            result.currency as CurrencyCode
-          );
+          return MoneyVO.fromNumber(Number(result.balance));
         }).pipe(
           Effect.catchAll((error) =>
             Effect.fail(RepositoryError.create("debit", "Wallet", error))
@@ -287,10 +274,7 @@ export const DrizzleWalletRepositoryLive = Layer.effect(
           yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
             await drizzle
               .update(wallets)
-              .set({
-                isActive,
-                updatedAt: new Date(),
-              })
+              .set({ isActive, updatedAt: new Date() })
               .where(eq(wallets.userId, userId.value));
           });
         }).pipe(
@@ -360,14 +344,8 @@ export const DrizzleWalletRepositoryLive = Layer.effect(
             }
           );
 
-          const totalCredits = MoneyVO.fromNumber(
-            result.totalCredits,
-            result.currency as CurrencyCode
-          );
-          const totalDebits = MoneyVO.fromNumber(
-            result.totalDebits,
-            result.currency as CurrencyCode
-          );
+          const totalCredits = MoneyVO.fromNumber(result.totalCredits);
+          const totalDebits = MoneyVO.fromNumber(result.totalDebits);
           const netChange = totalCredits.subtract(totalDebits);
 
           return {

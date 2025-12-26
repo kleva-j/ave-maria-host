@@ -1,6 +1,7 @@
 // Analytics and Reporting Validation Schemas using Effect Schema
 // Input/output schemas for analytics and insights operations
 
+import { PlanIdSchema } from "./id-schemas";
 import { Schema } from "effect";
 
 // ============================================================================
@@ -28,9 +29,7 @@ export type GetSavingsAnalyticsInput = typeof GetSavingsAnalyticsSchema.Type;
 export class GenerateProgressReportSchema extends Schema.Class<GenerateProgressReportSchema>(
   "GenerateProgressReportSchema"
 )({
-  planId: Schema.optional(
-    Schema.UUID.annotations({ message: () => "Invalid plan ID format" })
-  ),
+  planId: Schema.optional(PlanIdSchema),
   reportType: Schema.Literal("summary", "detailed", "comparison").pipe(
     Schema.annotations({
       description: "Type of progress report to generate",

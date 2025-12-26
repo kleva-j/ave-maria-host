@@ -1,13 +1,17 @@
 import type { UserRepository } from "@host/domain";
+import type { FinancialError } from "@host/shared";
 
 import { Schema, Effect, Context, Layer } from "effect";
 import { User, UserId } from "@host/domain";
 
 import {
-  type FinancialError,
   UserNotFoundError,
+  PhoneNumberSchema,
   ValidationError,
+  UrlStringSchema,
+  FirstNameSchema,
   DatabaseError,
+  DateSchema,
 } from "@host/shared";
 
 /**
@@ -15,10 +19,10 @@ import {
  */
 export const UpdateUserProfileInput = Schema.Struct({
   userId: Schema.UUID,
-  name: Schema.optional(Schema.String.pipe(Schema.minLength(1))),
-  image: Schema.optional(Schema.NullOr(Schema.String)),
-  phoneNumber: Schema.optional(Schema.NullOr(Schema.String)),
-  dateOfBirth: Schema.optional(Schema.NullOr(Schema.Date)),
+  name: Schema.optional(FirstNameSchema),
+  image: Schema.optional(Schema.NullOr(UrlStringSchema)),
+  phoneNumber: Schema.optional(Schema.NullOr(PhoneNumberSchema)),
+  dateOfBirth: Schema.optional(Schema.NullOr(DateSchema)),
 });
 
 export type UpdateUserProfileInput = typeof UpdateUserProfileInput.Type;
@@ -42,9 +46,7 @@ export interface UpdateUserProfileUseCase {
 }
 
 export const UpdateUserProfileUseCase =
-  Context.GenericTag<UpdateUserProfileUseCase>(
-    "@app/UpdateUserProfileUseCase"
-  );
+  Context.GenericTag<UpdateUserProfileUseCase>("@app/UpdateUserProfileUseCase");
 
 /**
  * Live implementation of UpdateUserProfileUseCase

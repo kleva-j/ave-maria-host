@@ -1,4 +1,5 @@
 import type { TransactionRepository, WalletRepository } from "@host/domain";
+import type { FinancialError } from "@host/shared";
 
 import { UserId, Money, TransactionId, Transaction } from "@host/domain";
 import { Effect, Context, Layer } from "effect";
@@ -7,11 +8,10 @@ import { Schema } from "effect";
 import { PaymentGatewayPort } from "./fund-wallet";
 
 import {
-  type FinancialError,
   InsufficientFundsError,
+  CurrencyCodeSchema,
   ValidationError,
   DatabaseError,
-  CurrencyCodeSchema,
 } from "@host/shared";
 
 /**
@@ -50,6 +50,9 @@ export interface WithdrawFundsUseCase {
   ) => Effect.Effect<WithdrawFundsOutput, FinancialError>;
 }
 
+/**
+ * Withdraw fund use case context interface
+ */
 export const WithdrawFundsUseCase = Context.GenericTag<WithdrawFundsUseCase>(
   "@app/WithdrawFundsUseCase"
 );
@@ -82,8 +85,8 @@ export const WithdrawFundsUseCaseLive = Layer.effect(
     }
 
     const transactionRepository = transactionRepo.value;
-    const walletRepository = walletRepo.value;
     const paymentGatewayService = paymentGateway.value;
+    const walletRepository = walletRepo.value;
 
     return {
       execute: (input: WithdrawFundsInput) =>
@@ -104,10 +107,7 @@ export const WithdrawFundsUseCaseLive = Layer.effect(
 
           // Create value objects
           const userId = UserId.fromString(validatedInput.userId);
-          const amount = Money.fromNumber(
-            validatedInput.amount,
-            validatedInput.currency
-          );
+          const amount = Money.fromNumber(validatedInput.amount);
 
           // Check wallet balance
           const currentBalance = yield* walletRepository
