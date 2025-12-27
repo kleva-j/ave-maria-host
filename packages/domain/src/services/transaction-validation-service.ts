@@ -1,9 +1,14 @@
-import type { PaymentSource, TransactionType } from "@host/shared";
+import type { KycTier, PaymentSource, TransactionType } from "@host/shared";
 import type { SavingsPlan } from "../entities/savings-plan";
 import type { UserId, PlanId } from "../value-objects";
 
 import { DEFAULT_CURRENCY, KycTierEnum, PaymentSourceEnum } from "@host/shared";
 import { Money } from "../value-objects";
+import { Effect } from "effect";
+import {
+  TransactionLimitValidationError,
+  ContributionValidationError,
+} from "../errors/validation-errors";
 /**
  * Validation result interface
  */
@@ -246,4 +251,162 @@ export function validateTransactionLimits(
  */
 function getTransactionLimits(kycTier: Tiers) {
   return KYC_TIER[kycTier];
+}
+
+/**
+ * Validates a contribution request using an Effect-based pipeline.
+ *
+ * This function sequences several validation checks:
+ * 1. Plan Ownership: Ensures the target plan belongs to the requesting user.
+ * 2. Plan Capacity: Checks if the plan can accept the specified contribution amount (e.g., active status, goal limits).
+ * 3. Wallet Balance: Verifies sufficient funds if the source is the user's wallet.
+ * 4. Range Validation: Enforces minimum and maximum allowable contribution amounts.
+ *
+ * @param userId - The ID of the user performing the contribution.
+ * @param planId - The ID of the targeted savings plan.
+ * @param amount - The contribution amount (validated against currency and limits).
+ * @param source - The payment source (e.g., wallet, bank_transfer).
+ * @param plan - The domain entity for the savings plan.
+ * @param walletBalance - Optional current wallet balance (required if source is WALLET).
+ * @returns An Effect that succeeds with `void` if all checks pass, or fails with a `ContributionValidationError`.
+ */
+export function validateContributionEffect(
+  userId: UserId,
+  planId: PlanId,
+  amount: Money,
+  source: PaymentSource,
+  plan: SavingsPlan,
+  walletBalance?: Money
+): Effect.Effect<void, ContributionValidationError> {
+  const commonData = { userId: userId.value, planId: planId.value };
+
+  return Effect.void.pipe(
+    // 1. Ownership Check
+    Effect.andThen(() =>
+      plan.userId.equals(userId)
+        ? Effect.void
+        : Effect.fail(
+            new ContributionValidationError({
+              ...commonData,
+              reason: "Plan does not belong to the user",
+            })
+          )
+    ),
+    // 2. Capacity & Status Check
+    Effect.andThen(() =>
+      plan.canMakeContribution(amount)
+        ? Effect.void
+        : Effect.fail(
+            new ContributionValidationError({
+              ...commonData,
+              reason:
+                "Plan cannot accept this contribution amount or is not active",
+            })
+          )
+    ),
+    // 3. Wallet Balance Check (conditional on source)
+    Effect.andThen(() =>
+      source === PaymentSourceEnum.WALLET &&
+      walletBalance &&
+      walletBalance.isLessThan(amount)
+        ? Effect.fail(
+            new ContributionValidationError({
+              ...commonData,
+              reason: "Insufficient wallet balance",
+            })
+          )
+        : Effect.void
+    ),
+    // 4. Minimum Amount Check
+    Effect.andThen(() => {
+      const minimumAmount = Money.fromNumber(10, amount.currency);
+      return amount.isLessThan(minimumAmount)
+        ? Effect.fail(
+            new ContributionValidationError({
+              ...commonData,
+              reason: `Minimum contribution amount is ${minimumAmount.format()}`,
+            })
+          )
+        : Effect.void;
+    }),
+    // 5. Maximum Amount Check
+    Effect.andThen(() => {
+      const maximumAmount = Money.fromNumber(50000, amount.currency);
+      return amount.isGreaterThan(maximumAmount)
+        ? Effect.fail(
+            new ContributionValidationError({
+              ...commonData,
+              reason: `Maximum contribution amount is ${maximumAmount.format()}`,
+            })
+          )
+        : Effect.void;
+    })
+  );
+}
+
+/**
+ * Validates transaction limits (daily, monthly, single-transaction) based on the user's KYC tier.
+ *
+ * This function sequences three checks:
+ * 1. Daily Limit: Ensures the total daily volume won't exceed the tier's daily cap.
+ * 2. Monthly Limit: Ensures the total monthly volume won't exceed the tier's monthly cap.
+ * 3. Single-Transaction Limit: Ensures the current transaction amount is within the tier's per-transaction cap.
+ *
+ * @param _userId - The ID of the user (currently unused but included for consistency).
+ * @param amount - The amount of the current transaction.
+ * @param _type - The type of transaction (currently unused).
+ * @param userKycTier - The user's current validation tier (influences limits).
+ * @param dailyTransactionTotal - Current sum of transactions today.
+ * @param monthlyTransactionTotal - Current sum of transactions this month.
+ * @returns An Effect that succeeds with `void` if all checks pass, or fails with a `TransactionLimitValidationError`.
+ */
+export function validateTransactionLimitsEffect(
+  _userId: UserId,
+  amount: Money,
+  _type: TransactionType,
+  userKycTier: KycTier,
+  dailyTransactionTotal: Money,
+  monthlyTransactionTotal: Money
+): Effect.Effect<void, TransactionLimitValidationError> {
+  const limits = getTransactionLimits(userKycTier);
+  const commonData = { amount: amount.value, kycTier: userKycTier as number };
+
+  return Effect.void.pipe(
+    // 1. Daily Volume Check
+    Effect.andThen(() =>
+      dailyTransactionTotal.add(amount).isGreaterThan(limits.dailyLimit)
+        ? Effect.fail(
+            new TransactionLimitValidationError({
+              ...commonData,
+              limitType: "daily",
+              limit: limits.dailyLimit.value,
+            })
+          )
+        : Effect.void
+    ),
+    // 2. Monthly Volume Check
+    Effect.andThen(() =>
+      monthlyTransactionTotal.add(amount).isGreaterThan(limits.monthlyLimit)
+        ? Effect.fail(
+            new TransactionLimitValidationError({
+              ...commonData,
+              limitType: "monthly",
+              limit: limits.monthlyLimit.value,
+            })
+          )
+        : Effect.void
+    ),
+    // 3. Single Transaction Cap Check
+    Effect.andThen(() =>
+      amount.isGreaterThan(limits.singleTransactionLimit)
+        ? Effect.fail(
+            new TransactionLimitValidationError({
+              ...commonData,
+              limitType: "single",
+              limit: limits.singleTransactionLimit.value,
+            })
+          )
+        : Effect.void
+    )
+  );
 }
