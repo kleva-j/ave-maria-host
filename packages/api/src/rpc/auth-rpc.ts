@@ -22,10 +22,12 @@ import {
   SessionIdSchema,
   UserAgentSchema,
   IpAddressSchema,
+  PasswordSchema,
+  BooleanSchema,
   UserIdSchema,
   EmailSchema,
-  DateSchema,
   TokenSchema,
+  DateSchema,
 } from "@host/shared";
 
 /**
@@ -69,7 +71,7 @@ export class AuthResponse extends Schema.Class<AuthResponse>("AuthResponse")({
 export class TokenValidationResponse extends Schema.Class<TokenValidationResponse>(
   "TokenValidationResponse"
 )({
-  valid: Schema.Boolean,
+  valid: BooleanSchema,
   user: User,
 }) {}
 
@@ -96,7 +98,7 @@ export class SessionListResponse extends Schema.Class<SessionListResponse>(
 export class SuccessResponse extends Schema.Class<SuccessResponse>(
   "SuccessResponse"
 )({
-  success: Schema.Boolean,
+  success: BooleanSchema,
   message: Schema.String,
 }) {}
 
@@ -168,55 +170,30 @@ export class AuthMiddleware extends RpcMiddleware.Tag<AuthMiddleware>()(
  */
 export class AuthLoginPayload extends Schema.Class<AuthLoginPayload>(
   "AuthLoginPayload"
-)({
-  email: Schema.String.pipe(Schema.pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)),
-  password: Schema.String.pipe(Schema.minLength(8)),
-}) {}
+)({ email: EmailSchema, password: PasswordSchema }) {}
 
 export class AuthRegisterPayload extends Schema.Class<AuthRegisterPayload>(
   "AuthRegisterPayload"
-)({
-  email: Schema.String.pipe(Schema.pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)),
-  password: Schema.String.pipe(Schema.minLength(8)),
-  name: Schema.String.pipe(
-    Schema.minLength(2),
-    Schema.maxLength(100),
-    Schema.trimmed()
-  ),
-}) {}
+)({ email: EmailSchema, password: PasswordSchema, name: FirstNameSchema }) {}
 
 export class AuthValidateTokenPayload extends Schema.Class<AuthValidateTokenPayload>(
   "AuthValidateTokenPayload"
-)({
-  token: Schema.String.pipe(Schema.minLength(1)),
-}) {}
+)({ token: TokenSchema }) {}
 
 export class AuthRefreshTokenPayload extends Schema.Class<AuthRefreshTokenPayload>(
   "AuthRefreshTokenPayload"
-)({
-  refreshToken: Schema.String.pipe(Schema.minLength(1)),
-}) {}
+)({ refreshToken: TokenSchema }) {}
 
 export class AuthUploadProfilePayload extends Schema.Class<AuthUploadProfilePayload>(
   "AuthUploadProfilePayload"
 )({
-  name: Schema.optional(
-    Schema.String.pipe(
-      Schema.minLength(2),
-      Schema.maxLength(100),
-      Schema.trimmed()
-    )
-  ),
-  email: Schema.optional(
-    Schema.String.pipe(Schema.pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/))
-  ),
+  name: Schema.optional(FirstNameSchema),
+  email: Schema.optional(EmailSchema),
 }) {}
 
 export class AuthRevokeSessionPayload extends Schema.Class<AuthRevokeSessionPayload>(
   "AuthRevokeSessionPayload"
-)({
-  sessionId: Schema.String.pipe(Schema.minLength(1)),
-}) {}
+)({ sessionId: SessionIdSchema }) {}
 
 /**
  * Authentication RPC Group Definition
@@ -288,10 +265,7 @@ export class AuthRpcs extends RpcGroup.make(
   Rpc.make("RefreshToken", {
     payload: AuthRefreshTokenPayload,
     success: Schema.Struct({
-      session: Schema.Struct({
-        token: Schema.String,
-        expiresAt: Schema.Date,
-      }),
+      session: Schema.Struct({ token: TokenSchema, expiresAt: DateSchema }),
     }),
     error: AuthenticationError,
   }),
