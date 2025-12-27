@@ -1,5 +1,6 @@
 import type { FinancialError } from "@host/shared";
 import type {
+  ContributionValidationError,
   TransactionRepository,
   SavingsRepository,
   WalletRepository,
@@ -7,6 +8,7 @@ import type {
 
 import { Effect, Context, Layer, Schema } from "effect";
 import {
+  validateContributionEffect,
   TransactionId,
   Transaction,
   PlanId,
@@ -117,10 +119,7 @@ export const ProcessContributionUseCaseLive = Layer.effect(
           // Create value objects
           const planId = PlanId.fromString(validatedInput.planId);
           const userId = UserId.fromString(validatedInput.userId);
-          const amount = Money.fromNumber(
-            validatedInput.amount,
-            DEFAULT_CURRENCY
-          );
+          const amount = Money.fromNumber(validatedInput.amount);
 
           // Retrieve the savings plan
           const plan = yield* savingsRepository.findById(planId).pipe(
@@ -142,49 +141,10 @@ export const ProcessContributionUseCaseLive = Layer.effect(
             );
           }
 
-          // Verify user owns the plan
-          if (plan.userId.value !== userId.value) {
-            return yield* Effect.fail(
-              new AuthorizationError({
-                userId: validatedInput.userId,
-                resource: "savings_plan",
-                action: "contribute",
-              })
-            );
-          }
-
-          // Validate contribution amount
-          if (!plan.canMakeContribution(amount)) {
-            return yield* Effect.fail(
-              new InvalidContributionError({
-                planId: validatedInput.planId,
-                reason: "Invalid contribution amount or plan status",
-                expectedAmount: plan.dailyAmount.value,
-                providedAmount: validatedInput.amount,
-              })
-            );
-          }
-
-          // Check wallet balance if source is wallet
-          if (validatedInput.source === PaymentSourceEnum.WALLET) {
-            const hasSufficientBalance = yield* walletRepository
-              .hasSufficientBalance(userId, amount)
-              .pipe(
-                Effect.mapError(
-                  (error) =>
-                    new DatabaseError({
-                      operation: "hasSufficientBalance",
-                      table: "wallets",
-                      message:
-                        error.message || "Failed to check wallet balance",
-                    })
-                )
-              );
-
-            if (!hasSufficientBalance) {
-              const currentBalance = yield* walletRepository
-                .getBalance(userId)
-                .pipe(
+          // Use domain validation service to eliminate code duplication
+          const walletBalance =
+            validatedInput.source === PaymentSourceEnum.WALLET
+              ? yield* walletRepository.getBalance(userId).pipe(
                   Effect.mapError(
                     (error) =>
                       new DatabaseError({
@@ -194,16 +154,44 @@ export const ProcessContributionUseCaseLive = Layer.effect(
                           error.message || "Failed to get wallet balance",
                       })
                   )
-                );
-              return yield* Effect.fail(
-                new InsufficientFundsError({
-                  available: currentBalance.value,
+                )
+              : undefined;
+
+          yield* validateContributionEffect(
+            userId,
+            planId,
+            amount,
+            validatedInput.source,
+            plan,
+            walletBalance
+          ).pipe(
+            Effect.mapError((domainError: ContributionValidationError) => {
+              // Map domain validation errors to application errors for API compatibility
+              if (
+                domainError.reason.includes("Plan does not belong to the user")
+              ) {
+                return new AuthorizationError({
+                  userId: validatedInput.userId,
+                  resource: "savings_plan",
+                  action: "contribute",
+                });
+              }
+              if (domainError.reason.includes("Insufficient wallet balance")) {
+                return new InsufficientFundsError({
+                  available: walletBalance?.value || 0,
                   required: validatedInput.amount,
                   currency: DEFAULT_CURRENCY,
-                })
-              );
-            }
-          }
+                });
+              }
+              // Default to InvalidContributionError for other validation failures
+              return new InvalidContributionError({
+                planId: validatedInput.planId,
+                reason: domainError.reason,
+                expectedAmount: plan.dailyAmount.value,
+                providedAmount: validatedInput.amount,
+              });
+            })
+          );
 
           // Generate transaction reference
           const reference =
@@ -232,22 +220,19 @@ export const ProcessContributionUseCaseLive = Layer.effect(
           );
 
           // Debit wallet if source is wallet
-          let newWalletBalance = 0;
-          if (validatedInput.source === PaymentSourceEnum.WALLET) {
-            const updatedBalance = yield* walletRepository
-              .debit(userId, amount)
-              .pipe(
-                Effect.mapError(
-                  (error) =>
-                    new DatabaseError({
-                      operation: "debit",
-                      table: "wallets",
-                      message: error.message || "Failed to debit wallet",
-                    })
+          const newWalletBalance =
+            validatedInput.source === PaymentSourceEnum.WALLET
+              ? yield* walletRepository.debit(userId, amount).pipe(
+                  Effect.mapError(
+                    (error) =>
+                      new DatabaseError({
+                        operation: "debit",
+                        table: "wallets",
+                        message: error.message || "Failed to debit wallet",
+                      })
+                  )
                 )
-              );
-            newWalletBalance = updatedBalance.value;
-          }
+              : Money.fromNumber(0);
 
           // Update plan with contribution
           const updatedPlan = plan.makeContribution(amount);
@@ -278,7 +263,7 @@ export const ProcessContributionUseCaseLive = Layer.effect(
           return {
             transaction: completedTransaction,
             newPlanBalance: updatedPlan.currentAmount.value,
-            newWalletBalance,
+            newWalletBalance: newWalletBalance.value,
           };
         }),
     };
