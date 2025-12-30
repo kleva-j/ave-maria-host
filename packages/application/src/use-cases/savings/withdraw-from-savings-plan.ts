@@ -200,7 +200,8 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
             plan.userId,
             plan.id,
             Money.fromNumber(input.amount, plan.currentAmount.currency),
-            plan
+            plan,
+            user.kycTier
           ).pipe(
             Effect.mapError((domainError: WithdrawalValidationError) => {
               // Map domain validation errors to application errors for API compatibility

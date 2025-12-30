@@ -160,6 +160,10 @@ host/
 │   ├── server/        # Backend API (Hono + oRPC)
 │   └── fumadocs/      # Documentation site
 │
+├── docs/
+│     ├── api/         # API documentation
+│     └── adr/         # Architecture Decision Records
+│
 ├── packages/
 │   ├── api/            # Shared API types and clients
 │   ├── application/    # Core business logic
