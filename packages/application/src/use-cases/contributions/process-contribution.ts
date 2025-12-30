@@ -83,8 +83,8 @@ export const ProcessContributionUseCaseLive = Layer.effect(
     );
 
     if (
-      savingsRepo._tag === "None" ||
       transactionRepo._tag === "None" ||
+      savingsRepo._tag === "None" ||
       walletRepo._tag === "None"
     ) {
       return yield* Effect.fail(
@@ -95,8 +95,8 @@ export const ProcessContributionUseCaseLive = Layer.effect(
       );
     }
 
-    const savingsRepository = savingsRepo.value;
     const transactionRepository = transactionRepo.value;
+    const savingsRepository = savingsRepo.value;
     const walletRepository = walletRepo.value;
 
     return {

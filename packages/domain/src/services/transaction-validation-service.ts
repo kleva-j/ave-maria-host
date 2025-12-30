@@ -1,21 +1,15 @@
 import type { KycTier, PaymentSource, TransactionType } from "@host/shared";
 import type { SavingsPlan } from "../entities/savings-plan";
+import type { ValidationResult } from "./validation-types";
 import type { UserId, PlanId } from "../value-objects";
 
-import { DEFAULT_CURRENCY, KycTierEnum, PaymentSourceEnum } from "@host/shared";
+import { KycTierEnum, PaymentSourceEnum } from "@host/shared";
 import { Money } from "../value-objects";
 import { Effect } from "effect";
 import {
   TransactionLimitValidationError,
   ContributionValidationError,
 } from "../errors/validation-errors";
-/**
- * Validation result interface
- */
-export interface ValidationResult {
-  isValid: boolean;
-  errors: string[];
-}
 
 export const KYC_TIER_LIMIT = {
   [KycTierEnum.UNVERIFIED]: {
@@ -37,45 +31,26 @@ export const KYC_TIER_LIMIT = {
 
 export const KYC_TIER = {
   [KycTierEnum.UNVERIFIED]: {
-    dailyLimit: Money.fromNumber(
-      KYC_TIER_LIMIT[KycTierEnum.UNVERIFIED].daily,
-      DEFAULT_CURRENCY
-    ),
+    dailyLimit: Money.fromNumber(KYC_TIER_LIMIT[KycTierEnum.UNVERIFIED].daily),
     monthlyLimit: Money.fromNumber(
-      KYC_TIER_LIMIT[KycTierEnum.UNVERIFIED].monthly,
-      DEFAULT_CURRENCY
+      KYC_TIER_LIMIT[KycTierEnum.UNVERIFIED].monthly
     ),
     singleTransactionLimit: Money.fromNumber(
-      KYC_TIER_LIMIT[KycTierEnum.UNVERIFIED].singleTransaction,
-      DEFAULT_CURRENCY
+      KYC_TIER_LIMIT[KycTierEnum.UNVERIFIED].singleTransaction
     ),
   },
   [KycTierEnum.BASIC]: {
-    dailyLimit: Money.fromNumber(
-      KYC_TIER_LIMIT[KycTierEnum.BASIC].daily,
-      DEFAULT_CURRENCY
-    ),
-    monthlyLimit: Money.fromNumber(
-      KYC_TIER_LIMIT[KycTierEnum.BASIC].monthly,
-      DEFAULT_CURRENCY
-    ),
+    dailyLimit: Money.fromNumber(KYC_TIER_LIMIT[KycTierEnum.BASIC].daily),
+    monthlyLimit: Money.fromNumber(KYC_TIER_LIMIT[KycTierEnum.BASIC].monthly),
     singleTransactionLimit: Money.fromNumber(
-      KYC_TIER_LIMIT[KycTierEnum.BASIC].singleTransaction,
-      DEFAULT_CURRENCY
+      KYC_TIER_LIMIT[KycTierEnum.BASIC].singleTransaction
     ),
   },
   [KycTierEnum.FULL]: {
-    dailyLimit: Money.fromNumber(
-      KYC_TIER_LIMIT[KycTierEnum.FULL].daily,
-      DEFAULT_CURRENCY
-    ),
-    monthlyLimit: Money.fromNumber(
-      KYC_TIER_LIMIT[KycTierEnum.FULL].monthly,
-      DEFAULT_CURRENCY
-    ),
+    dailyLimit: Money.fromNumber(KYC_TIER_LIMIT[KycTierEnum.FULL].daily),
+    monthlyLimit: Money.fromNumber(KYC_TIER_LIMIT[KycTierEnum.FULL].monthly),
     singleTransactionLimit: Money.fromNumber(
-      KYC_TIER_LIMIT[KycTierEnum.FULL].singleTransaction,
-      DEFAULT_CURRENCY
+      KYC_TIER_LIMIT[KycTierEnum.FULL].singleTransaction
     ),
   },
 } as const;
@@ -124,7 +99,7 @@ export function validateContribution(
     errors.push(`Maximum contribution amount is ${maximumAmount.format()}`);
   }
 
-  return { isValid: errors.length === 0, errors };
+  return { isValid: errors.length === 0, warnings: errors };
 }
 
 /**
@@ -169,7 +144,7 @@ export function validateWithdrawal(
     errors.push(`Minimum withdrawal amount is ${minimumAmount.format()}`);
   }
 
-  return { isValid: errors.length === 0, errors };
+  return { isValid: errors.length === 0, warnings: errors };
 }
 
 /**
@@ -201,7 +176,7 @@ export function validateWalletFunding(
     errors.push("Invalid payment source for wallet funding");
   }
 
-  return { isValid: errors.length === 0, errors };
+  return { isValid: errors.length === 0, warnings: errors };
 }
 
 /**
@@ -243,7 +218,7 @@ export function validateTransactionLimits(
     );
   }
 
-  return { isValid: errors.length === 0, errors };
+  return { isValid: errors.length === 0, warnings: errors };
 }
 
 /**

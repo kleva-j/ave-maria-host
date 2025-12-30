@@ -1,3 +1,4 @@
+import type { UserRepository, WithdrawalValidationError } from "@host/domain";
 import type { FinancialError } from "@host/shared";
 
 import type {
@@ -7,14 +8,23 @@ import type {
   RepositoryError,
 } from "@host/domain";
 
-import { Transaction, PlanId, Money } from "@host/domain";
 import { Effect, Context, Schema, Layer } from "effect";
+
+import {
+  validateWithdrawalEffect,
+  WithdrawalErrorType,
+  Transaction,
+  PlanId,
+  UserId,
+  Money,
+} from "@host/domain";
 
 import {
   MinimumBalanceViolationError,
   ConcurrentWithdrawalError,
   WithdrawalNotAllowedError,
   InsufficientFundsError,
+  AuthorizationError,
   ValidationError,
   DatabaseError,
   // Enums
@@ -76,10 +86,7 @@ export interface WithdrawFromSavingsPlanOutput {
 export interface WithdrawFromSavingsPlanUseCase {
   readonly execute: (
     input: WithdrawFromSavingsPlanInput
-  ) => Effect.Effect<
-    WithdrawFromSavingsPlanOutput,
-    FinancialError | ValidationError
-  >;
+  ) => Effect.Effect<WithdrawFromSavingsPlanOutput, FinancialError>;
 }
 
 export const WithdrawFromSavingsPlanUseCase =
@@ -102,6 +109,9 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
     const withdrawalRepo = yield* Effect.serviceOption(
       Context.GenericTag<WithdrawalRepository>("@domain/WithdrawalRepository")
     );
+    const userRepo = yield* Effect.serviceOption(
+      Context.GenericTag<UserRepository>("@domain/UserRepository")
+    );
     const complianceService = yield* Effect.serviceOption(ComplianceService);
     const savingsService = yield* Effect.serviceOption(SavingsService);
     const walletService = yield* Effect.serviceOption(WalletService);
@@ -111,6 +121,7 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
       savingsRepo._tag === "None" ||
       transactionRepo._tag === "None" ||
       withdrawalRepo._tag === "None" ||
+      userRepo._tag === "None" ||
       walletService._tag === "None" ||
       savingsService._tag === "None" ||
       complianceService._tag === "None" ||
@@ -120,17 +131,18 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
         new ValidationError({
           field: "dependencies",
           message:
-            "Required dependencies (SavingsRepo, TransactionRepo, WithdrawalRepo, WalletService, SavingsService, ComplianceService, FeeService) not available",
+            "Required dependencies (SavingsRepo, TransactionRepo, WithdrawalRepo, UserRepo, WalletService, SavingsService, ComplianceService, FeeService) not available",
         })
       );
     }
 
-    const savingsRepository = savingsRepo.value;
     const transactionRepository = transactionRepo.value;
     const withdrawalRepository = withdrawalRepo.value;
-    const wallet = walletService.value;
-    const savings = savingsService.value;
+    const savingsRepository = savingsRepo.value;
+    const userRepository = userRepo.value;
     const compliance = complianceService.value;
+    const savings = savingsService.value;
+    const wallet = walletService.value;
     const fees = feeService.value;
 
     return {
@@ -160,15 +172,75 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
             );
           }
 
-          // 2. Verify Ownership
-          if (plan.userId.value !== input.userId) {
+          const user = yield* userRepository
+            .findById(UserId.fromString(input.userId))
+            .pipe(
+              Effect.mapError(
+                (error: RepositoryError) =>
+                  new DatabaseError({
+                    operation: "findById",
+                    table: "users",
+                    message: error.message || "Failed to find user",
+                  })
+              )
+            );
+
+          if (!user) {
             return yield* Effect.fail(
               new ValidationError({
                 field: "userId",
-                message: "User is not authorized to withdraw from this plan",
+                message: "User not found",
+                value: input.userId,
               })
             );
           }
+
+          // Use domain validation service to eliminate code duplication
+          yield* validateWithdrawalEffect(
+            plan.userId,
+            plan.id,
+            Money.fromNumber(input.amount, plan.currentAmount.currency),
+            plan
+          ).pipe(
+            Effect.mapError((domainError: WithdrawalValidationError) => {
+              // Map domain validation errors to application errors for API compatibility
+              switch (domainError.type) {
+                case WithdrawalErrorType.PLAN_OWNERSHIP:
+                  return new AuthorizationError({
+                    userId: input.userId,
+                    resource: "savings_plan",
+                    action: "withdraw",
+                  });
+                case WithdrawalErrorType.PLAN_STATUS:
+                  return new WithdrawalNotAllowedError({
+                    planId: input.planId,
+                    reason: "Plan is not eligible for withdrawal",
+                    maturityDate: plan.endDate,
+                  });
+                case WithdrawalErrorType.INSUFFICIENT_BALANCE:
+                  return new MinimumBalanceViolationError({
+                    planId: input.planId,
+                    requestedAmount: input.amount,
+                    currentBalance: plan.currentAmount.value,
+                    minimumBalance: plan.minimumBalance.value,
+                    currency: plan.currentAmount.currency,
+                  });
+                case WithdrawalErrorType.MINIMUM_BALANCE:
+                  return new MinimumBalanceViolationError({
+                    planId: input.planId,
+                    requestedAmount: input.amount,
+                    currentBalance: plan.currentAmount.value,
+                    minimumBalance: plan.minimumBalance.value,
+                    currency: plan.currentAmount.currency,
+                  });
+                default:
+                  return new ValidationError({
+                    field: "withdrawal",
+                    message: domainError.message,
+                  });
+              }
+            })
+          );
 
           // 3. Check for pending withdrawals
           const hasPending = yield* withdrawalRepository
@@ -207,10 +279,7 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
             );
           }
 
-          const withdrawalAmount = Money.fromNumber(
-            input.amount,
-            plan.currentAmount.currency
-          );
+          const withdrawalAmount = Money.fromNumber(input.amount);
 
           // 5. Check Withdrawal Limits (Phase 2)
           yield* savings.checkWithdrawalLimits(plan.userId, withdrawalAmount);
@@ -226,14 +295,13 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
           }
 
           // 8. Calculate Fees (Phase 3)
-          const processingFeeAmount = yield* fees.calculateFees(
-            input.amount,
-            input.destination
-          );
-          const processingFee = Money.fromNumber(
-            processingFeeAmount,
-            plan.currentAmount.currency
-          );
+          const processingFeeAmount = yield* fees.calculateFees({
+            amount: input.amount,
+            destination: input.destination,
+            userKycTier: user.kycTier,
+          });
+
+          const processingFee = Money.fromNumber(processingFeeAmount.fee);
 
           // 9. Check minimum balance & Total Balance
           if (!plan.canWithdrawAmount(withdrawalAmount)) {
@@ -276,16 +344,11 @@ export const WithdrawFromSavingsPlanUseCaseLive = Layer.effect(
             );
           }
 
-          const netAmount = Money.fromNumber(
-            netAmountValue,
-            plan.currentAmount.currency
-          );
+          const netAmount = Money.fromNumber(netAmountValue);
 
           // 11. Perform Withdrawal
           const originalVersion = plan.version;
-          const updatedPlan = plan.withdraw(
-            Money.fromNumber(input.amount, plan.currentAmount.currency)
-          );
+          const updatedPlan = plan.withdraw(Money.fromNumber(input.amount));
 
           // 12. Handle Wallet Credit (if applicable)
           if (input.destination === PaymentDestinationEnum.WALLET) {
