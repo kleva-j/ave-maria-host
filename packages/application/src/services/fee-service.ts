@@ -106,11 +106,7 @@ export const FeeServiceLive = Layer.succeed(
             fee: 0,
             netAmount: params.amount,
             feeType: "fixed",
-            breakdown: {
-              baseFee: 0,
-              percentageFee: 0,
-              kycAdjustment: 0,
-            },
+            breakdown: { baseFee: 0, percentageFee: 0, kycAdjustment: 0 },
             kycGatecheck: {
               isAllowed: false,
               requiredTier,

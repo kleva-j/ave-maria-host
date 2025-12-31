@@ -19,10 +19,10 @@ import {
  */
 export function validateWithdrawalEffect(
   userId: UserId,
-  planId: PlanId,
+  _planId: PlanId,
   amount: Money,
   plan: SavingsPlan,
-  userKycTier?: KycTier
+  _userKycTier?: KycTier
 ): Effect.Effect<WithdrawalValidationResult, WithdrawalValidationError> {
   return Effect.gen(function* () {
     // Compose all validators
