@@ -87,3 +87,23 @@ export interface WithdrawalValidationResult extends ValidationResult {
     readonly respectsMonthlyLimit: boolean;
   };
 }
+
+export interface WalletValidationResult extends ValidationResult {
+  readonly walletEligibility: {
+    readonly hasSufficientBalance: boolean;
+    readonly availableBalance: Money | undefined;
+    readonly withdrawableAmount: Money;
+  };
+  readonly fundingEligibility: {
+    readonly respectsLimits: boolean;
+    readonly dailyLimit: Money;
+    readonly weeklyLimit: Money;
+    readonly monthlyLimit: Money;
+  };
+  readonly transactionEligibility: {
+    readonly isValidAmount: boolean;
+    readonly respectsPaymentSource: boolean;
+    readonly minimumAmount: Money;
+    readonly maximumAmount: Money;
+  };
+}

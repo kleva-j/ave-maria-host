@@ -18,6 +18,15 @@ export const WithdrawalErrorType = {
 
 export type WithdrawalErrorType = typeof WithdrawalErrorType[keyof typeof WithdrawalErrorType];
 
+export const WalletErrorType = {
+  INSUFFICIENT_BALANCE: "INSUFFICIENT_BALANCE",
+  LIMIT_EXCEEDED: "LIMIT_EXCEEDED",
+  INVALID_PAYMENT_SOURCE: "INVALID_PAYMENT_SOURCE",
+  INVALID_AMOUNT: "INVALID_AMOUNT",
+} as const;
+
+export type WalletErrorType = typeof WalletErrorType[keyof typeof WalletErrorType];
+
 // Simple, focused error types
 export class ContributionValidationError extends Data.TaggedError(
   "ContributionValidationError"
@@ -41,6 +50,21 @@ export class WithdrawalValidationError extends Data.TaggedError(
     readonly currentLimit?: number;
     readonly limitType?: "daily" | "weekly" | "monthly";
     readonly kycTier?: number;
+  };
+}> {}
+
+export class WalletValidationError extends Data.TaggedError(
+  "WalletValidationError"
+)<{
+  readonly type: WalletErrorType;
+  readonly userId: string;
+  readonly message: string;
+  readonly context?: {
+    readonly requestedAmount?: number;
+    readonly availableBalance?: number;
+    readonly currentLimit?: number;
+    readonly limitType?: "daily" | "weekly" | "monthly";
+    readonly paymentSource?: string;
   };
 }> {}
 
