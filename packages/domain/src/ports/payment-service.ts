@@ -149,7 +149,12 @@ export class PaymentError extends Data.TaggedError("PaymentError")<{
   readonly cause?: unknown;
   readonly timestamp?: Date;
 }> {
-  constructor(args: PaymentError) {
+  constructor(args: {
+    readonly code: string;
+    readonly message: string;
+    readonly provider?: string;
+    readonly cause?: unknown;
+  }) {
     super({ ...args, timestamp: new Date() });
   }
 }

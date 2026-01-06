@@ -28,6 +28,7 @@ import {
   EmailSchema,
   TokenSchema,
   DateSchema,
+  NameSchema,
   OtpSchema,
 } from "./common-schemas";
 
@@ -104,7 +105,7 @@ export type LoginCredentials = typeof LoginCredentialsSchema.Type;
  * Registration data schema
  */
 export const RegisterDataSchema = Schema.Struct({
-  name: FirstNameSchema,
+  name: NameSchema,
   email: EmailSchema,
   password: PasswordSchema,
 });

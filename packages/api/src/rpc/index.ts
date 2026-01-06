@@ -34,6 +34,7 @@ export {
 
 // Export our RPC groups
 export * from "./email-verification-rpc";
+export * from "./biometric-rpc";
 export * from "./analytics-rpc";
 export * from "./savings-rpc";
 export * from "./payment-rpc";
@@ -41,5 +42,6 @@ export * from "./wallet-rpc";
 export * from "./user-rpc";
 export * from "./todo-rpc";
 export * from "./auth-rpc";
+export * from "./kyc-rpc";
 export * from "./server";
 export * from "./client";

@@ -96,6 +96,11 @@ export const BankAccountIdSchema = UuidSchema.pipe(
   Schema.brand("BankAccountId")
 );
 
+/**
+ * DocumentId value object representing a unique identifier for documents
+ */
+export const DocumentIdSchema = UuidSchema.pipe(Schema.brand("DocumentId"));
+
 // Types
 export type Uuid = typeof UuidSchema.Type;
 export type UserId = typeof UserIdSchema.Type;
@@ -105,6 +110,7 @@ export type DeviceId = typeof DeviceIdSchema.Type;
 export type WalletId = typeof WalletIdSchema.Type;
 export type AccountId = typeof AccountIdSchema.Type;
 export type SessionId = typeof SessionIdSchema.Type;
+export type DocumentId = typeof DocumentIdSchema.Type;
 export type ChallengeId = typeof ChallengeIdSchema.Type;
 export type PermissionId = typeof PermissionIdSchema.Type;
 export type TransactionId = typeof TransactionIdSchema.Type;

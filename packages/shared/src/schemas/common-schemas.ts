@@ -189,9 +189,9 @@ export const IpAddressSchema = Schema.String.pipe(
 /**
  * Schema for Token validation
  */
-export const TokenSchema = Schema.Trimmed.pipe(Schema.minLength(10)).annotations(
-  { message: () => "Invalid token format" }
-);
+export const TokenSchema = Schema.Trimmed.pipe(
+  Schema.minLength(10)
+).annotations({ message: () => "Invalid token format" });
 
 export type Date = typeof DateSchema.Type;
 export type DateTime = typeof DateTimeSchema.Type;
@@ -262,6 +262,13 @@ export const PhoneNumberSchema = Schema.Trimmed.pipe(
       "Invalid phone number format. Use international format (e.g., +2348012345678)",
   })
 ).annotations({ description: "Phone number" });
+
+export const NameSchema = Schema.Trimmed.pipe(
+  Schema.minLength(1, { message: () => "Name is required" }),
+  Schema.maxLength(100, {
+    message: () => "Name must not exceed 100 characters",
+  })
+).annotations({ description: "Name" });
 
 /**
  * Schema for Firstname and Lastname

@@ -1,20 +1,32 @@
 import type { KycTier1Data, KycTier2Data, User } from "../auth/types";
-import type { KycVerificationStatus } from "@host/api";
 import type { Effect } from "effect";
+import type {
+  DocumentType,
+  DocumentId,
+  KycStatus,
+  KycTier,
+} from "@host/shared";
+
 import type {
   InsufficientKycTierError,
   KycVerificationError,
   UserNotFoundError,
 } from "../auth/errors";
 
+import { KycTierSchema } from "@host/shared";
 import { Context } from "effect";
+
+/**
+ * KYC verification status
+ */
+export type KycVerificationStatus = KycStatus;
 
 /**
  * KYC verification result
  */
 export interface KycVerificationResult {
   readonly status: KycVerificationStatus;
-  readonly tier: number;
+  readonly tier: KycTier;
   readonly verifiedAt?: Date;
   readonly rejectionReason?: string;
   readonly reviewNotes?: string;
@@ -24,7 +36,7 @@ export interface KycVerificationResult {
  * KYC limits based on tier
  */
 export interface KycLimits {
-  readonly tier: number;
+  readonly tier: KycTier;
   readonly dailyTransactionLimit: number;
   readonly monthlyTransactionLimit: number;
   readonly maxSavingsPlans: number;
@@ -38,7 +50,7 @@ export interface KycLimits {
  * Document upload result
  */
 export interface DocumentUploadResult {
-  readonly documentId: string;
+  readonly documentId: DocumentId;
   readonly url: string;
   readonly uploadedAt: Date;
   readonly verified: boolean;
@@ -82,7 +94,7 @@ export interface KycService {
    */
   readonly uploadDocument: (
     userId: string,
-    documentType: "government_id" | "selfie" | "address_proof",
+    documentType: DocumentType,
     fileData: Buffer,
     fileName: string,
     mimeType: string
@@ -201,7 +213,7 @@ export type KycServiceDeps = typeof KycService.Service;
  */
 export const DEFAULT_KYC_LIMITS: Record<number, KycLimits> = {
   0: {
-    tier: 0,
+    tier: KycTierSchema.make(0),
     dailyTransactionLimit: 0,
     monthlyTransactionLimit: 0,
     maxSavingsPlans: 0,
@@ -211,7 +223,7 @@ export const DEFAULT_KYC_LIMITS: Record<number, KycLimits> = {
     requiresApproval: true,
   },
   1: {
-    tier: 1,
+    tier: KycTierSchema.make(1),
     dailyTransactionLimit: 50000, // ₦50,000
     monthlyTransactionLimit: 200000, // ₦200,000
     maxSavingsPlans: 3,
@@ -221,7 +233,7 @@ export const DEFAULT_KYC_LIMITS: Record<number, KycLimits> = {
     requiresApproval: false,
   },
   2: {
-    tier: 2,
+    tier: KycTierSchema.make(2),
     dailyTransactionLimit: 500000, // ₦500,000
     monthlyTransactionLimit: 2000000, // ₦2,000,000
     maxSavingsPlans: 10,

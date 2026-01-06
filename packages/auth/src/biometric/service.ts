@@ -24,7 +24,6 @@ import { Context } from "effect";
  * Biometric service interface providing secure biometric authentication
  */
 export interface BiometricService {
-  // readonly testMethod: () => Effect.Effect<void, never>;
   /**
    * Register a new biometric device for a user
    */

@@ -14,6 +14,7 @@
 
 // Import services
 import type { RedisRateLimiterService } from "@host/infrastructure";
+import type { BiometricService, KycService } from "@host/auth";
 import type { HttpServer } from "@effect/platform";
 import type { DatabaseService } from "@host/db";
 import type { Hono } from "hono";
@@ -43,21 +44,21 @@ import type {
   FundWalletUseCase,
 } from "@host/application";
 
-// Import service layer
-import { AuthService } from "@host/auth";
-
 // Import Effect tools
 import { RpcServer, RpcSerialization } from "@effect/rpc";
 import { HttpRouter, Headers } from "@effect/platform";
 import { Effect, Layer, Option } from "effect";
+import { AuthService } from "@host/auth";
 
 // Import RPC groups
 import { AnalyticsRpcs, AnalyticsHandlersLive } from "./analytics-rpc";
+import { BiometricRpcs, BiometricHandlersLive } from "./biometric-rpc";
 import { SavingsRpcs, SavingsHandlersLive } from "./savings-rpc";
 import { PaymentRpcs, PaymentHandlersLive } from "./payment-rpc";
 import { WalletRpcs, WalletHandlersLive } from "./wallet-rpc";
 import { UserRpcs, UserHandlersLive } from "./user-rpc";
 import { TodoRpcs, TodoHandlersLive } from "./todo-rpc";
+import { KycRpcs, KycHandlersLive } from "./kyc-rpc";
 import {
   AuthenticationError,
   AuthValidationError,
@@ -102,10 +103,12 @@ export type AppUseCaseGroup =
 export const AppRpcs = TodoRpcs.merge(AuthRpcs)
   .merge(EmailVerificationRpcs)
   .merge(AnalyticsRpcs)
+  .merge(BiometricRpcs)
   .merge(SavingsRpcs)
   .merge(PaymentRpcs)
   .merge(WalletRpcs)
-  .merge(UserRpcs);
+  .merge(UserRpcs)
+  .merge(KycRpcs);
 
 /**
  * Authentication middleware implementation for the server
@@ -216,14 +219,16 @@ export const createRpcWebHandler = (
           timestamp: new Date().toISOString(),
           status: "RPC handlers registered (use case integration pending)",
           handlers: [
-            "TodoHandlersLive",
-            "AuthHandlersLive",
-            "SavingsHandlersLive",
-            "WalletHandlersLive",
-            "PaymentHandlersLive",
-            "AnalyticsHandlersLive",
             "EmailVerificationHandlersLive",
+            "AnalyticsHandlersLive",
+            "BiometricHandlersLive",
+            "SavingsHandlersLive",
+            "PaymentHandlersLive",
+            "WalletHandlersLive",
+            "AuthHandlersLive",
+            "TodoHandlersLive",
             "UserHandlersLive",
+            "KycHandlersLive",
           ],
         }),
         {
@@ -241,28 +246,41 @@ export const createRpcWebHandler = (
 };
 
 /**
+ * Type alias for all shared services and server layer dependencies
+ */
+type SharedDeps =
+  | RedisRateLimiterService
+  | BiometricService
+  | DatabaseService
+  | AppUseCaseGroup
+  | AuthService
+  | KycService;
+
+/**
+ * Type alias for all services provided by the RPC layer
+ */
+type RpcLayerServices = HttpServer.HttpServer | SharedDeps;
+
+/**
  * Combined RPC server layer with all handlers
  * Requires AuthService and DatabaseService to be provided
  */
 
-type RpcServerDeps =
-  | RedisRateLimiterService
-  | RpcServer.Protocol
-  | DatabaseService
-  | AppUseCaseGroup
-  | AuthService;
+type RpcServerDeps = RpcServer.Protocol | SharedDeps;
 
 export const RpcServerLive: Layer.Layer<never, never, RpcServerDeps> =
   RpcServer.layer(AppRpcs).pipe(
     // Handlers
-    Layer.provide(TodoHandlersLive),
-    Layer.provide(AuthHandlersLive),
-    Layer.provide(WalletHandlersLive),
-    Layer.provide(SavingsHandlersLive),
-    Layer.provide(PaymentHandlersLive),
-    Layer.provide(AnalyticsHandlersLive),
     Layer.provide(EmailVerificationHandlersLive),
+    Layer.provide(BiometricHandlersLive),
+    Layer.provide(AnalyticsHandlersLive),
+    Layer.provide(PaymentHandlersLive),
+    Layer.provide(SavingsHandlersLive),
+    Layer.provide(WalletHandlersLive),
     Layer.provide(UserHandlersLive),
+    Layer.provide(AuthHandlersLive),
+    Layer.provide(TodoHandlersLive),
+    Layer.provide(KycHandlersLive),
     // Middleware
     Layer.provide(AuthMiddlewareLive)
   );
@@ -282,11 +300,13 @@ export const RpcHttpProtocolLive: Layer.Layer<RpcServer.Protocol> =
 export const RpcLayerLive: Layer.Layer<
   never,
   never,
-  | AuthService
-  | DatabaseService
   | RedisRateLimiterService
   | HttpServer.HttpServer
+  | BiometricService
+  | DatabaseService
   | AppUseCaseGroup
+  | AuthService
+  | KycService
 > = HttpRouter.Default.serve().pipe(
   Layer.provide(RpcServerLive),
   Layer.provide(RpcHttpProtocolLive)
@@ -314,16 +334,17 @@ export const RpcLayerLive: Layer.Layer<
  * // Note: You still need to provide use case layers
  * ```
  */
-export const createCompleteRpcLayer = (
+export function createCompleteRpcLayer(
   authServiceLayer: Layer.Layer<AuthService>,
   databaseServiceLayer: Layer.Layer<DatabaseService>,
   redisRateLimiterServiceLayer: Layer.Layer<RedisRateLimiterService>
-): Layer.Layer<never, never, HttpServer.HttpServer | AppUseCaseGroup> =>
-  RpcLayerLive.pipe(
+): Layer.Layer<never, never, RpcLayerServices> {
+  return RpcLayerLive.pipe(
     Layer.provide(authServiceLayer),
     Layer.provide(databaseServiceLayer),
     Layer.provide(redisRateLimiterServiceLayer)
   );
+}
 
 /**
  * Integration helper for Hono applications

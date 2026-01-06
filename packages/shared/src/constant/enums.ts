@@ -46,6 +46,15 @@ export const KycGovernmentIdTypeEnum = {
   NIN: "NIN",
 } as const;
 
+/**
+ * Document Type Enum
+ */
+export const DocumentTypeEnum = {
+  GOVERNMENT_ID: "government_id",
+  ADDRESS_PROOF: "address_proof",
+  SELFIE: "selfie",
+} as const;
+
 // ==============================
 // Transaction Enumerations
 // ==============================

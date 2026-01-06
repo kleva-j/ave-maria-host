@@ -9,6 +9,7 @@ import {
   BiometricTypeEnum,
   PaymentMethodEnum,
   PaymentStatusEnum,
+  DocumentTypeEnum,
   CURRENCY_CODES,
   KycIdTypeEnum,
   KycStatusEnum,
@@ -103,6 +104,18 @@ export const KycGovernmentIdTypeSchema = Schema.Literal(
   .annotations({
     message: () => "Invalid ID type",
     description: "Type of government-issued ID",
+  });
+
+/**
+ * Schema for Document Identification Type
+ */
+export const DocumentTypeSchema = Schema.Literal(
+  ...Object.values(DocumentTypeEnum)
+)
+  .pipe(Schema.brand("DocumentType"))
+  .annotations({
+    message: () => "Invalid document type",
+    description: "Type of document identification",
   });
 
 /**
@@ -208,6 +221,7 @@ export type KycStatus = typeof KycStatusSchema.Type;
 export type KycIdType = typeof KycIdTypeSchema.Type;
 export type CountryName = typeof CountryNameSchema.Type;
 export type CurrencyCode = typeof CurrencyCodeSchema.Type;
+export type DocumentType = typeof DocumentTypeSchema.Type;
 export type BiometricType = typeof BiometricTypeSchema.Type;
 export type PaymentSource = typeof PaymentSourceSchema.Type;
 export type PaymentMethod = typeof PaymentMethodSchema.Type;
