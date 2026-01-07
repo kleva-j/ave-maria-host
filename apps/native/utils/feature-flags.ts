@@ -21,9 +21,17 @@ export const FEATURE_FLAGS = {
    * These allow granular control over which endpoints use @effect/rpc
    */
   EFFECT_RPC_ENDPOINTS: {
+    DOCUMENT_VERIFICATION: process.env.EXPO_PUBLIC_EFFECT_RPC_DOCUMENT_VERIFICATION === 'true' || false,
+    EMAIL_VERIFICATION: process.env.EXPO_PUBLIC_EFFECT_RPC_EMAIL_VERIFICATION === 'true' || false,
+    FILE_STORAGE: process.env.EXPO_PUBLIC_EFFECT_RPC_FILE_STORAGE === 'true' || false,
+    ANALYTICS: process.env.EXPO_PUBLIC_EFFECT_RPC_ANALYTICS === 'true' || false,
+    HEALTH_CHECK: process.env.EXPO_PUBLIC_EFFECT_RPC_HEALTH === 'true' || false,
+    PAYMENT: process.env.EXPO_PUBLIC_EFFECT_RPC_PAYMENT === 'true' || false,
+    SAVINGS: process.env.EXPO_PUBLIC_EFFECT_RPC_SAVINGS === 'true' || false,
+    WALLET: process.env.EXPO_PUBLIC_EFFECT_RPC_WALLET === 'true' || false,
     TODOS: process.env.EXPO_PUBLIC_EFFECT_RPC_TODOS === 'true' || false,
     AUTH: process.env.EXPO_PUBLIC_EFFECT_RPC_AUTH === 'true' || false,
-    HEALTH_CHECK: process.env.EXPO_PUBLIC_EFFECT_RPC_HEALTH === 'true' || false,
+    USER: process.env.EXPO_PUBLIC_EFFECT_RPC_USER === 'true' || false,
   },
   
   /**
