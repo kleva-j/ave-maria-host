@@ -2,7 +2,7 @@
  * @fileoverview Wallet RPC Endpoints
  */
 
-import type { FinancialError } from "@host/shared";
+import type { CurrencyCode, FinancialError } from "@host/shared";
 import type { Layer } from "effect";
 
 import { Effect, Schema, DateTime } from "effect";
@@ -192,7 +192,7 @@ export const WalletHandlersLive: Layer.Layer<
 
       return new GetBalanceResponse({
         balance: result.balance,
-        currency: result.currency,
+        currency: result.currency as CurrencyCode,
         lastUpdated: DateTime.unsafeMake(result.lastUpdated),
         availableBalance: result.balance,
         pendingBalance: 0,
@@ -283,16 +283,18 @@ export const WalletHandlersLive: Layer.Layer<
       const useCase = yield* GetTransactionHistoryUseCase;
       const currentUser = yield* CurrentUser;
 
-      const result = yield* useCase.execute(payload, currentUser.id).pipe(
-        Effect.mapError(
-          (error) =>
-            new PaymentError({
-              operation: "GetTransactionHistory",
-              message: error.message || "Failed",
-              cause: error,
-            })
-        )
-      );
+      const result = yield* useCase
+        .execute({ ...payload, userId: currentUser.id })
+        .pipe(
+          Effect.mapError(
+            (error) =>
+              new PaymentError({
+                operation: "GetTransactionHistory",
+                message: error.message || "Failed",
+                cause: error,
+              })
+          )
+        );
 
       return new GetTransactionHistoryResponse({
         transactions: result.transactions.map((t) => new Transaction(t)),
