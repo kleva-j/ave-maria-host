@@ -1,3 +1,4 @@
+import { AUTH_METHOD } from "../constant";
 import { Schema } from "effect";
 
 import {
@@ -38,7 +39,7 @@ import {
 
 export const UserSchema = Schema.Struct({
   id: UserIdSchema,
-  name: FirstNameSchema,
+  name: NameSchema,
   email: EmailSchema,
   emailVerified: Schema.Boolean,
   image: Schema.NullOr(UrlStringSchema),
@@ -244,3 +245,12 @@ export const RefreshTokenRequestSchema = Schema.Struct({
 });
 
 export type RefreshTokenRequest = typeof RefreshTokenRequestSchema.Type;
+
+export const AuthMethodSchema = Schema.Literal(...Object.values(AUTH_METHOD))
+  .pipe(Schema.brand("AuthMethod"))
+  .annotations({
+    message: () => "Invalid Auth Method",
+    description: "Auth Method",
+  });
+
+export type AuthMethod = typeof AuthMethodSchema.Type;

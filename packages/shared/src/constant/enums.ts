@@ -227,3 +227,50 @@ export const FeeTypeEnum = {
   HYBRID: "hybrid",
   PERCENTAGE: "percentage",
 } as const;
+
+/**
+ * Log Level Enum
+ */
+export const LogLevelEnum = {
+  DEBUG: "debug",
+  INFO: "info",
+  WARN: "warn",
+  ERROR: "error",
+} as const;
+
+/**
+ * KYC verification status
+ */
+export const KYC_VERIFICATION_STATUS = {
+  PENDING: "pending",
+  APPROVED: "approved",
+  REJECTED: "rejected",
+  UNDER_REVIEW: "under_review",
+} as const;
+
+/**
+ * Data access action
+ */
+export const DATA_ACCESS_ACTION = {
+  READ: "read",
+  WRITE: "write",
+  DELETE: "delete",
+} as const;
+
+/**
+ * Transaction limit type
+ */
+export const TRANSACTION_LIMIT_TYPE = {
+  DAILY: "daily",
+  MONTHLY: "monthly",
+  PER_TRANSACTION: "per_transaction",
+} as const;
+
+/**
+ * Financial transaction type
+ */
+export const FINANCIAL_TRANSACTION_TYPE = {
+  WITHDRAWAL: "withdrawal",
+  TRANSFER: "transfer",
+  DEPOSIT: "deposit",
+} as const;

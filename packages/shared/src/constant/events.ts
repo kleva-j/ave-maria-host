@@ -6,7 +6,9 @@ export const AUDIT_CATEGORY = {
   AUTHENTICATION: "authentication",
   AUTHORIZATION: "authorization",
   DATA_ACCESS: "data_access",
+  COMPLIANCE: "compliance",
   FINANCIAL: "financial",
+  SECURITY: "security",
   SYSTEM: "system",
   KYC: "kyc",
 } as const;
@@ -51,15 +53,6 @@ export const SECURITY_EVENT_TYPE = {
 } as const;
 
 /**
- * Financial transaction type
- */
-export const FINANCIAL_TRANSACTION_TYPE = {
-  WITHDRAWAL: "withdrawal",
-  TRANSFER: "transfer",
-  DEPOSIT: "deposit",
-} as const;
-
-/**
  * KYC event type
  */
 export const KYC_EVENT_TYPE = {
@@ -68,30 +61,23 @@ export const KYC_EVENT_TYPE = {
   REJECT: "reject",
 } as const;
 
-/**
- * KYC verification status
- */
-export const KYC_VERIFICATION_STATUS = {
-  PENDING: "pending",
-  APPROVED: "approved",
-  REJECTED: "rejected",
-  UNDER_REVIEW: "under_review",
-} as const;
+export const AUDIT_RESOURCES = {
+  KYC_VERIFICATION: "kyc_verification",
+  SAVINGS_PLAN: "savings_plan",
+  TRANSACTION: "transaction",
+  ANALYTICS: "analytics",
+  WALLET: "wallet",
+  SYSTEM: "system",
+  GROUP: "group",
+  USER: "user",
+};
 
 /**
- * Data access action
+ * Auth method
  */
-export const DATA_ACCESS_ACTION = {
-  READ: "read",
-  WRITE: "write",
-  DELETE: "delete",
-} as const;
-
-/**
- * Transaction limit type
- */
-export const TRANSACTION_LIMIT_TYPE = {
-  DAILY: "daily",
-  MONTHLY: "monthly",
-  PER_TRANSACTION: "per_transaction",
+export const AUTH_METHOD = {
+  BIOMETRIC: "biometric",
+  PASSWORD: "password",
+  REFRESH: "refresh",
+  TOKEN: "token",
 } as const;

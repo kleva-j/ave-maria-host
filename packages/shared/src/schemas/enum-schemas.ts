@@ -1,10 +1,14 @@
 import { Schema } from "effect";
 import {
+  FINANCIAL_TRANSACTION_TYPE,
+  KYC_VERIFICATION_STATUS,
   NotificationChannelEnum,
   KycGovernmentIdTypeEnum,
+  TRANSACTION_LIMIT_TYPE,
   PaymentDestinationEnum,
   TransactionStatusEnum,
   TransactionTypeEnum,
+  DATA_ACCESS_ACTION,
   PaymentSourceEnum,
   BiometricTypeEnum,
   PaymentMethodEnum,
@@ -214,6 +218,54 @@ export const PaymentStatusSchema = Schema.Literal(
     description: "Payment Status",
   });
 
+/**
+ * Schema for kyc verification status
+ */
+export const KycVerificationStatusSchema = Schema.Literal(
+  ...Object.values(KYC_VERIFICATION_STATUS)
+)
+  .pipe(Schema.brand("KycVerificationStatus"))
+  .annotations({
+    message: () => "Invalid Kyc Verification Status",
+    description: "Kyc Verification Status",
+  });
+
+/**
+ * Schema for financial transaction type
+ */
+export const FinancialTransactionTypeSchema = Schema.Literal(
+  ...Object.values(FINANCIAL_TRANSACTION_TYPE)
+)
+  .pipe(Schema.brand("FinancialTransactionType"))
+  .annotations({
+    message: () => "Invalid Financial Transaction Type",
+    description: "Financial Transaction Type",
+  });
+
+/**
+ * Schema for data access action
+ */
+export const DataAccessActionSchema = Schema.Literal(
+  ...Object.values(DATA_ACCESS_ACTION)
+)
+  .pipe(Schema.brand("DataAccessAction"))
+  .annotations({
+    message: () => "Invalid Data Access Action",
+    description: "Data Access Action",
+  });
+
+/**
+ * Schema for transaction limit type
+ */
+export const TransactionLimitTypeSchema = Schema.Literal(
+  ...Object.values(TRANSACTION_LIMIT_TYPE)
+)
+  .pipe(Schema.brand("TransactionLimitType"))
+  .annotations({
+    message: () => "Invalid Transaction Limit Type",
+    description: "Transaction Limit Type",
+  });
+
 export type LGA = typeof LgaSchema.Type;
 export type State = typeof StateSchema.Type;
 export type KycTier = typeof KycTierSchema.Type;
@@ -227,7 +279,12 @@ export type PaymentSource = typeof PaymentSourceSchema.Type;
 export type PaymentMethod = typeof PaymentMethodSchema.Type;
 export type PaymentStatus = typeof PaymentStatusSchema.Type;
 export type TransactionType = typeof TransactionTypeSchema.Type;
+export type DataAccessAction = typeof DataAccessActionSchema.Type;
 export type TransactionStatus = typeof TransactionStatusSchema.Type;
 export type PaymentDestination = typeof PaymentDestinationSchema.Type;
 export type NotificationChannel = typeof NotificationChannelSchema.Type;
 export type KycGovernmentIdType = typeof KycGovernmentIdTypeSchema.Type;
+export type TransactionLimitType = typeof TransactionLimitTypeSchema.Type;
+export type KycVerificationStatus = typeof KycVerificationStatusSchema.Type;
+export type FinancialTransactionType =
+  typeof FinancialTransactionTypeSchema.Type;

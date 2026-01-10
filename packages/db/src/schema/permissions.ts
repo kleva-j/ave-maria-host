@@ -129,31 +129,3 @@ export const userPermissions = pgTable(
     index("user_permissions_user_idx").on(table.userId),
   ]
 );
-
-/**
- * Audit log table
- * Tracks all permission-related changes and security events
- */
-export const auditLog = pgTable(
-  "audit_log",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id").references(() => user.id, { onDelete: "set null" }),
-    action: varchar("action", { length: 100 }).notNull(), // e.g., 'user.login', 'savings.create', 'wallet.withdraw'
-    resource: varchar("resource", { length: 50 }).notNull(),
-    resourceId: uuid("resource_id"), // ID of the affected resource
-    status: varchar("status", { length: 20 }).notNull(), // success, failure, denied
-    ipAddress: varchar("ip_address", { length: 45 }),
-    userAgent: text("user_agent"),
-    metadata: text("metadata"), // JSON string with additional context
-    errorMessage: text("error_message"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-  },
-  (table) => [
-    index("audit_log_user_idx").on(table.userId),
-    index("audit_log_status_idx").on(table.status),
-    index("audit_log_action_idx").on(table.action),
-    index("audit_log_resource_idx").on(table.resource),
-    index("audit_log_created_at_idx").on(table.createdAt),
-  ]
-);

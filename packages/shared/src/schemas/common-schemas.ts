@@ -29,7 +29,7 @@ export type Money = typeof MoneySchema.Type;
 /**
  * Schema for amount validation
  */
-export const Amount = Schema.BigInt.pipe(
+export const AmountSchema = Schema.BigInt.pipe(
   Schema.filter((n) => n >= 0n, {
     message: () => "Amount must be non-negative",
   }),
@@ -37,6 +37,8 @@ export const Amount = Schema.BigInt.pipe(
     message: () => "Amount exceeds safe BigInt limit",
   })
 );
+
+export type Amount = typeof AmountSchema.Type;
 
 /**
  * Schema for pagination parameters

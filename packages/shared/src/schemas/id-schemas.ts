@@ -101,6 +101,11 @@ export const BankAccountIdSchema = UuidSchema.pipe(
  */
 export const DocumentIdSchema = UuidSchema.pipe(Schema.brand("DocumentId"));
 
+/**
+ * AuditEventId value object representing a unique identifier for audit events
+ */
+export const AuditEventIdSchema = UuidSchema.pipe(Schema.brand("AuditEventId"));
+
 // Types
 export type Uuid = typeof UuidSchema.Type;
 export type UserId = typeof UserIdSchema.Type;
@@ -113,6 +118,7 @@ export type SessionId = typeof SessionIdSchema.Type;
 export type DocumentId = typeof DocumentIdSchema.Type;
 export type ChallengeId = typeof ChallengeIdSchema.Type;
 export type PermissionId = typeof PermissionIdSchema.Type;
+export type AuditEventId = typeof AuditEventIdSchema.Type;
 export type TransactionId = typeof TransactionIdSchema.Type;
 export type BankAccountId = typeof BankAccountIdSchema.Type;
 export type BiometricAuthId = typeof BiometricAuthIdSchema.Type;
