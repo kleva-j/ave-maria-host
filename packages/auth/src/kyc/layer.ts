@@ -1,6 +1,6 @@
+import type { AuditService } from "@host/infrastructure";
 import type { KycVerificationResult } from "./service";
-import type { AuditService } from "@host/api";
-import type { User } from "../auth/types";
+import type { User } from "@host/shared";
 
 import { DEFAULT_KYC_LIMITS, KycService } from "./service";
 import { user, kycVerification, db } from "@host/db";
@@ -70,7 +70,7 @@ export const DocumentVerificationService =
  * Context tag for AuditService dependency
  */
 const AuditServiceContext = Context.GenericTag<AuditService>(
-  "@host/api/AuditService"
+  "@host/infrastructure/AuditService"
 );
 
 /**
@@ -158,11 +158,17 @@ export const KycServiceLive = Layer.effect(
 
           // Log KYC submission
           yield* _(
-            auditService.logKycEvent(userId, "submit_tier1_kyc", 1, "success", {
-              firstName: data.firstName,
-              lastName: data.lastName,
-              address: data.address,
-            })
+            auditService.logKycEvent(
+              userId,
+              "submit_tier1_kyc",
+              1,
+              "success",
+              {
+                firstName: data.firstName,
+                lastName: data.lastName,
+                address: data.address,
+              }
+            )
           );
 
           return {
@@ -263,11 +269,17 @@ export const KycServiceLive = Layer.effect(
 
           // Log KYC submission
           yield* _(
-            auditService.logKycEvent(userId, "submit_tier2_kyc", 2, "success", {
-              idType: tier2Data.governmentIdType,
-              idNumber: tier2Data.governmentIdNumber,
-              hasDocuments: true,
-            })
+            auditService.logKycEvent(
+              userId,
+              "submit_tier2_kyc",
+              2,
+              "success",
+              {
+                idType: tier2Data.governmentIdType,
+                idNumber: tier2Data.governmentIdNumber,
+                hasDocuments: true,
+              }
+            )
           );
 
           return {
@@ -448,10 +460,16 @@ export const KycServiceLive = Layer.effect(
 
           // Log KYC approval
           yield* _(
-            auditService.logKycEvent(userId, "approve_kyc", tier, "success", {
-              approvedBy: verifiedBy,
-              notes,
-            })
+            auditService.logKycEvent(
+              userId,
+              "approve_kyc",
+              tier,
+              "success",
+              {
+                approvedBy: verifiedBy,
+                notes,
+              }
+            )
           );
 
           return {

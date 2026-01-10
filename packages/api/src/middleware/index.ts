@@ -19,4 +19,3 @@ export * from "./logging";
 export * from "./authorization";
 
 // Export audit logging middleware
-export * from "./audit-logging";

@@ -30,7 +30,7 @@ import type {
   AuthContext,
   Session,
   User,
-} from "./types";
+} from "@host/shared";
 
 import { Context, type Effect } from "effect";
 

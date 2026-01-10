@@ -9,6 +9,7 @@ import type {
 import { CurrencyCodeSchema } from "../schemas";
 import { RewardsBadgeTypeEnum } from "./enums";
 
+export * from "./events";
 export * from "./enums";
 
 /**

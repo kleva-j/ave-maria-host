@@ -7,6 +7,7 @@ export * from "./external-apis";
 export * from "./monitoring";
 export * from "./analytics";
 export * from "./database";
+export * from "./logging";
 export * from "./payment";
 export * from "./redis";
 export * from "./cache";

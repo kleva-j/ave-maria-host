@@ -3,3 +3,4 @@
 
 // Export monitoring and health check types
 export * from "./monitoring";
+export * from "./event";

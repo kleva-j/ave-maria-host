@@ -1,5 +1,9 @@
-import type { SessionId, BrandedKycTier, UserId } from "@host/shared";
-import type { AuthContext } from "./types";
+import type {
+  BrandedKycTier,
+  AuthContext,
+  SessionId,
+  UserId,
+} from "@host/shared";
 
 import type {
   SessionValidationError,
