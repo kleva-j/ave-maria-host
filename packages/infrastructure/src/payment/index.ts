@@ -10,3 +10,16 @@ export {
   FlutterwavePaymentService,
   FlutterwavePaymentServiceLive,
 } from "./flutterwave-payment-service";
+
+export {
+  CompositePaymentService,
+  CompositePaymentServiceLive,
+} from "./composite-payment-service";
+
+export {
+  PaymentLayer,
+  CompositePaymentLayer,
+  PaystackLayer,
+  FlutterwaveLayer,
+  MockPaymentLayer,
+} from "./layer";

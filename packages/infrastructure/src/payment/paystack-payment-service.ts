@@ -1,17 +1,25 @@
 import type { HttpClientError } from "@effect/platform";
-import type { UserId, Money } from "@host/domain";
+import type { CurrencyCode } from "@host/shared";
+
 import type {
+  GatewayBankAccount,
   PaymentService,
   PaymentResult,
   PaymentMethod,
   BankAccount,
+  UserId,
   Bank,
 } from "@host/domain";
 
-import { DEFAULT_CURRENCY, type CurrencyCode } from "@host/shared";
-
 import { Effect, Context, Layer, Config, Data, pipe, Redacted } from "effect";
-import { PaymentError, PaymentStatus } from "@host/domain";
+import { PaymentError, Money } from "@host/domain";
+
+import {
+  PaymentStatusSchema,
+  PaymentStatusEnum,
+  DEFAULT_CURRENCY,
+} from "@host/shared";
+
 import {
   HttpClientResponse,
   HttpClientRequest,
@@ -301,10 +309,10 @@ export const PaystackPaymentServiceLive = Layer.effect(
 
           const result = yield* pipe(
             client.initializeTransaction({
-              email: userEmail,
-              amount: amountInKobo,
-              reference,
               currency: amount.currency,
+              amount: amountInKobo,
+              email: userEmail,
+              reference,
             }),
             Effect.catchAll((error) =>
               Effect.fail(
@@ -321,18 +329,18 @@ export const PaystackPaymentServiceLive = Layer.effect(
           return {
             transactionId: result.reference,
             reference: result.reference,
-            status: PaymentStatus.PENDING,
+            status: PaymentStatusSchema.make(PaymentStatusEnum.PENDING),
             amount,
-            fees: { value: 0, currency: amount.currency } as Money,
+            fees: { value: 0 } as Money,
             message: "Payment initialized successfully",
             providerResponse: result,
           } as PaymentResult;
         }),
 
       processWithdrawal: (
-        userId: UserId,
+        _userId: UserId,
         amount: Money,
-        bankAccount: BankAccount,
+        bankAccount: GatewayBankAccount,
         reference: string
       ) =>
         Effect.gen(function* () {
@@ -383,9 +391,9 @@ export const PaystackPaymentServiceLive = Layer.effect(
             transactionId: transfer.transfer_code,
             reference: transfer.reference,
             status:
-              transfer.status === "success"
-                ? PaymentStatus.SUCCESS
-                : PaymentStatus.PENDING,
+              transfer.status === PaymentStatusEnum.SUCCESS
+                ? PaymentStatusSchema.make(PaymentStatusEnum.SUCCESS)
+                : PaymentStatusSchema.make(PaymentStatusEnum.PENDING),
             amount,
             fees: { value: 0, currency: amount.currency } as Money,
             message: "Withdrawal initiated successfully",
@@ -410,24 +418,18 @@ export const PaystackPaymentServiceLive = Layer.effect(
           );
 
           const status =
-            result.status === "success"
-              ? PaymentStatus.SUCCESS
-              : result.status === "failed"
-                ? PaymentStatus.FAILED
-                : PaymentStatus.PENDING;
+            result.status === PaymentStatusEnum.SUCCESS
+              ? PaymentStatusSchema.make(PaymentStatusEnum.SUCCESS)
+              : result.status === PaymentStatusEnum.FAILED
+                ? PaymentStatusSchema.make(PaymentStatusEnum.FAILED)
+                : PaymentStatusSchema.make(PaymentStatusEnum.PENDING);
 
           return {
             transactionId: result.reference,
             reference: result.reference,
             status,
-            amount: {
-              value: result.amount / 100,
-              currency: result.currency as CurrencyCode,
-            } as Money,
-            fees: {
-              value: result.fees / 100,
-              currency: result.currency as CurrencyCode,
-            } as Money,
+            amount: Money.fromNumber(result.amount / 100),
+            fees: Money.fromNumber(result.fees / 100),
             message: `Transaction ${status}`,
             providerResponse: result,
           } as PaymentResult;
@@ -553,21 +555,21 @@ export const PaystackPaymentServiceLive = Layer.effect(
             );
           }
 
-          const event = payload.event as string;
-          const data = payload.data as Record<string, unknown>;
+          const event = payload["event"] as string;
+          const data = payload["data"] as Record<string, unknown>;
 
           if (event === "charge.success" || event === "transfer.success") {
             return {
-              transactionId: data.reference as string,
-              reference: data.reference as string,
-              status: PaymentStatus.SUCCESS,
+              transactionId: data["reference"] as string,
+              reference: data["reference"] as string,
+              status: PaymentStatusEnum.SUCCESS,
               amount: {
-                value: (data.amount as number) / 100,
-                currency: data.currency as CurrencyCode,
+                value: (data["amount"] as number) / 100,
+                currency: data["currency"] as CurrencyCode,
               } as Money,
               fees: {
-                value: ((data.fees as number) || 0) / 100,
-                currency: data.currency as CurrencyCode,
+                value: ((data["fees"] as number) || 0) / 100,
+                currency: data["currency"] as CurrencyCode,
               } as Money,
               message: `Webhook event: ${event}`,
               providerResponse: data,
