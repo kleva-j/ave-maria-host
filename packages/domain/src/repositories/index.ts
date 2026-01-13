@@ -3,6 +3,7 @@
 
 import { type Effect, Data } from "effect";
 
+export * from "./user-authorization-repository";
 export * from "./phone-verification-repository";
 export * from "./kyc-verification-repository";
 export * from "./biometric-auth-repository";

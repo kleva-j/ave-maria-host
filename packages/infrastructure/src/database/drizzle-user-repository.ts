@@ -1,6 +1,6 @@
+import type { BrandedKycTier, KycStatus, UserId } from "@host/shared";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type { KycStatus, BrandedKycTier } from "@host/shared";
-import type { UserRepository, UserId } from "@host/domain";
+import type { UserRepository } from "@host/domain";
 
 import { RepositoryError, User } from "@host/domain";
 import { DatabaseService, user } from "@host/db";
@@ -94,7 +94,7 @@ export const DrizzleUserRepositoryLive = Layer.effect(
               return await drizzle
                 .select()
                 .from(user)
-                .where(eq(user.id, id.value))
+                .where(eq(user.id, id))
                 .limit(1);
             }
           );
@@ -186,13 +186,13 @@ export const DrizzleUserRepositoryLive = Layer.effect(
           )
         ),
 
-      delete: (id: UserId) =>
+      delete: (userId: UserId) =>
         Effect.gen(function* () {
           yield* db.withDrizzle(async (drizzle: NodePgDatabase) => {
             await drizzle
               .update(user)
               .set({ isActive: false, updatedAt: new Date() })
-              .where(eq(user.id, id.value));
+              .where(eq(user.id, userId));
           });
         }).pipe(
           Effect.catchAll((error) =>
@@ -200,14 +200,14 @@ export const DrizzleUserRepositoryLive = Layer.effect(
           )
         ),
 
-      exists: (id: UserId) =>
+      exists: (userId: UserId) =>
         Effect.gen(function* () {
           const result = yield* db.withDrizzle(
             async (drizzle: NodePgDatabase) => {
               return await drizzle
                 .select()
                 .from(user)
-                .where(eq(user.id, id.value))
+                .where(eq(user.id, userId))
                 .limit(1);
             }
           );

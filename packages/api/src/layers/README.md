@@ -83,7 +83,7 @@ A comprehensive role-based access control (RBAC) system with KYC tier enforcemen
 
 **Example Usage**:
 ```typescript
-import { requirePermission, requireKycTier } from "@host/api/middleware/authorization";
+import { requirePermission, requireKycTier } from "@host/auth/authorization";
 
 // Protect a route with permission checks
 const protectedRoute = (authContext: AuthContext) =>

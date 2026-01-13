@@ -1,6 +1,7 @@
 // Database Repository Implementations
 // Concrete implementations of domain repository interfaces using Drizzle ORM
 
+export * from "./drizzle-user-authorization-repository";
 export * from "./drizzle-phone-verification-repository";
 export * from "./drizzle-kyc-verification-repository";
 export * from "./drizzle-biometric-auth-repository";

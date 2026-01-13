@@ -1,6 +1,6 @@
 import type { Repository, RepositoryError } from ".";
-import type { UserId } from "../value-objects";
 import type { User } from "../entities/user";
+import type { UserId } from "@host/shared";
 import type { Effect } from "effect";
 
 import { Context } from "effect";

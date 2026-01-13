@@ -1,6 +1,11 @@
-import type { UnauthorizedError, UserNotFoundError } from "../auth/errors";
-import type { AuthContext } from "..";
+import type { AuthContext, TransactionLimitType } from "@host/shared";
 import type { Effect } from "effect";
+import type {
+  InsufficientKycTierError,
+  AccountSuspendedError,
+  UserNotFoundError,
+  UnauthorizedError,
+} from "../auth/errors";
 
 import { Context } from "effect";
 
@@ -27,14 +32,14 @@ export type ResourceActions = {
 /**
  * Permission resources
  */
-export type AuthorizationResource = keyof ResourceActions;
+export type Resources = keyof ResourceActions;
 
 /**
  * Permission types for operations (access control list)
  */
 export type Permission = {
-  [K in AuthorizationResource]: `${K}:${ResourceActions[K]}`;
-}[AuthorizationResource];
+  [K in Resources]: `${K}:${ResourceActions[K]}`;
+}[Resources];
 
 /**
  * User roles in the system
@@ -69,6 +74,26 @@ export interface AuthorizationContext {
   readonly permissions: Permission[];
   readonly isActive: boolean;
   readonly isSuspended: boolean;
+}
+
+/**
+ * Operation context for authorization checks
+ */
+export interface OperationContext {
+  readonly operation: string;
+  readonly resource?: string;
+  readonly resourceId?: string;
+  readonly metadata?: Record<string, unknown>;
+}
+
+/**
+ * Authorization result
+ */
+export interface AuthorizationResult {
+  readonly allowed: boolean;
+  readonly reason?: string;
+  readonly requiredTier?: number;
+  readonly requiredRole?: Role;
 }
 
 /**
@@ -208,6 +233,55 @@ export interface AuthorizationService {
     requiredTier: number,
     operation: string
   ) => Effect.Effect<boolean, UnauthorizedError | UserNotFoundError>;
+
+  /**
+   * Check if user has required KYC tier (throws error if not)
+   */
+  readonly checkKycTier: (
+    authContext: AuthContext,
+    requiredTier: number,
+    operation: string
+  ) => Effect.Effect<void, InsufficientKycTierError>;
+
+  /**
+   * Check if user has permission (throws error if not)
+   */
+  readonly checkPermission: (
+    authContext: AuthContext,
+    permission: Permission
+  ) => Effect.Effect<void, UnauthorizedError>;
+
+  /**
+   * Check if user has role (throws error if not)
+   */
+  readonly checkRole: (
+    authContext: AuthContext,
+    role: Role
+  ) => Effect.Effect<void, UnauthorizedError>;
+
+  /**
+   * Check if account is active and not suspended (throws error if not)
+   */
+  readonly checkAccountStatus: (
+    authContext: AuthContext
+  ) => Effect.Effect<void, UnauthorizedError | AccountSuspendedError>;
+
+  /**
+   * Check transaction limits based on KYC tier (throws error if exceeded)
+   */
+  readonly checkTransactionLimit: (
+    authContext: AuthContext,
+    amount: number,
+    limitType: TransactionLimitType
+  ) => Effect.Effect<void, UnauthorizedError>;
+
+  /**
+   * Authorize operation with full context (throws error if not authorized)
+   */
+  readonly authorizeOperation: (
+    authContext: AuthContext,
+    operation: OperationContext
+  ) => Effect.Effect<void, UnauthorizedError | AccountSuspendedError>;
 }
 
 /**
