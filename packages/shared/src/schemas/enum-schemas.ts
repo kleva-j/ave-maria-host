@@ -17,7 +17,9 @@ import {
   CURRENCY_CODES,
   KycIdTypeEnum,
   KycStatusEnum,
+  DEFAULT_ROLES,
   KycTierEnum,
+  RESOURCES,
   STATES,
   LGAS,
 } from "../constant";
@@ -266,18 +268,37 @@ export const TransactionLimitTypeSchema = Schema.Literal(
     description: "Transaction Limit Type",
   });
 
+/**
+ * Schema for resource
+ */
+export const SystemResourceSchema = Schema.Literal(...Object.values(RESOURCES))
+  .pipe(Schema.brand("SystemResource"))
+  .annotations({
+    message: () => "Invalid Resource",
+    description: "Resource",
+  });
+
+export const DefaultRoleSchema = Schema.Literal(...Object.values(DEFAULT_ROLES))
+  .pipe(Schema.brand("Role"))
+  .annotations({
+    message: () => "Invalid Role",
+    description: "Role",
+  });
+
 export type LGA = typeof LgaSchema.Type;
 export type State = typeof StateSchema.Type;
 export type KycTier = typeof KycTierSchema.Type;
 export type KycStatus = typeof KycStatusSchema.Type;
 export type KycIdType = typeof KycIdTypeSchema.Type;
 export type CountryName = typeof CountryNameSchema.Type;
+export type DefaultRole = typeof DefaultRoleSchema.Type;
 export type CurrencyCode = typeof CurrencyCodeSchema.Type;
 export type DocumentType = typeof DocumentTypeSchema.Type;
 export type BiometricType = typeof BiometricTypeSchema.Type;
 export type PaymentSource = typeof PaymentSourceSchema.Type;
 export type PaymentMethod = typeof PaymentMethodSchema.Type;
 export type PaymentStatus = typeof PaymentStatusSchema.Type;
+export type SystemResource = typeof SystemResourceSchema.Type;
 export type TransactionType = typeof TransactionTypeSchema.Type;
 export type DataAccessAction = typeof DataAccessActionSchema.Type;
 export type TransactionStatus = typeof TransactionStatusSchema.Type;

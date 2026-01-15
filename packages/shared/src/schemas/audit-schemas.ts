@@ -1,5 +1,4 @@
-import { AuthContextSchema, AuthMethodSchema } from "./auth-schemas";
-import { PermissionSchema, RoleSchema } from "./roles-schemas";
+import { AuthContextSchema } from "./auth-schemas";
 import { Schema } from "effect";
 
 import {
@@ -11,7 +10,6 @@ import {
 import {
   AuditEventIdSchema,
   DeviceIdSchema,
-  SessionIdSchema,
   UserIdSchema,
 } from "./id-schemas";
 

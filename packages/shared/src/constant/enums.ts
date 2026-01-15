@@ -274,3 +274,41 @@ export const FINANCIAL_TRANSACTION_TYPE = {
   TRANSFER: "transfer",
   DEPOSIT: "deposit",
 } as const;
+
+export const DEFAULT_ROLES = {
+  KYC_REVIEWER: "kyc_reviewer",
+  SUPER_ADMIN: "super_admin",
+  MODERATOR: "moderator",
+  SUPPORT: "support",
+  SYSTEM: "system",
+  ADMIN: "admin",
+  USER: "user",
+} as const;
+
+/**
+ * Resources Enum
+ */
+export const RESOURCES = {
+  // Audit Log, Analytics, Milestone, Rewards
+  AUDIT_LOG: "audit_log",
+  ANALYTICS: "analytics",
+  MILESTONE: "milestone",
+  REWARDS: "rewards",
+  // Auth (Biometric, Phone, Kyc, etc,.)
+  BIOMETRIC: "biometric",
+  SESSION: "session",
+  ACCOUNT: "account",
+  PHONE: "phone",
+  USER: "user",
+  KYC: "kyc",
+  // Bank, Contributions, Plans & Wallet
+  CONTRIBUTION: "contribution",
+  BANK_ACCOUNT: "bank_account",
+  SAVINGS_PLAN: "saving_plan",
+  TRANSACTION: "transaction",
+  WALLET: "wallet",
+  // Group & Role & Permission
+  PERMISSION: "permission",
+  GROUP: "group",
+  ROLE: "role",
+} as const;

@@ -11,6 +11,7 @@ import { RewardsBadgeTypeEnum } from "./enums";
 
 export * from "./events";
 export * from "./enums";
+export * from "./const";
 
 /**
  * Default values for common schemas

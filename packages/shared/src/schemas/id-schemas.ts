@@ -106,6 +106,16 @@ export const DocumentIdSchema = UuidSchema.pipe(Schema.brand("DocumentId"));
  */
 export const AuditEventIdSchema = UuidSchema.pipe(Schema.brand("AuditEventId"));
 
+/**
+ * ResourceId value object representing a unique identifier for resources
+ */
+export const ResourceIdSchema = UuidSchema.pipe(Schema.brand("ResourceId"));
+
+/**
+ * ActionId value object representing a unique identifier for actions
+ */
+export const ActionIdSchema = UuidSchema.pipe(Schema.brand("ActionId"));
+
 // Types
 export type Uuid = typeof UuidSchema.Type;
 export type UserId = typeof UserIdSchema.Type;
@@ -113,9 +123,11 @@ export type RoleId = typeof RoleIdSchema.Type;
 export type PlanId = typeof PlanIdSchema.Type;
 export type DeviceId = typeof DeviceIdSchema.Type;
 export type WalletId = typeof WalletIdSchema.Type;
+export type ActionId = typeof ActionIdSchema.Type;
 export type AccountId = typeof AccountIdSchema.Type;
 export type SessionId = typeof SessionIdSchema.Type;
 export type DocumentId = typeof DocumentIdSchema.Type;
+export type ResourceId = typeof ResourceIdSchema.Type;
 export type ChallengeId = typeof ChallengeIdSchema.Type;
 export type PermissionId = typeof PermissionIdSchema.Type;
 export type AuditEventId = typeof AuditEventIdSchema.Type;

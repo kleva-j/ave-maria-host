@@ -1,7 +1,12 @@
-import { PermissionIdSchema, RoleIdSchema, UserIdSchema } from "./id-schemas";
 import { BooleanSchema, DateSchema } from "./common-schemas";
-
 import { Schema } from "effect";
+import {
+  PermissionIdSchema,
+  ResourceIdSchema,
+  ActionIdSchema,
+  RoleIdSchema,
+  UserIdSchema,
+} from "./id-schemas";
 
 export const PermissionSchema = Schema.Struct({
   id: PermissionIdSchema,
@@ -35,4 +40,16 @@ export const UserPermissionSchema = Schema.Struct({
   assignedBy: UserIdSchema,
   assignedAt: DateSchema,
   expiresAt: Schema.optional(DateSchema),
+});
+
+export const ResourceSchema = Schema.Struct({
+  id: ResourceIdSchema,
+  name: Schema.String,
+  description: Schema.optional(Schema.String),
+});
+
+export const ActionSchema = Schema.Struct({
+  id: ActionIdSchema,
+  name: Schema.String,
+  description: Schema.optional(Schema.String),
 });
